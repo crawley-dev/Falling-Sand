@@ -17,6 +17,7 @@ public:
 	~Game();
 
 	void init(std::vector<GLubyte> pixelData, int textureW, int textureH);
+	void createPixel(int range, bool flag, int texIdx, int x, int y, PixelType type);
 	void updatePixel(int x, int y, int r, int g, int b, int a);
 	
 	inline int texIdx(int x, int y) { return 4 * (y * texW + x); }
