@@ -56,6 +56,10 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     if (!interface) return false;
     std::cout << "Interface Initialised! .." << std::endl;
 
+    game = new Game();
+    if (!game) return false;
+    std::cout << "Game initialised! .." << std::endl;
+
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
@@ -71,6 +75,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version);
     std::cout << "Setup Complete! .." << std::endl;
+    std::cout << std::endl;
 
     isRunning = true;
     return true;
@@ -96,6 +101,10 @@ void Framework::handleEvents()
 void Framework::update()
 {
     interface->main(textureID, textureWidth, textureHeight, texReloadedCount);
+
+    pixelData = game->getTextureData();
+    updateTexture();
+
     interface->gameWindow(textureID, textureWidth, textureHeight, hasSizeChanged);
 }
 
@@ -108,7 +117,11 @@ void Framework::render()
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    if (ImGui::GetFrameCount() == 1 || hasSizeChanged == true) createTexture(); // texture will get overwritten by imgui interface if not placed here
+    // texture will get overwritten by imgui interface if not placed here
+    if (ImGui::GetFrameCount() == 1 || hasSizeChanged == true) {
+        createTexture();
+        game->init(pixelData, textureWidth, textureHeight);
+    }
 
     // Handling Multiple Viewports
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) 
@@ -152,7 +165,16 @@ void Framework::createTexture()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    std::vector<GLubyte> pixelData(textureWidth * textureHeight * 4, 255);
+    pixelData = std::vector<GLubyte>(textureWidth * textureHeight * 4, 255);
 
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.data());
+    printf("CREATED SIZE:%d\n", pixelData.size());
+    printf("textureWIDTH:%d\n", textureWidth);
+    printf("textureHEIGHT:%d\n\n", textureHeight);
+
+    updateTexture();
+}
+
+void Framework::updateTexture() 
+{ 
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.data()); 
 }

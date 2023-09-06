@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <SDL.h>
 #include <SDL_opengl.h>
+#include <vector>
 
 #include "pixel.h"
 
@@ -15,8 +16,16 @@ public:
 	Game();
 	~Game();
 
-	void init();
+	void init(std::vector<GLubyte> pixelData, int textureW, int textureH);
+	void updatePixel(int x, int y, int r, int g, int b, int a);
+	
+	inline int texIdx(int x, int y) { return 4 * (y * texW + x); }
+	inline std::vector<GLubyte> getTextureData() { return textureData; }
 
 private:
-
+	int texW, texH;
+	std::vector<Pixel> pixels;
+	std::vector<GLubyte> textureData;
+	PixelType Types[4];
+	PixelType AIR, SAND, WATER, ROCK;
 };

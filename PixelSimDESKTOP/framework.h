@@ -31,6 +31,8 @@ public:
 	void render();
 	void clean();
 	void createTexture();
+	void updateTexture();
+	//inline void updateTexture() { glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.data()); }
 
 private:
 	bool isRunning = false;
@@ -40,7 +42,7 @@ private:
 	GLuint textureID = 255;
 	int textureWidth = 0;
 	int textureHeight = 0;
-	std::vector<GLubyte> pixelData;
+	std::vector<GLubyte> pixelData = std::vector<GLubyte>(9999 * 9999, 255); // declare to make big enough 
 
 	Game* game = nullptr;
 	Interface* interface = nullptr;
