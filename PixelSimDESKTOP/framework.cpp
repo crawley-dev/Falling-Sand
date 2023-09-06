@@ -32,24 +32,25 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
 
     // Create SDL Window, integrate with openGL
     SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-    window = SDL_CreateWindow(title, xpos, ypos, width, height, window_flags);  // Create SDL Window
-    gl_context = SDL_GL_CreateContext(window);                                  // Create openGL Context
+    window  = SDL_CreateWindow(title, xpos, ypos, width, height, window_flags); // Create SDL Window
+    gl_context  = SDL_GL_CreateContext(window);                                 // Create openGL Context
     SDL_GL_MakeCurrent(window, gl_context);                                     // Set SDL_Window Context
     if (SDL_GL_SetSwapInterval(-1) != 0) SDL_GL_SetSwapInterval(0);             // Enables Adaptive v-sync if possible, otherwise v-sync
     std::cout << "Window Initialised! .." << std::endl;
 
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();                                                 // Setup Dear ImGui context  
+    ImGui::CreateContext();                                                     // Setup Dear ImGui context  
     std::cout << "ImGui Context Initialised! .." << std::endl;
 
-    ImGuiIO& io = ImGui::GetIO();                                           // Setup ImGui Config
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;                   // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;                    // Enable Gamepad Controls
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;                       // Enable Docking
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;                     // Enable Multi-Viewport / Platform Windows
-    io.ConfigDockingWithShift = true;                                       // Enable Docking on Shift
-    io.ConfigDockingTransparentPayload = true;                              // Enable Transparent Window on Docking
-    io.Fonts->AddFontFromFileTTF("../Libraries/fonts/Cascadia.ttf", 15);    // Changing Font -> Cascadia Mono (vs editor font) | Relative paths FTW!
+    // |= is a bitwise operator: 0101 |= 0110 -> 0111
+    ImGuiIO& io = ImGui::GetIO();                                               // Setup ImGui Config
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;                       // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;                        // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;                           // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;                         // Enable Multi-Viewport / Platform Windows
+    io.ConfigDockingWithShift = true;                                           // Enable Docking on Shift
+    io.ConfigDockingTransparentPayload = true;                                  // Enable Transparent Window on Docking
+    io.Fonts->AddFontFromFileTTF("../Libraries/fonts/Cascadia.ttf", 15);        // Changing Font -> Cascadia Mono (vs editor font) | Relative paths FTW!
     std::cout << "ImGui Config Initialised! .." << std::endl;
     
     interface = new Interface();
@@ -65,8 +66,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     ImGuiStyle& style = ImGui::GetStyle();
 
     // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) 
-    {
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         style.WindowRounding = 0.0f;
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
@@ -77,7 +77,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     std::cout << "Setup Complete! .." << std::endl;
     std::cout << std::endl;
 
-    isRunning = true;
+    applicationRunning = true;
     return true;
 }
 
@@ -92,19 +92,20 @@ void Framework::handleEvents()
     {
         ImGui_ImplSDL2_ProcessEvent(&event);
         if (event.type == SDL_QUIT)
-            isRunning = false;
+            applicationRunning = false;
         else if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
-            isRunning = true;
+            applicationRunning = true;
     }
 }
 
 void Framework::update()
 {
-    interface->main(textureID, textureWidth, textureHeight, texReloadedCount);
+    interface->main(textureID, textureWidth, textureHeight, texReloadedCount, runSim);
+    if (!runSim) return; // maybe not despawn gameWindow but pausing updates on texture?
 
     pixelData = game->getTextureData();
     updateTexture();
-
+    
     interface->gameWindow(textureID, textureWidth, textureHeight, hasSizeChanged);
 }
 
@@ -113,17 +114,20 @@ void Framework::render()
     ImGuiIO& io = ImGui::GetIO();
 
     // Main rendering
-    ImGui::Render();                                            
+    ImGui::Render();
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    // texture will get overwritten by imgui interface if not placed here
-    if (ImGui::GetFrameCount() == 1 || hasSizeChanged == true) {
+    // Placed After ^^ to prevent ImGui HUD overwriting it.
+    // Loads Texture on init, on Window Size Changed, Prevents Reloading Texture too soon (>120 Frames)
+    const int minFramesTilReload = 120;
+    if (ImGui::GetFrameCount() == 1 || hasSizeChanged == true && ImGui::GetFrameCount() - framesSinceReload > minFramesTilReload) {
         createTexture();
         game->init(pixelData, textureWidth, textureHeight);
+        framesSinceReload = ImGui::GetFrameCount();
     }
 
-    // Handling Multiple Viewports
+    // Handling Multiple Viewports, Swaps between 2 texture buffers for smoother rendering
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) 
     {
         SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
@@ -133,7 +137,7 @@ void Framework::render()
         SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
     }
     
-    SDL_GL_SwapWindow(window);  // Swaps between the 2 texture buffers (smoother rendering)
+    SDL_GL_SwapWindow(window);  
 }
 
 void Framework::clean()
@@ -162,14 +166,12 @@ void Framework::createTexture()
     glBindTexture(GL_TEXTURE_2D, textureID);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);       // GL_LINEAR --> GL_NEAREST
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);       // FASTER but produces blocky, pixelated texture (not noticeable-ish)
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  // GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);  // GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
 
     pixelData = std::vector<GLubyte>(textureWidth * textureHeight * 4, 255);
-
-    printf("CREATED SIZE:%d\n", pixelData.size());
-    printf("textureWIDTH:%d\n", textureWidth);
-    printf("textureHEIGHT:%d\n\n", textureHeight);
 
     updateTexture();
 }

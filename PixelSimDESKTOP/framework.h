@@ -12,6 +12,7 @@
 #include <thread>
 #include <iomanip>
 #include <vector>
+#include <chrono>
 
 // make compiler happy
 class Interface; 
@@ -25,7 +26,7 @@ public:
 
 	bool init(const char* title, int xpos, int ypos, int width, int height);
 
-	bool running() { return isRunning; }
+	bool running() { return applicationRunning; }
 	void handleEvents();
 	void update();
 	void render();
@@ -35,9 +36,11 @@ public:
 	//inline void updateTexture() { glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.data()); }
 
 private:
-	bool isRunning = false;
+	bool runSim = true;
+	bool applicationRunning = false;
 	bool hasSizeChanged = false;
 	int texReloadedCount = 0;
+	int framesSinceReload = 0;
 
 	GLuint textureID = 255;
 	int textureWidth = 0;

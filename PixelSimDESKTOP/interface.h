@@ -13,9 +13,9 @@ public:
     Interface();
     ~Interface();
 
-    void main(GLuint textureID, int textureWidth, int textureHeight, int texReloadedCount);
+    void main(GLuint textureID, int textureWidth, int textureHeight, int texReloadedCount, bool &runSim);
     void boilerPlate();
-    void debugMenu(GLuint textureID, int textureWidth, int textureHeight, int texReloadedCount);
+    void debugMenu(GLuint textureID, int textureWidth, int textureHeight, int texReloadedCount, bool &runSim);
     void gameWindow(GLuint textureID, int& textureWidth, int& textureHeight, bool& hasSizeChanged);
     inline void demoWindow() { if (showDemoWindow) ImGui::ShowDemoWindow(&showDemoWindow); }
 
