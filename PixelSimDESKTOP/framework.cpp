@@ -100,9 +100,18 @@ void Framework::handleEvents()
 
 void Framework::update()
 {
-    interface->main(textureID, textureWidth, textureHeight, texReloadedCount, runSim);
+    ImGuiIO& io = ImGui::GetIO();
+    
+    static int pxDrawType = 1;
+    static bool inBounds = false;
+    interface->main(textureID, textureWidth, textureHeight, texReloadedCount, runSim, pxDrawType);
+    interface->debugMenu(textureID, textureWidth, textureHeight, texReloadedCount, runSim, pxDrawType, inBounds);
     if (!runSim) return; // maybe not despawn gameWindow but pausing updates on texture?
 
+    if (io.MouseDown[0]) // Mouse Button Left == 0
+        mouseDraw(pxDrawType);
+
+    game->update();
     pixelData = game->getTextureData();
     updateTexture();
     
@@ -121,7 +130,7 @@ void Framework::render()
     // Placed After ^^ to prevent ImGui HUD overwriting it.
     // Loads Texture on init, on Window Size Changed, Prevents Reloading Texture too soon (>120 Frames)
     const int minFramesTilReload = 120;
-    if (ImGui::GetFrameCount() == 1 || hasSizeChanged == true && ImGui::GetFrameCount() - framesSinceReload > minFramesTilReload) {
+    if (ImGui::GetFrameCount() <= 3 || hasSizeChanged == true && ImGui::GetFrameCount() - framesSinceReload > minFramesTilReload) {
         createTexture();
         game->init(pixelData, textureWidth, textureHeight);
         framesSinceReload = ImGui::GetFrameCount();
@@ -166,10 +175,10 @@ void Framework::createTexture()
     glBindTexture(GL_TEXTURE_2D, textureID);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);       // GL_LINEAR --> GL_NEAREST
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);       // FASTER but produces blocky, pixelated texture (not noticeable-ish)
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  // GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);  // GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);   // GL_LINEAR --> GL_NEAREST
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // FASTER but produces blocky, pixelated texture (not noticeable-ish)
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);// GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);// GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
 
     pixelData = std::vector<GLubyte>(textureWidth * textureHeight * 4, 255);
 
@@ -179,4 +188,18 @@ void Framework::createTexture()
 void Framework::updateTexture() 
 { 
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.data()); 
+}
+
+// PROBLEM: calls game->mouseDraw too often.
+void Framework::mouseDraw(int pxDrawType)
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
+    const float titleBarOffsetX = 8.f;
+    const float titleBarOffsetY = 28.f;
+    const float trueXPos = io.MousePos.x - windowPos.x - titleBarOffsetX;
+    const float trueYPos = io.MousePos.y - windowPos.y - titleBarOffsetY;
+
+    game->mouseDraw(trueXPos, trueYPos, 20, pxDrawType);
 }

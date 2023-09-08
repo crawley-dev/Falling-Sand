@@ -17,8 +17,9 @@ public:
 	~Game();
 
 	void init(std::vector<GLubyte> pixelData, int textureW, int textureH);
+	void reload(std::vector<GLubyte> pixelData, int textureW, int textureH);
 	void update();
-	void calcNewPositions();
+	void calcNewPosition(Pixel p);
 
 	void createPixel(int range, bool flag, int texIdx, int x, int y, int PixelTypeID);
 	void updatePixel(int x, int y, int r, int g, int b, int a);
@@ -27,7 +28,9 @@ public:
 	void swapPixels(int x1, int y1, int x2, int y2);
 	void changePixelType(int x, int y, int PixelTypeID);
 	void mouseDraw(int x, int y, int radius, int PixelTypeID);
-
+	
+	bool canSwapPixels(int x1, int y1, int x2, int y2);
+	inline bool outOfBounds(int x, int y) { return (x > texW || x < 0 || y > texH || y < 0); }
 	inline int pixIdx(int x, int y) { return y * texW + x; }
 	inline int texIdx(int x, int y) { return 4 * (y * texW + x); }
 	inline std::vector<GLubyte> getTextureData() { return textureData; }

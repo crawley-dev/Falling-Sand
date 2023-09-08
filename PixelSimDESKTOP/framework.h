@@ -24,15 +24,19 @@ public:
 	Framework();		// Constructor
 	~Framework();	// Deconstructor
 
+	// Application Abstraction Functions
 	bool init(const char* title, int xpos, int ypos, int width, int height);
-
-	bool running() { return applicationRunning; }
 	void handleEvents();
 	void update();
 	void render();
 	void clean();
+
+	// Internal Functions
 	void createTexture();
 	void updateTexture();
+	void mouseDraw(int pxDrawType);
+
+	inline bool running() { return applicationRunning; }
 	//inline void updateTexture() { glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.data()); }
 
 private:

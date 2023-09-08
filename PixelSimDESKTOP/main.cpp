@@ -24,7 +24,6 @@ int main(int, char**)
     {
         app->handleEvents();
         app->update();
-
         app->render();
 
         frameTime = SDL_GetTicks() - frameStart;
