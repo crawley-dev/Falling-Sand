@@ -34,7 +34,7 @@ public:
 	// Internal Functions
 	void createTexture();
 	void updateTexture();
-	void mouseDraw(int pxDrawType);
+	void mouseDraw(int pxDrawType, int drawSize);
 
 	inline bool running() { return applicationRunning; }
 	//inline void updateTexture() { glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.data()); }
@@ -45,6 +45,8 @@ private:
 	bool hasSizeChanged = false;
 	int texReloadedCount = 0;
 	int framesSinceReload = 0;
+	int pxDrawType = 1;
+	int pxDrawSize = 40;
 
 	GLuint textureID = 255;
 	int textureWidth = 0;

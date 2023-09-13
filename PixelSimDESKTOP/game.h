@@ -8,7 +8,7 @@
 #include <SDL_opengl.h>
 #include <vector>
 
-#include "pixel.h"
+#include "cell.h"
 
 class Game
 {
@@ -19,26 +19,30 @@ public:
 	void init(std::vector<GLubyte> pixelData, int textureW, int textureH);
 	void reload(std::vector<GLubyte> pixelData, int textureW, int textureH);
 	void update();
-	void calcNewPosition(Pixel p);
+	void cellUpdate(Cell& p);
 
-	void createPixel(int range, bool flag, int texIdx, int x, int y, int PixelTypeID);
+	void createCell(int range, bool flag, int texIdx, int x, int y, int PixelTypeID);
 	void updatePixel(int x, int y, int r, int g, int b, int a);
 	
-	PixelType varyPixelColour(int range, int PixelTypeID);
-	void swapPixels(int x1, int y1, int x2, int y2);
-	void changePixelType(int x, int y, int PixelTypeID);
+	CellType varyPixelColour(int range, int PixelTypeID);
+	void changeCellType(int x, int y, int PixelTypeID);
 	void mouseDraw(int x, int y, int radius, int PixelTypeID);
-	
-	bool canSwapPixels(int x1, int y1, int x2, int y2);
+
+	void swapCells(int x1, int y1, int x2, int y2);
+	void swapCells(Cell& p1, Cell& p2);
+	bool checkDensity(int x1, int y1, int x2, int y2);
+	bool checkDensity(Cell& p1, int delX, int delY);
+
+
 	inline bool outOfBounds(int x, int y) { return (x > texW || x < 0 || y > texH || y < 0); }
-	inline int pixIdx(int x, int y) { return y * texW + x; }
+	inline int cellIdx(int x, int y) { return y * texW + x; }
 	inline int texIdx(int x, int y) { return 4 * (y * texW + x); }
 	inline std::vector<GLubyte> getTextureData() { return textureData; }
 
 private:
 	int texW, texH;
-	std::vector<Pixel> pixels;
+	std::vector<Cell> cells;
 	std::vector<GLubyte> textureData;
-	PixelType Types[4];
-	PixelType AIR, SAND, WATER, ROCK;
+	CellType Types[4];
+	CellType AIR, SAND, WATER, ROCK;
 };

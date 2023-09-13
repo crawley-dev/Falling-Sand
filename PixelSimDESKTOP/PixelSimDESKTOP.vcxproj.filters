@@ -92,7 +92,7 @@
     <ClInclude Include="game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pixel.h">
+    <ClInclude Include="cell.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

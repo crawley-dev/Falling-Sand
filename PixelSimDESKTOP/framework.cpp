@@ -101,17 +101,17 @@ void Framework::handleEvents()
 void Framework::update()
 {
     ImGuiIO& io = ImGui::GetIO();
-    
-    static int pxDrawType = 1;
-    static bool inBounds = false;
+   
     interface->main(textureID, textureWidth, textureHeight, texReloadedCount, runSim, pxDrawType);
-    interface->debugMenu(textureID, textureWidth, textureHeight, texReloadedCount, runSim, pxDrawType, inBounds);
-    if (!runSim) return; // maybe not despawn gameWindow but pausing updates on texture?
+    interface->debugMenu(textureID, textureWidth, textureHeight, texReloadedCount, runSim, pxDrawType, pxDrawSize);
 
+    pxDrawSize += io.MouseWheel;
+    pxDrawSize = std::max(pxDrawSize, 0);
     if (io.MouseDown[0]) // Mouse Button Left == 0
-        mouseDraw(pxDrawType);
+        mouseDraw(pxDrawType, pxDrawSize);
 
-    game->update();
+    // maybe not despawn gameWindow but pausing updates on texture?
+    if (runSim) game->update();
     pixelData = game->getTextureData();
     updateTexture();
     
@@ -130,12 +130,15 @@ void Framework::render()
     // Placed After ^^ to prevent ImGui HUD overwriting it.
     // Loads Texture on init, on Window Size Changed, Prevents Reloading Texture too soon (>120 Frames)
     const int minFramesTilReload = 120;
-    if (ImGui::GetFrameCount() <= 3 || hasSizeChanged == true && ImGui::GetFrameCount() - framesSinceReload > minFramesTilReload) {
+    if (ImGui::GetFrameCount() == 2 || hasSizeChanged == true && ImGui::GetFrameCount() - framesSinceReload > minFramesTilReload) {
+        printf("FrameCount: %d\n", ImGui::GetFrameCount());
+        printf("hasSizeChanged: %d\n", hasSizeChanged);
+
         createTexture();
         game->init(pixelData, textureWidth, textureHeight);
         framesSinceReload = ImGui::GetFrameCount();
     }
-
+   
     // Handling Multiple Viewports, Swaps between 2 texture buffers for smoother rendering
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) 
     {
@@ -169,6 +172,7 @@ void Framework::createTexture()
     if (textureID >= 2) {
         glDeleteTextures(1, &textureID);
         texReloadedCount++;
+        printf("updated texture\n");
     }
 
     glGenTextures(1, &textureID);
@@ -191,15 +195,15 @@ void Framework::updateTexture()
 }
 
 // PROBLEM: calls game->mouseDraw too often.
-void Framework::mouseDraw(int pxDrawType)
+void Framework::mouseDraw(int pxDrawType, int pxDrawSize)
 {
     ImGuiIO& io = ImGui::GetIO();
 
     ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
     const float titleBarOffsetX = 8.f;
     const float titleBarOffsetY = 28.f;
-    const float trueXPos = io.MousePos.x - windowPos.x - titleBarOffsetX;
-    const float trueYPos = io.MousePos.y - windowPos.y - titleBarOffsetY;
+    const float mousePosX = io.MousePos.x - windowPos.x - titleBarOffsetX;
+    const float mousePosY = io.MousePos.y - windowPos.y - titleBarOffsetY;
 
-    game->mouseDraw(trueXPos, trueYPos, 20, pxDrawType);
+    game->mouseDraw(mousePosX, mousePosY, pxDrawSize, pxDrawType);
 }

@@ -1,10 +1,10 @@
 #pragma once
 
-struct PixelType
+struct CellType
 {
 	int id, r, g, b, a, d;
 	
-	PixelType(int ID, int RED, int GREEN, int BLUE, int ALPHA, int DENSITY)
+	CellType(int ID, int RED, int GREEN, int BLUE, int ALPHA, int DENSITY)
 	{
 		id = ID;
 		r = RED;
@@ -13,16 +13,16 @@ struct PixelType
 		a = ALPHA;
 		d = DENSITY;
 	}
-	PixelType() = default;
+	CellType() = default;
 };
 
-struct Pixel
+struct Cell
 {
 	bool flag;
 	int id, x, y;
-	PixelType type;
+	CellType type;
 
-	Pixel(bool HAS_MOVED_FLAG, int ID, int X, int Y, PixelType PIXEL_TYPE)
+	Cell(bool HAS_MOVED_FLAG, int ID, int X, int Y, CellType PIXEL_TYPE)
 	{
 		flag = HAS_MOVED_FLAG;
 		id = ID;
