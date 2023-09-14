@@ -80,7 +80,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
 
     // Init Values
 #if true
-    data = interfaceData(255, 0, 0, 0, 1, 40, true, false);
+    data = interfaceData(255, 0, 0, 0, 1, 40, true, false, false);
 #else
     data.data.runSim = true;
     bool data.hasSizeChanged = false;
@@ -117,20 +117,17 @@ void Framework::handleEvents()
 void Framework::update()
 {
     ImGuiIO& io = ImGui::GetIO();
-   
-//    data = interfaceData(data.texID, data.texW, data.texH, data.texReloadCount,
-//                                           data.clDrawType, data.clDrawSize, data.runSim, data.hasSizeChanged);
     
     interface->main();
     interface->debugMenu(data);
 
     data.clDrawSize += (int)io.MouseWheel;
     data.clDrawSize = std::max(data.clDrawSize, 0);
-    if (io.MouseDown[0]) // Mouse Button Left == 0
-        mouseDraw();
-        //mouseDraw(data.clDrawType, data.clDrawSize);
 
+    if (data.resetSim) game->reset(0, data.resetSim);
+    if (io.MouseDown[0]) mouseDraw();
     if (data.runSim) game->update();
+
     textureData = game->getTextureData();
     updateTexture();
     

@@ -34,6 +34,7 @@ void Interface::debugMenu(interfaceData& data)
     {   // Edit bool toggling on/off the demo window
         ImGui::Checkbox("Toggle Demo Window", &showDemoWindow);         
         ImGui::Checkbox("Run Simulation Game", &data.runSim);
+        if (ImGui::Button("Reset Sim")) data.resetSim = true;
     }
 
     ImGui::SeparatorText("Values"); 

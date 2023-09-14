@@ -18,16 +18,17 @@ public:
 
 	void init(std::vector<GLubyte> texData, int textureW, int textureH);
 	void reload(std::vector<GLubyte> texData, int textureW, int textureH);
+	void reset(int CellTypeID, bool& resetSim);
 	void update();
 	void cellUpdate(Cell& p);
 
-	void createCell(int range, bool flag, int texIdx, int x, int y, int PixelTypeID);
+	void createCell(int range, bool flag, int texIdx, int x, int y, int CellTypeID);
 	void updatePixel(int x, int y, int r, int g, int b, int a);
 	
-	CellType varyPixelColour(int range, int PixelTypeID);
-	void changeCellType(int x, int y, int PixelTypeID, int range);
-	void mouseDraw(int x, int y, int radius, int PixelTypeID, int range);
+	CellType varyPixelColour(int range, int CellTypeID);
+	void mouseDraw(int x, int y, int radius, int CellTypeID, int range);
 
+	void changeCellType(int x, int y, int CellTypeID, int range);
 	void swapCells(int x1, int y1, int x2, int y2);
 	void swapCells(Cell& p1, Cell& p2);
 	bool checkDensity(int x1, int y1, int x2, int y2);
