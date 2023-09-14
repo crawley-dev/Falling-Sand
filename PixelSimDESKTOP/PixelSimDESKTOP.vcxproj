@@ -159,6 +159,7 @@
     <ClInclude Include="game.h" />
     <ClInclude Include="interface.h" />
     <ClInclude Include="cell.h" />
+    <ClInclude Include="interfaceData.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -11,11 +11,6 @@ int main(int, char**)
 {
     const int width = 1280;
     const int height = 720;
-    const int fpsCap = 60;
-    const int frameDelay = 100 / fpsCap;
-
-    Uint32 frameStart = 0;
-    int  frameTime = 0;
 
     app = new Framework();
     if (!app->init("Pixel Physics Simulation", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height)) return -1;
@@ -25,12 +20,6 @@ int main(int, char**)
         app->handleEvents();
         app->update();
         app->render();
-
-        frameTime = SDL_GetTicks() - frameStart;
-        if (frameDelay > frameTime) { 
-            printf("Delaying by %d\n", frameDelay);
-            SDL_Delay(frameDelay - frameTime);
-        }
     }
 
     app->clean();

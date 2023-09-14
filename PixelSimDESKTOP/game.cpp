@@ -5,9 +5,10 @@
 Game::Game() {}
 Game::~Game() {}
 
-void Game::init(std::vector<GLubyte> pixelData, int textureW, int textureH)
+// annoying that texture --> tex for w,h but not data!!
+void Game::init(std::vector<GLubyte> texData, int textureW, int textureH)
 {
-	textureData = pixelData;
+	textureData = texData;
 	texW = textureW;
 	texH = textureH;
 
@@ -17,21 +18,20 @@ void Game::init(std::vector<GLubyte> pixelData, int textureW, int textureH)
 	Types[2] = WATER = CellType(2, 20 , 20 , 255, 100, 997	);
 	Types[3] = ROCK  = CellType(3, 200, 200, 200, 255, 2000);
 
-	cells.clear();
+	cells.clear(); // once upon a time, it didn't reset cell arr on reload :/ oops
 
 	const int initType = 0;
-	// init all pixels as air.
 	for (int y = 0; y < texH; ++y)
 		for (int x = 0; x < texW; ++x) {
-			createCell(initType, false, texIdx(x, y), x, y, initType);
+			createCell(0, false, cellIdx(x, y), x, y, initType);
 			updatePixel(x,y, Types[initType].r, Types[initType].g, Types[initType].b, Types[initType].a);
-			cells[cellIdx(x,y)].flag = false;
 		}
-
-	printf("Cells length: %d\n", cells.size());
-	printf("width: %d\n", textureW);
-	printf("height: %d\n", textureH);
-	printf("\n");
+	
+	//printf("texureData Size: %d\n", (int)textureData.size());
+	//printf("cells Size: %d\n", (int)cells.size());
+	//printf("width: %d\n", texW);
+	//printf("height: %d\n", texH);
+	//printf("\n");
 }
 
 void Game::reload(std::vector<GLubyte> pixelData, int newTexW, int newTexH)
@@ -51,13 +51,13 @@ void Game::update()
 #if 0
 	for (int y = texH - 1; y > 0; --y)	
 		for (int x = 0; x < texW; x++) {
-			Pixel& p = cells[pixIdx(x, y)];
+			Pixel& c = cells[pixIdx(x, y)];
 		
-			calcNewPosition(p);
-			updatePixel(x, y, p.type.r, p.type.g, p.type.b, p.type.a);
+			calcNewPosition(c);
+			updatePixel(x, y, c.type.r, c.type.g, c.type.b, c.type.a);
 			cells[pixIdx(x, y)].flag = false;
 		}
-#else
+#else 
 	for (Cell& c : cells)
 	{
 		cellUpdate(c);
@@ -67,28 +67,34 @@ void Game::update()
 #endif
 }
 
-void Game::cellUpdate(Cell& p)
+void Game::cellUpdate(Cell& c)
 {
-	if (p.type.id == 0 || p.type.id == 3) return; // Air | Rock
-	else if (p.type.id == 1 || p.type.id == 2) // Sand
-	{	
-#if false
-
-#elif 2
-		if		(checkDensity(p, 0, 1));
-		else if (checkDensity(p, -1, 1));
-		else if (checkDensity(p, 1, 1));
-		else if (p.type.id == 2 && checkDensity(p, -1, 0));
-		else if (p.type.id == 2 && checkDensity(p, 1, 0));
-#else 
-		if (checkDensity(p.x, p.y, p.x, p.y + 1));							// check vertical
-		else if (checkDensity(p.x, p.y, p.x - 1, p.y + 1));				// check bot left
-		else if (checkDensity(p.x, p.y, p.x + 1, p.y + 1));				// check bot right
-		else if (p.type.id == 2 && checkDensity(p.x, p.y, p.x - 1, p.y));	// water check L
-		else if (p.type.id == 2 && checkDensity(p.x, p.y, p.x + 1, p.y));	// water check R
-
-#endif	
+#if true
+	if (c.type.id == 0 || c.type.id == 3);
+	else if (c.type.id == 1) updateSand(c);
+	else if (c.type.id == 2) updateWater(c);
+#elif false
+	if (c.type.id == 0 || c.type.id == 3) return; // Air | Rock
+	else if (c.type.id == 1 || c.type.id == 2) // Sand
+	{
+		if (checkDensity(c, 0, 1));
+		else if (checkDensity(c, -1, 1));
+		else if (checkDensity(c, 1, 1));
+		else if (c.type.id == 2 && checkDensity(c, -1, 0));
+		else if (c.type.id == 2 && checkDensity(c, 1, 0));
 	}
+#elif false
+	if (c.type.id == 0 || c.type.id == 3) return; // Air | Rock
+	else if (c.type.id == 1 || c.type.id == 2) // Sand
+	{
+		if (checkDensity(c.x, c.y, c.x, c.y + 1));							// check vertical
+		else if (checkDensity(c.x, c.y, c.x - 1, c.y + 1));				// check bot left
+		else if (checkDensity(c.x, c.y, c.x + 1, c.y + 1));				// check bot right
+		else if (c.type.id == 2 && checkDensity(c.x, c.y, c.x - 1, c.y));	// water check L
+		else if (c.type.id == 2 && checkDensity(c.x, c.y, c.x + 1, c.y));	// water check R
+
+	}
+#endif	
 }
 
 void Game::createCell(int range, bool flag, int texIdx, int x, int y, int PixelTypeID)
@@ -119,72 +125,97 @@ CellType Game::varyPixelColour(int range, int PixelTypeID)
 	return material;
 }
 
-void Game::changeCellType(int x, int y, int CellTypeID)
+void Game::changeCellType(int x, int y, int CellTypeID, int range)
 {
 	if (outOfBounds(x, y)) return;
-	Cell& p = cells[cellIdx(x, y)];
-	if (CellTypeID == 0) cells[cellIdx(x, y)].type = varyPixelColour(5, CellTypeID);
-	else cells[cellIdx(x, y)].type = varyPixelColour(20, CellTypeID);
-	cells[cellIdx(x, y)].flag = true;
+
+	Cell& c = cells[cellIdx(x, y)];
+	c.flag = true;
+
+	if (CellTypeID == 0) c.type = Types[CellTypeID];//varyPixelColour(5, CellTypeID);
+	else c.type = varyPixelColour(range, CellTypeID);
 }
 
-void Game::mouseDraw(int x, int y, int radius, int PixelTypeID)
+void Game::mouseDraw(int x, int y, int radius, int PixelTypeID, int range)
 {
-	if (outOfBounds(x, y)) return;
-	for (auto a = -radius/2; a < radius/2; ++a)
-		for (auto b = -radius/2; b < radius/2; ++b)
-			changeCellType(x + a, y + b, PixelTypeID);
+	const int chance = 10; // 1 out of 100
+	int r2 = radius * radius;
+	int area = r2 << 2;
+	int rr = radius << 1;
+
+	for (int i = 0; i < area; i++)
+	{
+		int tx = (i % rr) - radius;
+		int ty = (i / rr) - radius;
+
+		if (tx * tx + ty * ty <= r2 && rand() % chance == 0)
+			changeCellType(x + tx, y + ty, PixelTypeID, 0);
+	}
 }
 
 void Game::swapCells(int x1, int y1, int x2, int y2)
 {
 	if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return;
 
-	Cell& p1 = cells[cellIdx(x1, y1)];
-	Cell& p2 = cells[cellIdx(x2, y2)];
+	Cell& c1 = cells[cellIdx(x1, y1)];
+	Cell& c2 = cells[cellIdx(x2, y2)];
 
-	if (!p1.flag && !p2.flag) {
-		int id1 = p1.type.id;
-		p1.type = p2.type;
-		p2.type = Types[id1];
+	if (c1.flag || c2.flag) return; 
+	int id1 = c1.type.id;
+	c1.type = c2.type;
+	c2.type = Types[id1];
 
-		p1.flag = true;
-		p2.flag = true;
-	}
+	c1.flag = true;
+	c2.flag = true;
 }
 
-void Game::swapCells(Cell& p1, Cell& p2)
+void Game::swapCells(Cell& c1, Cell& c2)
 {
-	if (outOfBounds(p1.x, p1.y) || outOfBounds(p2.x, p2.y) || p1.flag || p2.flag);
+	if (outOfBounds(c1.x, c1.y) || outOfBounds(c2.x, c2.y) || c1.flag || c2.flag);
 
-	int id1 = p1.type.id;
-	p1.type = p2.type;
-	p2.type = Types[id1];
+	int id1 = c1.type.id;
+	c1.type = c2.type;
+	c2.type = Types[id1];
 
-	p1.flag = true;
-	p2.flag = true;
+	c1.flag = true;
+	c2.flag = true;
 }
 
 bool Game::checkDensity(int x1, int y1, int x2, int y2) 
 { 
-	/*if (cells[pixIdx(x1, y1)].type.d > cells[pixIdx(x2, y2)].type.d &&
-		cells[pixIdx(x1, y1)].flag == false && cells[pixIdx(x2,y2)].flag == false) 
-	{
-		swapcells(x1, y1, x2, y1);
-		return true;
-	}*/
-
 	if (cells[cellIdx(x1, y1)].type.d < cells[cellIdx(x2, y2)].type.d) return false;
 	swapCells(x1, y1, x2, y2);
 	return true;
 }
 
-bool Game::checkDensity(Cell& p1, int delX, int delY)
+bool Game::checkDensity(Cell& c1, int delX, int delY)
 {
-	Cell& p2 = cells[cellIdx(p1.x + delX, p1.y + delY)];
-	if (p1.type.d > p2.type.d) return false;
-	swapCells(p1, p2);
+	if (cellIdx(c1.x + delX, c1.y + delY) >= texW * texH) {
+		printf("x: %d\n", c1.x + delX);
+		printf("y: %d\n", c1.y + delY);
+		printf("texW: %d\n", texW);
+		printf("texH: %d\n", texH);
+	}
+	Cell& c2 = cells[cellIdx(c1.x + delX, c1.y + delY)];
+	if (c1.type.d < c2.type.d) return false;
+	swapCells(c1, c2);
 	return true;
+}
+
+void Game::updateSand(Cell& c)
+{
+	if (checkDensity(c, 0, 1));
+	else if (checkDensity(c, -1, 1));
+	else if (checkDensity(c, 1, 1));
+}
+
+void Game::updateWater(Cell& c)
+{
+	if		(checkDensity(c, 0, 1 )					 );
+	else if (checkDensity(c, -1, 1)					 );
+	else if (checkDensity(c, 1, 1 )					 );
+	else if (c.type.id == 2 && checkDensity(c, -1, 0));
+	else if (c.type.id == 2 && checkDensity(c, 1, 0) );
 }
 
 #if false
@@ -196,22 +227,22 @@ printf("%d\n", y);
 
 //for (int y = texH - 1; y > 0; --y)	
 for (int x = 0; x < texW; x++) {
-	Pixel& p = cells[pixIdx(x, y)];
+	Pixel& c = cells[pixIdx(x, y)];
 
-	if (p.type.g != 255) {
-		p.type.r = 255;
-		p.type.g = 255;
-		p.type.b = 255;
-		p.type.a = 255;
+	if (c.type.g != 255) {
+		c.type.r = 255;
+		c.type.g = 255;
+		c.type.b = 255;
+		c.type.a = 255;
 	}
 	else {
-		p.type.r = 255;
-		p.type.g = 0;
-		p.type.b = 0;
-		p.type.a = 255;
+		c.type.r = 255;
+		c.type.g = 0;
+		c.type.b = 0;
+		c.type.a = 255;
 	}
-	//calcNewPosition(p);
-	updatePixel(x, y, p.type.r, p.type.g, p.type.b, p.type.a);
+	//calcNewPosition(c);
+	updatePixel(x, y, c.type.r, c.type.g, c.type.b, c.type.a);
 	//cells[pixIdx(x, y)].flag = false;
 }
 #endif

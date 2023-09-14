@@ -7,16 +7,18 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 
+#include "interfaceData.h"
+
 class Interface
 {
 public:
     Interface();
     ~Interface();
 
-    void main(GLuint textureID, int textureWidth, int textureHeight, int texReloadedCount, bool &runSim, int& pxDrawType);
+    void main();
     void boilerPlate();
-    void debugMenu(GLuint textureID, int textureWidth, int textureHeight, int texReloadedCount, bool &runSim, int& pxDrawType, int& drawSize);
-    void gameWindow(GLuint textureID, int& textureWidth, int& textureHeight, bool& hasSizeChanged);
+    void debugMenu(interfaceData& data);
+    void gameWindow(interfaceData& data);
     inline void demoWindow() { if (showDemoWindow) ImGui::ShowDemoWindow(&showDemoWindow); }
 
 private:

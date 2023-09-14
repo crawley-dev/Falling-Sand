@@ -3,6 +3,7 @@
 #include "game.h"
 #include "framework.h"
 #include "interface.h"
+//#include "interfaceData.h"
 
 Framework::Framework() {}
 Framework::~Framework() {}
@@ -77,6 +78,21 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     std::cout << "Setup Complete! .." << std::endl;
     std::cout << std::endl;
 
+    // Init Values
+#if true
+    data = interfaceData(255, 0, 0, 0, 1, 40, true, false);
+#else
+    data.data.runSim = true;
+    bool data.hasSizeChanged = false;
+    int data.texReloadCount = 0;
+    int data.clDrawType = 1; // clDrawType
+    int data.clDrawSize = 40; // clDrawSize
+
+    int data.texW = 0;
+    int data.texH = 0;
+    GLuint data.texID = 255;
+#endif
+
     applicationRunning = true;
     return true;
 }
@@ -102,20 +118,23 @@ void Framework::update()
 {
     ImGuiIO& io = ImGui::GetIO();
    
-    interface->main(textureID, textureWidth, textureHeight, texReloadedCount, runSim, pxDrawType);
-    interface->debugMenu(textureID, textureWidth, textureHeight, texReloadedCount, runSim, pxDrawType, pxDrawSize);
+//    data = interfaceData(data.texID, data.texW, data.texH, data.texReloadCount,
+//                                           data.clDrawType, data.clDrawSize, data.runSim, data.hasSizeChanged);
+    
+    interface->main();
+    interface->debugMenu(data);
 
-    pxDrawSize += io.MouseWheel;
-    pxDrawSize = std::max(pxDrawSize, 0);
+    data.clDrawSize += (int)io.MouseWheel;
+    data.clDrawSize = std::max(data.clDrawSize, 0);
     if (io.MouseDown[0]) // Mouse Button Left == 0
-        mouseDraw(pxDrawType, pxDrawSize);
+        mouseDraw();
+        //mouseDraw(data.clDrawType, data.clDrawSize);
 
-    // maybe not despawn gameWindow but pausing updates on texture?
-    if (runSim) game->update();
-    pixelData = game->getTextureData();
+    if (data.runSim) game->update();
+    textureData = game->getTextureData();
     updateTexture();
     
-    interface->gameWindow(textureID, textureWidth, textureHeight, hasSizeChanged);
+    interface->gameWindow(data);
 }
 
 void Framework::render()
@@ -130,12 +149,12 @@ void Framework::render()
     // Placed After ^^ to prevent ImGui HUD overwriting it.
     // Loads Texture on init, on Window Size Changed, Prevents Reloading Texture too soon (>120 Frames)
     const int minFramesTilReload = 120;
-    if (ImGui::GetFrameCount() == 2 || hasSizeChanged == true && ImGui::GetFrameCount() - framesSinceReload > minFramesTilReload) {
+    if (ImGui::GetFrameCount() == 2 || data.hasSizeChanged == true && ImGui::GetFrameCount() - framesSinceReload > minFramesTilReload) {
         printf("FrameCount: %d\n", ImGui::GetFrameCount());
-        printf("hasSizeChanged: %d\n", hasSizeChanged);
+        printf("hasSizeChanged: %d\n\n", data.hasSizeChanged);
 
         createTexture();
-        game->init(pixelData, textureWidth, textureHeight);
+        game->init(textureData, data.texW, data.texH);
         framesSinceReload = ImGui::GetFrameCount();
     }
    
@@ -158,7 +177,7 @@ void Framework::clean()
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    glDeleteTextures(1, &textureID);
+    glDeleteTextures(1, &data.texID);
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
@@ -169,41 +188,40 @@ void Framework::clean()
 void Framework::createTexture()
 {
     // deletes excess textures.
-    if (textureID >= 2) {
-        glDeleteTextures(1, &textureID);
-        texReloadedCount++;
-        printf("updated texture\n");
+    if (data.texID >= 2) {
+        glDeleteTextures(1, &data.texID);
+        data.texReloadCount++;
     }
 
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glGenTextures(1, &data.texID);
+    glBindTexture(GL_TEXTURE_2D, data.texID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, data.texW, data.texH, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);   // GL_LINEAR --> GL_NEAREST
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // FASTER but produces blocky, pixelated texture (not noticeable-ish)
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);// GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);// GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
 
-    pixelData = std::vector<GLubyte>(textureWidth * textureHeight * 4, 255);
+    textureData = std::vector<GLubyte>(data.texW * data.texH * 4, 255);
 
     updateTexture();
 }
 
 void Framework::updateTexture() 
 { 
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.data()); 
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.texW, data.texH, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data()); 
 }
 
 // PROBLEM: calls game->mouseDraw too often.
-void Framework::mouseDraw(int pxDrawType, int pxDrawSize)
+void Framework::mouseDraw()
 {
     ImGuiIO& io = ImGui::GetIO();
 
     ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
-    const float titleBarOffsetX = 8.f;
-    const float titleBarOffsetY = 28.f;
-    const float mousePosX = io.MousePos.x - windowPos.x - titleBarOffsetX;
-    const float mousePosY = io.MousePos.y - windowPos.y - titleBarOffsetY;
+    const int titleBarOffsetX = 8;
+    const int titleBarOffsetY = 28;
+    const int mousePosX = io.MousePos.x - windowPos.x - titleBarOffsetX;
+    const int mousePosY = io.MousePos.y - windowPos.y - titleBarOffsetY;
 
-    game->mouseDraw(mousePosX, mousePosY, pxDrawSize, pxDrawType);
+    game->mouseDraw(mousePosX, mousePosY, data.clDrawSize, data.clDrawType, 20);
 }
