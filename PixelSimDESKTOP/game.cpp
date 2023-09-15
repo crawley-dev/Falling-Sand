@@ -29,8 +29,6 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH)
 			updatePixel(x,y, Types[initType].r, Types[initType].g, Types[initType].b, Types[initType].a);
 		}
 	
-	cells[cellIdx(500, 200)].type = SAND;
-
 	//printf("texureData Size: %d\n", (int)textureData.size());
 	//printf("cells Size: %d\n", (int)cells.size());
 	//printf("width: %d\n", texW);
@@ -82,10 +80,18 @@ void Game::reset(int CellTypeID, bool& resetSim)
 void Game::update()
 {
 	if (texH == 0 || texW == 0) return;
+	mouseDraw(500, 100, 1, 99, 1, 1, 0);
 
-#if true // currently flickers..
+#if true // why does it flicker with only 1 loop??
 	for (auto it = cells.rbegin(); it < cells.rend(); ++it)
 	{	
+		Cell& c = *it;
+		cellUpdate(c);
+		updatePixel(c.x, c.y, c.type.r, c.type.g, c.type.b, c.type.a);
+		//c.flag = false;
+	}
+	for (auto it = cells.begin(); it < cells.end(); ++it)
+	{
 		Cell& c = *it;
 		cellUpdate(c);
 		updatePixel(c.x, c.y, c.type.r, c.type.g, c.type.b, c.type.a);
@@ -106,8 +112,8 @@ void Game::update()
 
 void Game::cellUpdate(Cell& c)
 {
-	if (c.flag) return;
-	if (c.type.id == 0 || c.type.id == 3) return;
+	if		(c.flag) return;
+	else if (c.type.id == 0 || c.type.id == 3) return;
 	else if (c.type.id == 1) updateSand(c);
 	else if (c.type.id == 2) updateWater(c);
 }
@@ -141,34 +147,35 @@ CellType Game::varyPixelColour(int range, int PixelTypeID)
 }
 
 
-void Game::mouseDraw(int x, int y, int radius, int chance, int CellTypeID, int range)
+void Game::mouseDraw(int x, int y, int radius, int chance, int CellTypeID, int CellDrawShape, int range)
 {
-#if true
-	if (outOfBounds(x, y)) return;
-	int r2 = radius * radius;
-	int area = r2 << 2;
-	int rr = radius << 1;
-
-	for (int i = 0; i < area; i++)
-	{
-		int tx = (i % rr) - radius;
-		int ty = (i / rr) - radius;
-
-		if (tx * tx + ty * ty <= r2 && rand() % (101 - chance) == 0)
-			changeCellType(x + tx, y + ty, CellTypeID, range);
-	}
-#elif false
-	for (int tx = -radius; tx < radius; ++tx)
-		if (rand() % 101 - chance == 0)
-			changeCellType(x + tx, y, CellTypeID, range);
-#else // square
 	if (outOfBounds(x, y) || outOfBounds(x - radius, y - radius) || outOfBounds(x + radius, y + radius)) return;
-	printf("coords: (%d,%d)\n", x, y);
 
-	for (auto ty = 0; ty < radius; ++ty)
-		for (auto tx = 0; tx < radius; ++tx)
-			changeCellType(x + tx, y + ty, CellTypeID, range);
-#endif
+	if (CellDrawShape == 0) {
+		int r2 = radius * radius;
+		int area = r2 << 2;
+		int rr = radius << 1;
+
+		for (int i = 0; i < area; i++)
+		{
+			int tx = (i % rr) - radius;
+			int ty = (i / rr) - radius;
+
+			if (tx * tx + ty * ty <= r2 && rand() % (101 - chance) == 0)
+				changeCellType(x + tx, y + ty, CellTypeID, range);
+		}
+	}
+	else if (CellDrawShape == 1) {
+		for (int tx = -radius; tx < radius; ++tx)
+			if (rand() % (101 - chance) == 0)
+				changeCellType(x + tx, y, CellTypeID, range);
+	}
+	else if (CellDrawShape == 2) {
+		for (auto ty = 0; ty < radius; ++ty)
+			for (auto tx = 0; tx < radius; ++tx)
+				if (rand() % (101 - chance) == 0)
+					changeCellType(x + tx, y + ty, CellTypeID, range);
+	}
 }
 
 void Game::changeCellType(int x, int y, int CellTypeID, int range)
@@ -180,28 +187,6 @@ void Game::changeCellType(int x, int y, int CellTypeID, int range)
 
 	if (CellTypeID == 0) c.type = Types[CellTypeID];//varyPixelColour(5, CellTypeID);
 	else c.type = varyPixelColour(range, CellTypeID);
-}
-
-void Game::swapCells(int x1, int y1, int x2, int y2)
-{
-	if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return;
-
-	Cell& c1 = cells[cellIdx(x1, y1)];
-	Cell& c2 = cells[cellIdx(x2, y2)];
-
-	if (c1.flag || c2.flag) return; 
-	CellType t = c1.type;
-	c1.type = c2.type;
-	c2.type = t;
-
-	c1.flag = true;
-	c2.flag = true;
-}
-bool Game::checkDensity(int x1, int y1, int x2, int y2) 
-{ 
-	if (cells[cellIdx(x1, y1)].type.d < cells[cellIdx(x2, y2)].type.d) return false;
-	swapCells(x1, y1, x2, y2);
-	return true;
 }
 
 void Game::swapCells(Cell& c1, Cell& c2)
@@ -216,17 +201,8 @@ void Game::swapCells(Cell& c1, Cell& c2)
 	c2.flag = true;
 }
 
-
 bool Game::checkDensity(Cell& c1, int delX, int delY)
 {
-	/*
-	if (cellIdx(c1.x + delX, c1.y + delY) >= texW * texH) {
-		printf("x: %d\n", c1.x + delX);
-		printf("y: %d\n", c1.y + delY);
-		printf("texW: %d\n", texW);
-		printf("texH: %d\n", texH);
-	}*/
-
 	if (outOfBounds(c1.x + delX, c1.y + delY)) return false;
 	Cell& c2 = cells[cellIdx(c1.x + delX, c1.y + delY)];
 	if (c1.type.d <= c2.type.d) return false;
@@ -237,11 +213,15 @@ bool Game::checkDensity(Cell& c1, int delX, int delY)
 // implement rand chance left or right
 void Game::updateSand(Cell& c)
 {
-	//printf("Sand coords: (%d,%d)\n", c.x, c.y);
-
-	if		(checkDensity(c,  0, 1));
-	else if (checkDensity(c, -1, 1));
-	else if (checkDensity(c,  1, 1));
+	if	(checkDensity(c,  0, 1)) return;
+	if (rand() % 1000 >= 500) {
+		if (checkDensity(c,  1, 1));
+		else checkDensity(c, -1, 1);
+	} 
+	else {
+		if (checkDensity(c, -1, 1));
+		else checkDensity(c, 1, 1);
+	}
 }
 
 void Game::updateWater(Cell& c)

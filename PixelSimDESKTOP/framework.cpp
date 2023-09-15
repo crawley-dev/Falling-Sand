@@ -80,7 +80,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     std::cout << std::endl;
 
     // Init Values
-    data = interfaceData(255, 0, 0, 0, 1, 40, 90, 20, false, false, false);
+    data = interfaceData(255, 0, 0, 0, 1, 25, 99, 20, 0, 0, 0, true, false, false);
 
     applicationRunning = true;
     return true;
@@ -213,12 +213,20 @@ void Framework::mouseDraw()
 {
     ImGuiIO& io = ImGui::GetIO();
 
+    /*
+        ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
+        const float titleBarOffsetX = 8.f;
+        const float titleBarOffsetY = 28.f;
+        const float mousePosX       = io.MousePos.x - windowPos.x - titleBarOffsetX;
+        const float mousePosY       = io.MousePos.y - windowPos.y - titleBarOffsetY;
+    */
+
     ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
     const int titleBarOffsetX = 8;
     const int titleBarOffsetY = 28;
-    const int mousePosX = io.MousePos.x - windowPos.x - titleBarOffsetX;
-    const int mousePosY = io.MousePos.y - windowPos.y - titleBarOffsetY;
+    data.mousePosX = io.MousePos.x - windowPos.x - titleBarOffsetX;
+    data.mousePosY = io.MousePos.y - windowPos.y - titleBarOffsetY;
     const int COLOUR_VARIANCE_RANGE = 20;
 
-    game->mouseDraw(mousePosX, mousePosY, data.clDrawSize, data.clDrawChance, data.clDrawType, data.clColourVariance);
+    game->mouseDraw(data.mousePosX, data.mousePosY, data.clDrawSize, data.clDrawChance, data.clDrawType, data.clDrawShape, data.clColourVariance);
 }

@@ -28,12 +28,12 @@ public:
 	void updatePixel(int x, int y, int r, int g, int b, int a);
 	
 	CellType varyPixelColour(int range, int CellTypeID);
-	void mouseDraw(int x, int y, int radius, int chance, int CellTypeID, int range);
+	void mouseDraw(int x, int y, int radius, int chance, int CellTypeID, int CellDrawShape, int range);
 
 	void changeCellType(int x, int y, int CellTypeID, int range);
-	void swapCells(int x1, int y1, int x2, int y2);
+	//void swapCells(int x1, int y1, int x2, int y2);
 	void swapCells(Cell& p1, Cell& p2);
-	bool checkDensity(int x1, int y1, int x2, int y2);
+	//bool checkDensity(int x1, int y1, int x2, int y2);
 	bool checkDensity(Cell& p1, int delX, int delY);
 
 	void updateSand(Cell& c);
