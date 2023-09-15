@@ -3,6 +3,7 @@
 #include "game.h"
 #include "framework.h"
 #include "interface.h"
+    
 //#include "interfaceData.h"
 
 Framework::Framework() {}
@@ -79,19 +80,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     std::cout << std::endl;
 
     // Init Values
-#if true
-    data = interfaceData(255, 0, 0, 0, 1, 40, true, false, false);
-#else
-    data.data.runSim = true;
-    bool data.hasSizeChanged = false;
-    int data.texReloadCount = 0;
-    int data.clDrawType = 1; // clDrawType
-    int data.clDrawSize = 40; // clDrawSize
-
-    int data.texW = 0;
-    int data.texH = 0;
-    GLuint data.texID = 255;
-#endif
+    data = interfaceData(255, 0, 0, 0, 1, 40, 90, 20, false, false, false);
 
     applicationRunning = true;
     return true;
@@ -122,11 +111,15 @@ void Framework::update()
     interface->debugMenu(data);
 
     data.clDrawSize += (int)io.MouseWheel;
-    data.clDrawSize = std::max(data.clDrawSize, 0);
 
-    if (data.resetSim) game->reset(0, data.resetSim);
+    data.clDrawSize       = std::clamp(data.clDrawSize      , 1, 1000);
+    data.clDrawChance     = std::clamp(data.clDrawChance    , 1,  100);
+    data.clColourVariance = std::clamp(data.clColourVariance, 1,  255);
+
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
     if (io.MouseDown[0]) mouseDraw();
-    if (data.runSim) game->update();
+    if (data.runSim    ) game->update();
+    if (data.resetSim  ) game->reset(0, data.resetSim);
 
     textureData = game->getTextureData();
     updateTexture();
@@ -144,17 +137,23 @@ void Framework::render()
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     // Placed After ^^ to prevent ImGui HUD overwriting it.
+    if (ImGui::GetFrameCount() == 2 ) {
+        createTexture();
+        game->init(textureData, data.texW, data.texH);
+    }
+
     // Loads Texture on init, on Window Size Changed, Prevents Reloading Texture too soon (>120 Frames)
     const int minFramesTilReload = 120;
-    if (ImGui::GetFrameCount() == 2 || data.hasSizeChanged == true && ImGui::GetFrameCount() - framesSinceReload > minFramesTilReload) {
+    if (data.hasSizeChanged == true && ImGui::GetFrameCount() - framesSinceReload > minFramesTilReload)
+    {
         printf("FrameCount: %d\n", ImGui::GetFrameCount());
         printf("hasSizeChanged: %d\n\n", data.hasSizeChanged);
 
         createTexture();
-        game->init(textureData, data.texW, data.texH);
+        game->reload(textureData, data.texW, data.texH);
         framesSinceReload = ImGui::GetFrameCount();
     }
-   
+
     // Handling Multiple Viewports, Swaps between 2 texture buffers for smoother rendering
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) 
     {
@@ -219,6 +218,7 @@ void Framework::mouseDraw()
     const int titleBarOffsetY = 28;
     const int mousePosX = io.MousePos.x - windowPos.x - titleBarOffsetX;
     const int mousePosY = io.MousePos.y - windowPos.y - titleBarOffsetY;
+    const int COLOUR_VARIANCE_RANGE = 20;
 
-    game->mouseDraw(mousePosX, mousePosY, data.clDrawSize, data.clDrawType, 20);
+    game->mouseDraw(mousePosX, mousePosY, data.clDrawSize, data.clDrawChance, data.clDrawType, data.clColourVariance);
 }

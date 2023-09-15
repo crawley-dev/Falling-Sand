@@ -5,39 +5,52 @@
 Interface::Interface() {}
 Interface::~Interface() {}
 
-// pass a structure with all variables for nice viewing?? idk how else to?? template???? <-- prob not sounds complex
 void Interface::main()
 {
     io = ImGui::GetIO(); // keep IO upto date
 
     boilerPlate();
     demoWindow();
-    //debugMenu(interfaceData& data);
 }
 
 void Interface::boilerPlate()
 {
-    ImGui_ImplOpenGL3_NewFrame();   // init openGl frame  
-    ImGui_ImplSDL2_NewFrame();      // init SDL2   frame
-    ImGui::NewFrame();              // init imgui  frame
-
-    ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()); // add background dockspace by default
+    ImGui_ImplOpenGL3_NewFrame();                           // init openGl frame  
+    ImGui_ImplSDL2_NewFrame();                              // init SDL2   frame
+    ImGui::NewFrame();                                      // init imgui  frame
+    ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()); // adds docking by default
 }
 
-// GLuint textureID, int textureWidth, int textureHeight, int texReloadedCount, 
-// bool &runSim, int& pxDrawType, int& drawSize
 void Interface::debugMenu(interfaceData& data)
 {   // A Begin/End Pair (the brackets) to contain a named window's creation and destruction. required!!
-    ImGui::Begin("Debug Menu");                                     // Create a window called "Hello, world!" and append into it  
-    
+    ImGui::Begin("Debug Menu");
+
     ImGui::SeparatorText("Bools");
     {   // Edit bool toggling on/off the demo window
+        static int stepFrame = -1;
+        if (stepFrame == ImGui::GetFrameCount()) data.runSim = true;
+        else if (stepFrame + 1 == ImGui::GetFrameCount()) data.runSim = false;
+
         ImGui::Checkbox("Toggle Demo Window", &showDemoWindow);         
-        ImGui::Checkbox("Run Simulation Game", &data.runSim);
+        ImGui::Checkbox("Run Simulation Game", &data.runSim); // ImGui::SameLine();
+        if (ImGui::Button("Step 1 Frame.")) stepFrame = ImGui::GetFrameCount() + 1;
         if (ImGui::Button("Reset Sim")) data.resetSim = true;
+
+        if (ImGui::Button("Eraser")) data.clDrawType = 0; ImGui::SameLine();
+        if (ImGui::Button("Sand")) data.clDrawType = 1; ImGui::SameLine();
+        if (ImGui::Button("Water")) data.clDrawType = 2; ImGui::SameLine();
+        if (ImGui::Button("Concrete")) data.clDrawType = 3; //ImGui::SameLine();
     }
 
-    ImGui::SeparatorText("Values"); 
+    ImGui::SeparatorText("Cell Drawing");
+    {
+        //ImGui::SliderInt("CellDraw Type", &data.clDrawType, 0, 3);
+        ImGui::InputInt("Cell Draw Size (px)", &data.clDrawSize, 1, 10);
+        ImGui::InputInt("Cell Draw Chance (%)", &data.clDrawChance, 1, 10);
+        ImGui::InputInt("Cell Colour Variance", &data.clColourVariance, 1, 10);
+    }
+
+    ImGui::SeparatorText("Debug Values"); 
     {
         ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
         const float titleBarOffsetX = 8.f;
@@ -50,6 +63,7 @@ void Interface::debugMenu(interfaceData& data)
         else inBounds = false;
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
+        ImGui::Text("Application framecount: %d\n", ImGui::GetFrameCount());
         ImGui::Text("textureID:%d\n", data.texID);
         ImGui::Text("Reloaded Texture: %d Times\n", data.texReloadCount);
         ImGui::Text("textureWidth: %d\n", data.texW);
@@ -59,13 +73,6 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::Text("Out of Bounds? %d\n", inBounds);
     }
 
-    ImGui::SeparatorText("Variables");
-    {
-        ImGui::SliderInt("CellDraw Type", &data.clDrawType, 0, 3); // change to buttons later
-        ImGui::InputInt("Cell Draw Size", &data.clDrawSize, 1, 10);
-        //ImGui::SliderInt("Pixel Draw Size", &drawSize, 0, 1000);
-
-    }
 
     ImGui::End();
 }
@@ -76,14 +83,13 @@ void Interface::gameWindow(interfaceData& data)
     ImGui::Begin("GameWindow");
     frameRate = io.Framerate;
 
-
+    // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow", not win32 application
     const int textureOffsetX = 10;
     const int textureOffsetY = 20 + 10 + 10;
-    // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow", not win32 application
     if (data.texW + textureOffsetX != (int)ImGui::GetWindowSize().x 
-       || data.texH + textureOffsetY != (int)ImGui::GetWindowSize().y) {
+       || data.texH + textureOffsetY != (int)ImGui::GetWindowSize().y) 
+    {
         data.hasSizeChanged  = true;
-
         data.texW = ImGui::GetWindowSize().x - textureOffsetX;
         data.texH = ImGui::GetWindowSize().y - textureOffsetY;
     }

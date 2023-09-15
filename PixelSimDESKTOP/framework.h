@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <vector>
 #include <chrono>
+#include <algorithm>
 
 #include "interfaceData.h"
 

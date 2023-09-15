@@ -22,12 +22,12 @@ struct Cell
 	int id, x, y;
 	CellType type;
 
-	Cell(bool HAS_MOVED_FLAG, int ID, int X, int Y, CellType PIXEL_TYPE)
+	Cell(bool HAS_MOVED_FLAG, int ID, int X, int Y, CellType CELL_TYPE)
 	{
 		flag = HAS_MOVED_FLAG;
 		id = ID;
 		x = X;
 		y = Y;
-		type = PIXEL_TYPE;
+		type = CELL_TYPE;
 	}
 };

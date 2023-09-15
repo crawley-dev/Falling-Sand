@@ -6,7 +6,9 @@
 #include <stdio.h>
 #include <SDL.h>
 #include <SDL_opengl.h>
+
 #include <vector>
+#include <ranges>
 
 #include "cell.h"
 
@@ -26,7 +28,7 @@ public:
 	void updatePixel(int x, int y, int r, int g, int b, int a);
 	
 	CellType varyPixelColour(int range, int CellTypeID);
-	void mouseDraw(int x, int y, int radius, int CellTypeID, int range);
+	void mouseDraw(int x, int y, int radius, int chance, int CellTypeID, int range);
 
 	void changeCellType(int x, int y, int CellTypeID, int range);
 	void swapCells(int x1, int y1, int x2, int y2);
@@ -47,5 +49,5 @@ private:
 	std::vector<Cell> cells;
 	std::vector<GLubyte> textureData;
 	CellType Types[4];
-	CellType AIR, SAND, WATER, ROCK;
+	CellType AIR, SAND, WATER, CONCRETE;
 };
