@@ -80,7 +80,7 @@ void Game::reset(int CellTypeID, bool& resetSim)
 void Game::update()
 {
 	if (texH == 0 || texW == 0) return;
-	mouseDraw(500, 100, 1, 99, 1, 1, 0);
+	//mouseDraw(500, 100, 1, 99, 1, 1, 0);
 
 #if true // why does it flicker with only 1 loop??
 	for (auto it = cells.rbegin(); it < cells.rend(); ++it)
@@ -171,8 +171,8 @@ void Game::mouseDraw(int x, int y, int radius, int chance, int CellTypeID, int C
 				changeCellType(x + tx, y, CellTypeID, range);
 	}
 	else if (CellDrawShape == 2) {
-		for (auto ty = 0; ty < radius; ++ty)
-			for (auto tx = 0; tx < radius; ++tx)
+		for (auto ty = -radius/2; ty < radius/2; ++ty)
+			for (auto tx = -radius/2; tx < radius/2; ++tx)
 				if (rand() % (101 - chance) == 0)
 					changeCellType(x + tx, y + ty, CellTypeID, range);
 	}

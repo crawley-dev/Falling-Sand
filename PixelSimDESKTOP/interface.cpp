@@ -40,6 +40,8 @@ void Interface::debugMenu(interfaceData& data)
 
         if (ImGui::Button("Reset Sim"     )) data.resetSim = true;
 
+        // doesn't currently highlight which type is selected.
+        // dig into deeper logic of ImGui.. ugh
         if (ImGui::Button("Eraser"  )) data.clDrawType = 0; ImGui::SameLine();
         if (ImGui::Button("Sand"    )) data.clDrawType = 1; ImGui::SameLine();
         if (ImGui::Button("Water"   )) data.clDrawType = 2; ImGui::SameLine();
