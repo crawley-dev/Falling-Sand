@@ -80,7 +80,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     std::cout << std::endl;
 
     // Init Values
-    data = interfaceData(255, 0, 0, 0, 1, 25, 99, 20, 0, 0, 0, true, false, false);
+    data = interfaceData(255, 0, 0, 0, 1, 25, 99, 20, 0, 0, 0, false, false, false);
 
     applicationRunning = true;
     return true;
@@ -118,8 +118,8 @@ void Framework::update()
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
     if (io.MouseDown[0]) mouseDraw();
-    if (data.runSim    ) game->update();
     if (data.resetSim  ) game->reset(0, data.resetSim);
+    game->update(data.runSim);
 
     textureData = game->getTextureData();
     updateTexture();
@@ -137,24 +137,26 @@ void Framework::render()
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     // Placed After ^^ to prevent ImGui HUD overwriting it.
-    if (ImGui::GetFrameCount() == 2 ) {
+    if (ImGui::GetFrameCount() == 2) {
         createTexture();
         game->init(textureData, data.texW, data.texH);
     }
 
     // Loads Texture on init, on Window Size Changed, Prevents Reloading Texture too soon (>120 Frames)
-    const int minFramesTilReload = 120;
-    if (data.hasSizeChanged == true && ImGui::GetFrameCount() - framesSinceReload > minFramesTilReload)
+    static int framesSinceReload    = 0;
+    const int MIN_FRAMES_TIL_RELOAD = 120;
+    if (data.hasSizeChanged == true && ImGui::GetFrameCount() - framesSinceReload > MIN_FRAMES_TIL_RELOAD)
     {
         printf("FrameCount: %d\n", ImGui::GetFrameCount());
         printf("hasSizeChanged: %d\n\n", data.hasSizeChanged);
 
         createTexture();
-        game->reload(textureData, data.texW, data.texH);
+        //game->reload(textureData, data.texW, data.texH);
+        game->init(textureData, data.texW, data.texH);
         framesSinceReload = ImGui::GetFrameCount();
     }
 
-    // Handling Multiple Viewports, Swaps between 2 texture buffers for smoother rendering
+    // Handling Multiple Viewports && Swaps between 2 texture buffers for smoother rendering
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) 
     {
         SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
@@ -208,25 +210,17 @@ void Framework::updateTexture()
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.texW, data.texH, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data()); 
 }
 
-// PROBLEM: calls game->mouseDraw too often.
 void Framework::mouseDraw()
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    /*
-        ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
-        const float titleBarOffsetX = 8.f;
-        const float titleBarOffsetY = 28.f;
-        const float mousePosX       = io.MousePos.x - windowPos.x - titleBarOffsetX;
-        const float mousePosY       = io.MousePos.y - windowPos.y - titleBarOffsetY;
-    */
-
-    ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
-    const int titleBarOffsetX = 8;
-    const int titleBarOffsetY = 28;
-    data.mousePosX = io.MousePos.x - windowPos.x - titleBarOffsetX;
-    data.mousePosY = io.MousePos.y - windowPos.y - titleBarOffsetY;
-    const int COLOUR_VARIANCE_RANGE = 20;
-
+    static int lastFrameCall   = 0;
+    const int minFramesTilDraw = 5;
+    if (ImGui::GetFrameCount() - lastFrameCall > minFramesTilDraw) {
+        lastFrameCall = ImGui::GetFrameCount();
+        return;
+    } 
+    
+    // Mouse pos updated in interface->debugMenu() each frame. called before mouseDraw event so correct.
     game->mouseDraw(data.mousePosX, data.mousePosY, data.clDrawSize, data.clDrawChance, data.clDrawType, data.clDrawShape, data.clColourVariance);
 }

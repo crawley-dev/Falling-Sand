@@ -21,11 +21,12 @@ public:
 	void init(std::vector<GLubyte> texData, int textureW, int textureH);
 	void reload(std::vector<GLubyte> texData, int textureW, int textureH);
 	void reset(int CellTypeID, bool& resetSim);
-	void update();
+	void update(bool runSim);
 	void cellUpdate(Cell& p);
 
 	void createCell(int range, bool flag, int texIdx, int x, int y, int CellTypeID);
 	void updatePixel(int x, int y, int r, int g, int b, int a);
+	void updatePixel(Cell& c);
 	
 	CellType varyPixelColour(int range, int CellTypeID);
 	void mouseDraw(int x, int y, int radius, int chance, int CellTypeID, int CellDrawShape, int range);
@@ -40,6 +41,7 @@ public:
 	void updateWater(Cell& c);
 
 	inline bool outOfBounds(int x, int y) { return (x >= texW || x < 0 || y >= texH || y < 0); }
+	//inline int cellIdx(int x, int y) { return (outOfBounds(x,y)) ? (y * texW) + x : 0; }
 	inline int cellIdx(int x, int y) { return (y * texW) + x; }
 	inline int texIdx(int x, int y) { return 4 * (y * texW + x); }
 	inline std::vector<GLubyte> getTextureData() { return textureData; }

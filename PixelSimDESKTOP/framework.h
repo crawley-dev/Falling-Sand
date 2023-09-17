@@ -45,7 +45,6 @@ public:
 private:
 	interfaceData data;
 	bool applicationRunning = false;
-	int framesSinceReload = 0;
 
 	/*
 	bool runSim = true;

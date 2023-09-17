@@ -26,9 +26,9 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH)
 	for (int y = 0; y < texH; ++y)
 		for (int x = 0; x < texW; ++x) {
 			createCell(0, false, cellIdx(x, y), x, y, initType);
-			updatePixel(x,y, Types[initType].r, Types[initType].g, Types[initType].b, Types[initType].a);
+			updatePixel(cells[cellIdx(x, y)]);
 		}
-	
+
 	//printf("texureData Size: %d\n", (int)textureData.size());
 	//printf("cells Size: %d\n", (int)cells.size());
 	//printf("width: %d\n", texW);
@@ -72,48 +72,41 @@ void Game::reset(int CellTypeID, bool& resetSim)
 	for (int y = 0; y < texH; ++y)
 		for (int x = 0; x < texW; ++x) {
 			createCell(0, false, cellIdx(x, y), x, y, CellTypeID);
-			updatePixel(x, y, Types[CellTypeID].r, Types[CellTypeID].g, Types[CellTypeID].b, Types[CellTypeID].a);
+			updatePixel(cells[cellIdx(x, y)]);
 		}
 	resetSim = false;
 }
 
-void Game::update()
+void Game::update(bool runSim)
 {
 	if (texH == 0 || texW == 0) return;
-	mouseDraw(500, 100, 1, 99, 1, 1, 0);
+	//mouseDraw(500, 100, 1, 99, 1, 1, 0);
 
-#if true // why does it flicker with only 1 loop??
-	for (auto it = cells.rbegin(); it < cells.rend(); ++it)
-	{	
-		Cell& c = *it;
-		cellUpdate(c);
-		updatePixel(c.x, c.y, c.type.r, c.type.g, c.type.b, c.type.a);
-		//c.flag = false;
-	}
-	for (auto it = cells.begin(); it < cells.end(); ++it)
+#if true
+	for (Cell& c : cells)
 	{
-		Cell& c = *it;
-		cellUpdate(c);
-		updatePixel(c.x, c.y, c.type.r, c.type.g, c.type.b, c.type.a);
-		c.flag = false; // whats the point of set true then straight to false ??
+		if (runSim) cellUpdate(c);
+		updatePixel(c);
 	}
-#else
+#else 
+	static int frameCount = 0;
 	for (int y = texH - 1; y >= 0; --y)	
-		for (int x = 0; x < texW; ++x) {
+		for (int x = texW - 1; x >= 0; --x) {
 			if (outOfBounds(x, y)) return;
 			Cell& c = cells[cellIdx(x, y)];
 		
-			cellUpdate(c);
-			updatePixel(c.x, c.y, c.type.r, c.type.g, c.type.b, c.type.a);
-			c.flag = false;
+			if (runSim) cellUpdate(c);
+			updatePixel(c);
+			if (runSim) cellUpdate(c); // flickers without this.. WAT
 		}
+	frameCount++;
 #endif
 }
 
 void Game::cellUpdate(Cell& c)
 {
 	if		(c.flag) return;
-	else if (c.type.id == 0 || c.type.id == 3) return;
+	else if (c.type.id == 0 || c.type.id == 3);
 	else if (c.type.id == 1) updateSand(c);
 	else if (c.type.id == 2) updateWater(c);
 }
@@ -135,6 +128,19 @@ void Game::updatePixel(int x, int y, int r, int g, int b, int a)
 	textureData[idx + 3] = a;
 }
 
+void Game::updatePixel(Cell& c)
+{
+	if (outOfBounds(c.x, c.y)) return;
+
+	int idx = texIdx(c.x, c.y);
+	textureData[idx + 0] = c.type.r;
+	textureData[idx + 1] = c.type.g;
+	textureData[idx + 2] = c.type.b;
+	textureData[idx + 3] = c.type.a;
+
+	c.flag = false;
+}
+
 CellType Game::varyPixelColour(int range, int PixelTypeID)
 {
 	if (range <= 0) return Types[PixelTypeID];
@@ -146,10 +152,9 @@ CellType Game::varyPixelColour(int range, int PixelTypeID)
 	return material;
 }
 
-
 void Game::mouseDraw(int x, int y, int radius, int chance, int CellTypeID, int CellDrawShape, int range)
 {
-	if (outOfBounds(x, y) || outOfBounds(x - radius, y - radius) || outOfBounds(x + radius, y + radius)) return;
+	if (outOfBounds(x, y)) return;
 
 	if (CellDrawShape == 0) {
 		int r2 = radius * radius;
@@ -171,8 +176,8 @@ void Game::mouseDraw(int x, int y, int radius, int chance, int CellTypeID, int C
 				changeCellType(x + tx, y, CellTypeID, range);
 	}
 	else if (CellDrawShape == 2) {
-		for (auto ty = 0; ty < radius; ++ty)
-			for (auto tx = 0; tx < radius; ++tx)
+		for (auto ty = -radius/2; ty < radius/2; ++ty)
+			for (auto tx = -radius/2; tx < radius/2; ++tx)
 				if (rand() % (101 - chance) == 0)
 					changeCellType(x + tx, y + ty, CellTypeID, range);
 	}
@@ -259,5 +264,21 @@ for (int x = 0; x < texW; x++) {
 	//calcNewPosition(c);
 	updatePixel(x, y, c.type.r, c.type.g, c.type.b, c.type.a);
 	//cells[pixIdx(x, y)].flag = false;
+}
+
+#elif false 
+for (auto it = cells.rbegin(); it < cells.rend(); ++it)
+{
+	Cell& c = *it;
+	if (runSim) cellUpdate(c);
+	updatePixel(c.x, c.y, c.type.r, c.type.g, c.type.b, c.type.a);
+	//c.flag = false;
+}
+for (auto it = cells.rbegin(); it < cells.rend(); ++it)
+{
+	Cell& c = *it;
+	if (runSim) cellUpdate(c);
+	updatePixel(c.x, c.y, c.type.r, c.type.g, c.type.b, c.type.a);
+	c.flag = false; // whats the point of set true then straight to false ??
 }
 #endif

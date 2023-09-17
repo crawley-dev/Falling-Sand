@@ -37,9 +37,10 @@ void Interface::debugMenu(interfaceData& data)
         // doesn't work as ImGui framecount is independent of the simulation.
         //ImGui::InputInt("", &stepFrame, 1, 10); ImGui::SameLine();
         if (ImGui::Button("Step n Frames:")) stepFrame = ImGui::GetFrameCount() + 1;
-
         if (ImGui::Button("Reset Sim"     )) data.resetSim = true;
 
+        // doesn't currently highlight which type is selected.
+        // dig into deeper logic of ImGui.. ugh
         if (ImGui::Button("Eraser"  )) data.clDrawType = 0; ImGui::SameLine();
         if (ImGui::Button("Sand"    )) data.clDrawType = 1; ImGui::SameLine();
         if (ImGui::Button("Water"   )) data.clDrawType = 2; ImGui::SameLine();
@@ -63,14 +64,21 @@ void Interface::debugMenu(interfaceData& data)
         bool OutofBounds = false;
         if (data.mousePosX > data.texW || data.mousePosX < 0 || data.mousePosY > data.texH || data.mousePosY < 0) OutofBounds = true;
 
+        ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
+        const int TITLE_BAR_OFFSET_X = 8;
+        const int TITLE_BAR_OFFSET_Y = 28;
+        const int COLOUR_VARIANCE_RANGE = 20;
+        data.mousePosX = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
+        data.mousePosY = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
+
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
         ImGui::Text("Application framecount: %d\n", ImGui::GetFrameCount());
         ImGui::Text("textureID:%d\n"              , data.texID            );
         ImGui::Text("Reloaded Texture: %d Times\n", data.texReloadCount   );
         ImGui::Text("textureWidth: %d\n"          , data.texW             );
         ImGui::Text("textureHeight: %d\n"         , data.texH             );
-        ImGui::Text("Mouse X: %f\n"               , data.mousePosX        );
-        ImGui::Text("Mouse Y: %f\n"               , data.mousePosY        );
+        ImGui::Text("Mouse X: %d\n"               , data.mousePosX        );
+        ImGui::Text("Mouse Y: %d\n"               , data.mousePosY        );
         ImGui::Text("Out of Bounds? %d\n"         , OutofBounds           );
     }
 
@@ -87,8 +95,8 @@ void Interface::gameWindow(interfaceData& data)
     // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow", not win32 application
     const int textureOffsetX = 10;
     const int textureOffsetY = 20 + 10 + 10;
-    if (data.texW   + textureOffsetX != (int)ImGui::GetWindowSize().x 
-       || data.texH + textureOffsetY != (int)ImGui::GetWindowSize().y) 
+    if (   data.texW + textureOffsetX != (int)ImGui::GetWindowSize().x 
+        || data.texH + textureOffsetY != (int)ImGui::GetWindowSize().y) 
     {
         data.hasSizeChanged = true;
         data.texW = ImGui::GetWindowSize().x - textureOffsetX;
