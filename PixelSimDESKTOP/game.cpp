@@ -6,11 +6,14 @@ Game::Game() {}
 Game::~Game() {}
 
 // annoying that texture --> tex for w,h but not data!!
-void Game::init(std::vector<GLubyte> texData, int textureW, int textureH)
+void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int scale)
 {
+	cellScale   = 2;
 	textureData = texData;
-	texW = textureW;
-	texH = textureH;
+	texW        = textureW;
+	texH        = textureH;
+	cellW       = texW / cellScale;
+	cellH       = texH / cellScale;
 
 //	Types[0] = AIR	 = CellType(0, 188, 231, 255, 255, 0	);
 //	Types[0] = AIR	 = CellType(0, 255, 255, 255, 255, 0	);
@@ -23,17 +26,17 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH)
 	cells.clear(); // once upon a time, it didn't reset cell arr on reload :/ oops
 
 	const int initType = 0;
-	for (int y = 0; y < texH; ++y)
-		for (int x = 0; x < texW; ++x) {
+	for (int y = 0; y < cellH; ++y)
+		for (int x = 0; x < cellW; ++x) {
 			createCell(0, false, cellIdx(x, y), x, y, initType);
 			updatePixel(cells[cellIdx(x, y)]);
 		}
 
-	//printf("texureData Size: %d\n", (int)textureData.size());
-	//printf("cells Size: %d\n", (int)cells.size());
-	//printf("width: %d\n", texW);
-	//printf("height: %d\n", texH);
-	//printf("\n");
+	printf("texureData Size: %d\n", (int)textureData.size());
+	printf("cells Size: %d\n", (int)cells.size());
+	printf("width: %d\n", texW);
+	printf("height: %d\n", texH);
+	printf("\n");
 }
 
 // this does not work properlyl. huh who could've guessed
@@ -69,8 +72,8 @@ void Game::reset(int CellTypeID, bool& resetSim)
 {
 	cells.clear();
 
-	for (int y = 0; y < texH; ++y)
-		for (int x = 0; x < texW; ++x) {
+	for (int y = 0; y < cellW; ++y)
+		for (int x = 0; x < cellH; ++x) {
 			createCell(0, false, cellIdx(x, y), x, y, CellTypeID);
 			updatePixel(cells[cellIdx(x, y)]);
 		}
@@ -87,6 +90,7 @@ void Game::update(bool runSim)
 	{
 		if (runSim) cellUpdate(c);
 		updatePixel(c);
+		c.flag = false;
 	}
 #else 
 	static int frameCount = 0;
@@ -97,6 +101,7 @@ void Game::update(bool runSim)
 		
 			if (runSim) cellUpdate(c);
 			updatePixel(c);
+			c.flag = false;
 			if (runSim) cellUpdate(c); // flickers without this.. WAT
 		}
 	frameCount++;
@@ -128,17 +133,17 @@ void Game::updatePixel(int x, int y, int r, int g, int b, int a)
 	textureData[idx + 3] = a;
 }
 
-void Game::updatePixel(Cell& c)
+void Game::updatePixel(Cell& c) // gotta figure this out
 {
 	if (outOfBounds(c.x, c.y)) return;
-
-	int idx = texIdx(c.x, c.y);
-	textureData[idx + 0] = c.type.r;
-	textureData[idx + 1] = c.type.g;
-	textureData[idx + 2] = c.type.b;
-	textureData[idx + 3] = c.type.a;
-
-	c.flag = false;
+	
+	{
+		int idx = texIdx(c.x * cellScale, c.y * cellScale);
+		textureData[idx + 0] = c.type.r;
+		textureData[idx + 1] = c.type.g;
+		textureData[idx + 2] = c.type.b;
+		textureData[idx + 3] = c.type.a;
+	}
 }
 
 CellType Game::varyPixelColour(int range, int PixelTypeID)

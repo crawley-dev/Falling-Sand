@@ -18,7 +18,7 @@ public:
 	Game();
 	~Game();
 
-	void init(std::vector<GLubyte> texData, int textureW, int textureH);
+	void init(std::vector<GLubyte> texData, int textureW, int textureH, int scale);
 	void reload(std::vector<GLubyte> texData, int textureW, int textureH);
 	void reset(int CellTypeID, bool& resetSim);
 	void update(bool runSim);
@@ -40,14 +40,14 @@ public:
 	void updateSand(Cell& c);
 	void updateWater(Cell& c);
 
-	inline bool outOfBounds(int x, int y) { return (x >= texW || x < 0 || y >= texH || y < 0); }
+	inline bool outOfBounds(int x, int y) { return (x >= cellW || x < 0 || y >= cellH || y < 0); }
 	//inline int cellIdx(int x, int y) { return (outOfBounds(x,y)) ? (y * texW) + x : 0; }
-	inline int cellIdx(int x, int y) { return (y * texW) + x; }
+	inline int cellIdx(int x, int y) { return (y * cellW) + x; }
 	inline int texIdx(int x, int y) { return 4 * (y * texW + x); }
 	inline std::vector<GLubyte> getTextureData() { return textureData; }
 
 private:
-	int texW, texH;
+	int texW, texH, cellScale, cellW, cellH;
 	std::vector<Cell> cells;
 	std::vector<GLubyte> textureData;
 	CellType Types[4];

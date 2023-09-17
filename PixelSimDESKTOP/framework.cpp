@@ -139,7 +139,7 @@ void Framework::render()
     // Placed After ^^ to prevent ImGui HUD overwriting it.
     if (ImGui::GetFrameCount() == 2) {
         createTexture();
-        game->init(textureData, data.texW, data.texH);
+        game->init(textureData, data.texW, data.texH, 1);
     }
 
     // Loads Texture on init, on Window Size Changed, Prevents Reloading Texture too soon (>120 Frames)
@@ -152,7 +152,7 @@ void Framework::render()
 
         createTexture();
         //game->reload(textureData, data.texW, data.texH);
-        game->init(textureData, data.texW, data.texH);
+        game->init(textureData, data.texW, data.texH, 1);
         framesSinceReload = ImGui::GetFrameCount();
     }
 

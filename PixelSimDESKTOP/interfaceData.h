@@ -32,16 +32,3 @@ struct interfaceData
 #endif
 
 };
-
-#if false
-	GLuint textureID, int textureWidth, int textureHeight, int texReloadedCount, bool& runSim, int& pxDrawType,
-	int& drawSize
-
-	bool runSim = true;
-	bool applicationRunning = false;
-	bool hasSizeChanged = false;
-	int texReloadedCount = 0;
-	int framesSinceReload = 0;
-	int pxDrawType = 1;
-	int pxDrawSize = 40;
-#endif
