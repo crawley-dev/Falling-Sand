@@ -1,5 +1,5 @@
 #pragma once
-
+// extreme homosexuality L 
 #include "framework.h"
 
 Framework* app = nullptr;
