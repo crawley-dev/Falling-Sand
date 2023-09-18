@@ -20,7 +20,7 @@ public:
 	~Game();
 
 	void init(std::vector<GLubyte> texData, int textureW, int textureH, int scale);
-	void reload(std::vector<GLubyte> texData, int textureW, int textureH);
+	void reload(std::vector<GLubyte> texData, int textureW, int textureH, int newScaleFactor);
 	void reset(int CellTypeID, bool& resetSim);
 	void update(interfaceData& data);
 	void cellUpdate(Cell& p);
@@ -52,5 +52,5 @@ private:
 	std::vector<Cell> cells;
 	std::vector<GLubyte> textureData;
 	CellType Types[4];
-	CellType AIR, SAND, WATER, CONCRETE;
+	CellType EMPTY, SAND, WATER, CONCRETE;
 };

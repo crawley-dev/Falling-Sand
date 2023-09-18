@@ -30,4 +30,5 @@ struct Cell
 		y = Y;
 		type = CELL_TYPE;
 	}
+	Cell() = default;
 };

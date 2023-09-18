@@ -80,7 +80,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     std::cout << std::endl;
 
     // Init Values
-    data = interfaceData(255, 0, 0, 0, 1, 25, 99, 20, 0, 2, 0, 0, false, false, false, true);
+    data = interfaceData(255, 0, 0, 0, 1, 25, 99, 10, 0, 2, 0, 0, false, false, false, true);
 
     applicationRunning = true;
     return true;
@@ -106,8 +106,7 @@ void Framework::update()
     interface->main();
     interface->debugMenu(data);
 
-    data.clDrawSize += (int)io.MouseWheel;
-
+    data.clDrawSize      += (int)io.MouseWheel;
     data.clDrawSize       = std::clamp(data.clDrawSize      , 1, 1000);
     data.clDrawChance     = std::clamp(data.clDrawChance    , 1,  100);
     data.clColourVariance = std::clamp(data.clColourVariance, 1,  255);
@@ -116,7 +115,14 @@ void Framework::update()
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
     if (io.MouseDown[0]) mouseDraw();
     if (data.resetSim  ) game->reset(0, data.resetSim);
+    if (data.hasSizeChanged) 
+    {
+        createTexture();
+        game->reload(textureData, data.texW, data.texH, data.clScaleFactor);
+        data.hasSizeChanged = false;
+    }
     game->update(data);
+
 
     textureData = game->getTextureData();
     updateTexture();
@@ -137,20 +143,6 @@ void Framework::render()
     if (ImGui::GetFrameCount() == 2) {
         createTexture();
         game->init(textureData, data.texW, data.texH, data.clScaleFactor);
-    }
-
-    // Loads Texture on init, on Window Size Changed, Prevents Reloading Texture too soon (>120 Frames)
-    static int framesSinceReload    = 0;
-    const int MIN_FRAMES_TIL_RELOAD = 120;
-    if (data.hasSizeChanged == true && ImGui::GetFrameCount() - framesSinceReload > MIN_FRAMES_TIL_RELOAD)
-    {
-        printf("FrameCount: %d\n", ImGui::GetFrameCount());
-        printf("hasSizeChanged: %d\n\n", data.hasSizeChanged);
-
-        createTexture();
-        //game->reload(textureData, data.texW, data.texH);
-        game->init(textureData, data.texW, data.texH, data.clScaleFactor);
-        framesSinceReload = ImGui::GetFrameCount();
     }
 
     // Handling Multiple Viewports && Swaps between 2 texture buffers for smoother rendering
@@ -194,8 +186,8 @@ void Framework::createTexture()
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);   // GL_LINEAR --> GL_NEAREST
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // FASTER but produces blocky, pixelated texture (not noticeable-ish)
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);// GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);// GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);// GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);// GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
 
     textureData = std::vector<GLubyte>(data.texW * data.texH * 4, 255);
 
@@ -221,3 +213,15 @@ void Framework::mouseDraw()
     // Mouse pos updated in interface->debugMenu() each frame. called before mouseDraw event so correct.
     game->mouseDraw(data.mousePosX, data.mousePosY, data.clDrawSize, data.clDrawChance, data.clDrawType, data.clDrawShape, data.clColourVariance);
 }
+
+#if false
+    // Loads Texture on init, on Window Size Changed, Prevents Reloading Texture too soon (>120 Frames)
+    //static int framesSinceReload = 0;
+    //const int MIN_FRAMES_TIL_RELOAD = 10;
+    //if (data.hasSizeChanged && ImGui::GetFrameCount() - framesSinceReload > MIN_FRAMES_TIL_RELOAD)
+    //{
+    //    createTexture();
+    //    game->reload(textureData, data.texW, data.texH, data.clScaleFactor);
+    //    framesSinceReload = ImGui::GetFrameCount();
+    //}
+#endif

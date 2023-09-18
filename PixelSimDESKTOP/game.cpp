@@ -17,17 +17,18 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int sc
 
 //	Types[0] = AIR	 = CellType(0, 188, 231, 255, 255, 0	);
 //	Types[0] = AIR	 = CellType(0, 255, 255, 255, 255, 0	);
-	Types[0] = AIR	 = CellType(0,  44,  44,  44, 255,	0	);
-	Types[1] = SAND	 = CellType(1, 245, 215, 176, 255, 1600	);
-	Types[2] = WATER = CellType(2, 20 , 20 , 255, 125, 997	);
-	Types[3] = CONCRETE  = CellType(3, 200, 200, 200, 255, 2000	);
+	Types[0] = EMPTY	= CellType(0,  44,  44,  44, 255,	0	);
+	Types[1] = SAND		= CellType(1, 245, 215, 176, 255, 1600	);
+	Types[2] = WATER	= CellType(2, 20 , 20 , 255, 125, 997	);
+	Types[3] = CONCRETE = CellType(3, 200, 200, 200, 255, 2000	);
 	
 
 	cells.clear(); // once upon a time, it didn't reset cell arr on reload :/ oops
 
 	const int initType = 0;
 	for (int y = 0; y < cellH; ++y)
-		for (int x = 0; x < cellW; ++x) {
+		for (int x = 0; x < cellW; ++x) 
+		{
 			createCell(0, false, cellIdx(x, y), x, y, initType);
 			updatePixel(cells[cellIdx(x, y)]);
 		}
@@ -41,33 +42,33 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int sc
 	//printf("\n");
 }
 
-// this does not work properlyl. huh who could've guessed
-void Game::reload(std::vector<GLubyte> newTexData, int newTexW, int newTexH)
+void Game::reload(std::vector<GLubyte> newTexData, int newTexW, int newTexH, int newScaleFactor)
 {
-	//const int deltaW = newTexW - texW;
-	//const int deltaH = newTexH - texH;
-	texW = newTexW;
-	texH = newTexH;
-
-	//std::vector<GLubyte> tempData = newTexData;
-	textureData = newTexData;
+	int newCellW = newTexW / newScaleFactor;
+	int newCellH = newTexH / newScaleFactor;
 	std::vector<Cell> newCells;
 
 	const int initType = 0;
-	for (int y = 0; y < texH; ++y)
-		for (int x = 0; x < texW; ++x) {
-			if (!outOfBounds(x, y)) {
-				Cell& c = cells[cellIdx(x, y)];
-				newCells.push_back(Cell(false, texIdx(x, y), c.x, c.y, c.type));
-				updatePixel(x, y, c.type.r, c.type.g, c.type.b, c.type.a);
+	for (int y = 0; y < newCellH; ++y) 
+		for (int x = 0; x < newCellW; ++x) 
+		{
+			if (outOfBounds(x, y)) {
+				newCells.push_back(Cell(false, cellIdx(x, y), x, y, Types[initType]));
+				updatePixel(newCells[(y * newCellW) + x]);
 			}
 			else {
-				newCells.push_back(Cell(false, texIdx(x, y), x, y, Types[initType]));
-				updatePixel(x, y, Types[initType].r, Types[initType].g, Types[initType].b, Types[initType].a);
+				newCells.push_back(cells[cellIdx(x, y)]);
+				updatePixel(newCells[(y * newCellW) + x]);
 			}
 		}
-	cells = newCells;
 
+	cellScale = newScaleFactor;
+	textureData = newTexData;
+	texW = newTexW;
+	texH = newTexH;
+	cellW = newCellW;
+	cellH = newCellH;
+	cells = newCells;
 }
 
 void Game::reset(int initType, bool& resetSim)
@@ -75,7 +76,8 @@ void Game::reset(int initType, bool& resetSim)
 	cells.clear();
 
 	for (int y = 0; y < cellH; ++y)
-		for (int x = 0; x < cellW; ++x) {
+		for (int x = 0; x < cellW; ++x) 
+		{
 			createCell(0, false, cellIdx(x, y), x, y, initType);
 			updatePixel(cells[cellIdx(x, y)]);
 		}
@@ -91,14 +93,18 @@ void Game::update(interfaceData& data)
 	{
 		for (Cell& c : cells)
 		{
-			if (data.runSim) cellUpdate(c);
+			if (data.runSim) {
+				cellUpdate(c);
+				c.flag = false;
+			}
 			updatePixel(c);
-			c.flag = false;
 		}
 	}
-	else {
+	else 
+	{
 		for (int y = cellH - 1; y >= 0; --y)	
-			for (int x = cellW - 1; x >= 0; --x) {
+			for (int x = cellW - 1; x >= 0; --x) 
+			{
 				if (outOfBounds(x, y)) return;
 				Cell& c = cells[cellIdx(x, y)];
 		
@@ -112,8 +118,7 @@ void Game::update(interfaceData& data)
 
 void Game::cellUpdate(Cell& c)
 {
-	if		(c.flag) return;
-	else if (c.type.id == 0 || c.type.id == 3);
+	if (c.flag || c.type.id == 0 || c.type.id == 3) return;
 	else if (c.type.id == 1) updateSand(c);
 	else if (c.type.id == 2) updateWater(c);
 }
@@ -140,7 +145,8 @@ void Game::updatePixel(Cell& c) // gotta figure this out
 	if (outOfBounds(c.x, c.y)) return;
 	
 	for (int tY = 0; tY < cellScale; ++tY)
-		for (int tX = 0; tX < cellScale; ++tX) {
+		for (int tX = 0; tX < cellScale; ++tX) 
+		{
 			int idx = texIdx((c.x * cellScale) + tX, (c.y * cellScale) + tY);
 			textureData[idx + 0] = c.type.r;
 			textureData[idx + 1] = c.type.g;
@@ -167,7 +173,8 @@ void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int
 
 	if (outOfBounds(x, y)) return;
 
-	if (CellDrawShape == 0) {
+	if (CellDrawShape == 0) 
+	{
 		int r2 = radius * radius;
 		int area = r2 << 2;
 		int rr = radius << 1;
@@ -181,12 +188,14 @@ void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int
 				changeCellType(x + tx, y + ty, CellTypeID, range);
 		}
 	}
-	else if (CellDrawShape == 1) {
+	else if (CellDrawShape == 1) 
+	{
 		for (int tx = -radius; tx < radius; ++tx)
 			if (rand() % (101 - chance) == 0)
 				changeCellType(x + tx, y, CellTypeID, range);
 	}
-	else if (CellDrawShape == 2) {
+	else if (CellDrawShape == 2) 
+	{
 		for (auto ty = -radius/2; ty < radius/2; ++ty)
 			for (auto tx = -radius/2; tx < radius/2; ++tx)
 				if (rand() % (101 - chance) == 0)

@@ -2,13 +2,12 @@
 
 struct interfaceData
 {
-	//textureID, textureWidth, textureHeight, texReloadedCount, runSim, pxDrawType, pxDrawSize
 	GLuint texID;
 	int texW, texH, texReloadCount, clDrawType, clDrawSize, clDrawChance, clColourVariance, clDrawShape, 
 		clScaleFactor, mousePosX, mousePosY;
 	bool runSim, hasSizeChanged, resetSim, doTopBot;
 
-#if false
+#if false // don't even need this lul
 	interfaceData(GLuint TEXTURE_ID, int TEXTURE_WIDTH, int TEXTURE_HEIGHT, int TEXTURE_RELOADED_COUNT, 
 				  int CELL_DRAW_TYPE, int CELL_DRAW_SIZE, int CELL_DRAW_CHANCE, int CELL_COLOUR_VARIANCE,
 				  int CELL_DRAW_SHAPE, int MOUSE_POS_X, int MOUSE_POS_Y,
