@@ -8,7 +8,7 @@ Game::~Game() {}
 // annoying that texture --> tex for w,h but not data!!
 void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int scale)
 {
-	cellScale   = 2;
+	cellScale   = scale;
 	textureData = texData;
 	texW        = textureW;
 	texH        = textureH;
@@ -32,11 +32,13 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int sc
 			updatePixel(cells[cellIdx(x, y)]);
 		}
 
-	printf("texureData Size: %d\n", (int)textureData.size());
-	printf("cells Size: %d\n", (int)cells.size());
-	printf("width: %d\n", texW);
-	printf("height: %d\n", texH);
-	printf("\n");
+	//printf("texureData Size: %d\n", (int)textureData.size());
+	//printf("cells Size: %d\n", (int)cells.size());
+	//printf("tex width: %d\n", texW);
+	//printf("tex height: %d\n", texH);
+	//printf("cell width: %d\n", cellW);
+	//printf("cell height: %d\n", cellH);
+	//printf("\n");
 }
 
 // this does not work properlyl. huh who could've guessed
@@ -68,44 +70,44 @@ void Game::reload(std::vector<GLubyte> newTexData, int newTexW, int newTexH)
 
 }
 
-void Game::reset(int CellTypeID, bool& resetSim)
+void Game::reset(int initType, bool& resetSim)
 {
 	cells.clear();
 
-	for (int y = 0; y < cellW; ++y)
-		for (int x = 0; x < cellH; ++x) {
-			createCell(0, false, cellIdx(x, y), x, y, CellTypeID);
+	for (int y = 0; y < cellH; ++y)
+		for (int x = 0; x < cellW; ++x) {
+			createCell(0, false, cellIdx(x, y), x, y, initType);
 			updatePixel(cells[cellIdx(x, y)]);
 		}
 	resetSim = false;
 }
 
-void Game::update(bool runSim)
+void Game::update(interfaceData& data)
 {
 	if (texH == 0 || texW == 0) return;
-	//mouseDraw(500, 100, 1, 99, 1, 1, 0);
+	//mouseDraw(texW/2, 5, texW, 95, 1, 1, 0);
 
-#if true
-	for (Cell& c : cells)
+	if (data.doTopBot)
 	{
-		if (runSim) cellUpdate(c);
-		updatePixel(c);
-		c.flag = false;
-	}
-#else 
-	static int frameCount = 0;
-	for (int y = texH - 1; y >= 0; --y)	
-		for (int x = texW - 1; x >= 0; --x) {
-			if (outOfBounds(x, y)) return;
-			Cell& c = cells[cellIdx(x, y)];
-		
-			if (runSim) cellUpdate(c);
+		for (Cell& c : cells)
+		{
+			if (data.runSim) cellUpdate(c);
 			updatePixel(c);
 			c.flag = false;
-			if (runSim) cellUpdate(c); // flickers without this.. WAT
 		}
-	frameCount++;
-#endif
+	}
+	else {
+		for (int y = cellH - 1; y >= 0; --y)	
+			for (int x = cellW - 1; x >= 0; --x) {
+				if (outOfBounds(x, y)) return;
+				Cell& c = cells[cellIdx(x, y)];
+		
+				if (data.runSim) cellUpdate(c);
+				updatePixel(c);
+				c.flag = false;
+				if (data.runSim) cellUpdate(c); // flickers without this.. WAT
+			}
+	}
 }
 
 void Game::cellUpdate(Cell& c)
@@ -137,13 +139,14 @@ void Game::updatePixel(Cell& c) // gotta figure this out
 {
 	if (outOfBounds(c.x, c.y)) return;
 	
-	{
-		int idx = texIdx(c.x * cellScale, c.y * cellScale);
-		textureData[idx + 0] = c.type.r;
-		textureData[idx + 1] = c.type.g;
-		textureData[idx + 2] = c.type.b;
-		textureData[idx + 3] = c.type.a;
-	}
+	for (int tY = 0; tY < cellScale; ++tY)
+		for (int tX = 0; tX < cellScale; ++tX) {
+			int idx = texIdx((c.x * cellScale) + tX, (c.y * cellScale) + tY);
+			textureData[idx + 0] = c.type.r;
+			textureData[idx + 1] = c.type.g;
+			textureData[idx + 2] = c.type.b;
+			textureData[idx + 3] = c.type.a;
+		}
 }
 
 CellType Game::varyPixelColour(int range, int PixelTypeID)
@@ -157,8 +160,11 @@ CellType Game::varyPixelColour(int range, int PixelTypeID)
 	return material;
 }
 
-void Game::mouseDraw(int x, int y, int radius, int chance, int CellTypeID, int CellDrawShape, int range)
+void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int CellDrawShape, int range)
 {
+	const int x = mx / cellScale;
+	const int y = my / cellScale;
+
 	if (outOfBounds(x, y)) return;
 
 	if (CellDrawShape == 0) {
@@ -220,18 +226,19 @@ bool Game::checkDensity(Cell& c1, int delX, int delY)
 	return true;
 }
 
-// implement rand chance left or right
+// Current rand is impacting performance. gpu pseudo rand? 
+// can't send each rand to gpu each time, want to group them together..
 void Game::updateSand(Cell& c)
 {
 	if	(checkDensity(c,  0, 1)) return;
-	if (rand() % 1000 >= 500) {
+	//if (rand() % 1000 >= 500) {
 		if (checkDensity(c,  1, 1));
 		else checkDensity(c, -1, 1);
-	} 
-	else {
-		if (checkDensity(c, -1, 1));
-		else checkDensity(c, 1, 1);
-	}
+	//} 
+	//else {
+		//if (checkDensity(c, -1, 1));
+		//else checkDensity(c, 1, 1);
+	//}
 }
 
 void Game::updateWater(Cell& c)

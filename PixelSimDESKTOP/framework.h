@@ -40,24 +40,10 @@ public:
 	void mouseDraw();
 
 	inline bool running() { return applicationRunning; }
-	//inline void updateTexture() { glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.data()); }
 
 private:
 	interfaceData data;
 	bool applicationRunning = false;
-
-	/*
-	bool runSim = true;
-	bool hasSizeChanged = false;
-	int texReloadedCount = 0;
-	int cellDrawType = 1; // clDrawType
-	int cellDrawSize = 40; // clDrawSize
-	
-	int textureWidth = 0;
-	int textureHeight = 0;
-	GLuint textureID = 255;
-	*/
-
 	std::vector<GLubyte> textureData; // declare to make big enough 
 
 	Game* game = nullptr;

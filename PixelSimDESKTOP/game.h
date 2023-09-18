@@ -11,6 +11,7 @@
 #include <ranges>
 
 #include "cell.h"
+#include "interfaceData.h"
 
 class Game
 {
@@ -21,7 +22,7 @@ public:
 	void init(std::vector<GLubyte> texData, int textureW, int textureH, int scale);
 	void reload(std::vector<GLubyte> texData, int textureW, int textureH);
 	void reset(int CellTypeID, bool& resetSim);
-	void update(bool runSim);
+	void update(interfaceData& data);
 	void cellUpdate(Cell& p);
 
 	void createCell(int range, bool flag, int texIdx, int x, int y, int CellTypeID);
@@ -47,7 +48,7 @@ public:
 	inline std::vector<GLubyte> getTextureData() { return textureData; }
 
 private:
-	int texW, texH, cellScale, cellW, cellH;
+	int texW, texH, cellScale, cellW, cellH;	
 	std::vector<Cell> cells;
 	std::vector<GLubyte> textureData;
 	CellType Types[4];
