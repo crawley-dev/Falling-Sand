@@ -38,9 +38,16 @@ void Interface::debugMenu(interfaceData& data)
         //ImGui::InputInt("", &stepFrame, 1, 10); ImGui::SameLine();
         if (ImGui::Button("Step n Frames:")) stepFrame = ImGui::GetFrameCount() + 1;
         if (ImGui::Button("Reset Sim"     )) data.resetSim = true;
-        ImGui::InputInt("Cell Scale Factor", &data.clScaleFactor, 1, 1);
         if (ImGui::Button("Top->Bot")) data.doTopBot = true; ImGui::SameLine();
         if (ImGui::Button("Bot->Top")) data.doTopBot = false;
+        if (ImGui::Button("Decrease Cell Scale")) {
+            data.clScaleFactor--;
+            data.doReload = true;
+        } ImGui::SameLine();
+        if (ImGui::Button("Increase Cell Scale")) {
+            data.clScaleFactor++;
+            data.doReload = true;
+        }
     }
 
     ImGui::SeparatorText("Cell Drawing");
@@ -86,7 +93,6 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::Text("Out of Bounds? %d\n"         , OutofBounds           );
     }
 
-
     ImGui::End();
 }
 
@@ -102,11 +108,11 @@ void Interface::gameWindow(interfaceData& data)
     if (   data.texW + textureOffsetX != (int)ImGui::GetWindowSize().x 
         || data.texH + textureOffsetY != (int)ImGui::GetWindowSize().y) 
     {
-        data.hasSizeChanged = true;
+        data.doReload = true;
         data.texW = ImGui::GetWindowSize().x - textureOffsetX;
         data.texH = ImGui::GetWindowSize().y - textureOffsetY;
     }
-    else data.hasSizeChanged = false;
+    else data.doReload = false;
 
     {
         ImGui::BeginChild("GameRender");

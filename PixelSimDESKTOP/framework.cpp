@@ -115,11 +115,11 @@ void Framework::update()
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
     if (io.MouseDown[0]) mouseDraw();
     if (data.resetSim  ) game->reset(0, data.resetSim);
-    if (data.hasSizeChanged) 
+    if (data.doReload) 
     {
         createTexture();
         game->reload(textureData, data.texW, data.texH, data.clScaleFactor);
-        data.hasSizeChanged = false;
+        data.doReload = false;
     }
     game->update(data);
 
