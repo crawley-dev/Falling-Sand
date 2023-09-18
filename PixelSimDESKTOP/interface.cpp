@@ -38,18 +38,22 @@ void Interface::debugMenu(interfaceData& data)
         //ImGui::InputInt("", &stepFrame, 1, 10); ImGui::SameLine();
         if (ImGui::Button("Step n Frames:")) stepFrame = ImGui::GetFrameCount() + 1;
         if (ImGui::Button("Reset Sim"     )) data.resetSim = true;
-
-        // doesn't currently highlight which type is selected.
-        // dig into deeper logic of ImGui.. ugh
-        if (ImGui::Button("Eraser"  )) data.clDrawType = 0; ImGui::SameLine();
-        if (ImGui::Button("Sand"    )) data.clDrawType = 1; ImGui::SameLine();
-        if (ImGui::Button("Water"   )) data.clDrawType = 2; ImGui::SameLine();
-        if (ImGui::Button("Concrete")) data.clDrawType = 3; //ImGui::SameLine();
+        ImGui::InputInt("Cell Scale Factor", &data.clScaleFactor, 1, 1);
+        if (ImGui::Button("Top->Bot")) data.doTopBot = true; ImGui::SameLine();
+        if (ImGui::Button("Bot->Top")) data.doTopBot = false;
     }
 
     ImGui::SeparatorText("Cell Drawing");
     {
-        ImGui::Text("Draw Type: ");                           ImGui::SameLine();
+        // doesn't currently highlight which type is selected.
+        // dig into deeper logic of ImGui.. ugh
+        ImGui::Text("Draw Type: "    );
+        if (ImGui::Button("Eraser"   )) data.clDrawType  = 0;   ImGui::SameLine();
+        if (ImGui::Button("Sand"     )) data.clDrawType  = 1;   ImGui::SameLine();
+        if (ImGui::Button("Water"    )) data.clDrawType  = 2;   ImGui::SameLine();
+        if (ImGui::Button("Concrete" )) data.clDrawType  = 3;   //ImGui::SameLine();
+
+        ImGui::Text("Draw Shape: "   );                       ImGui::SameLine();
         if (ImGui::Button("Circlular")) data.clDrawShape = 0; ImGui::SameLine();
         if (ImGui::Button("Line"     )) data.clDrawShape = 1; ImGui::SameLine();
         if (ImGui::Button("Square"   )) data.clDrawShape = 2;

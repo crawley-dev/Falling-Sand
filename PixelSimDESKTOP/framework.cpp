@@ -80,7 +80,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     std::cout << std::endl;
 
     // Init Values
-    data = interfaceData(255, 0, 0, 0, 1, 25, 99, 20, 0, 0, 0, false, false, false);
+    data = interfaceData(255, 0, 0, 0, 1, 25, 99, 20, 0, 2, 0, 0, false, false, false, true);
 
     applicationRunning = true;
     return true;
@@ -88,10 +88,6 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
 
 void Framework::handleEvents()
 {
-    // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-    // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
-    // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
-    // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
@@ -115,11 +111,12 @@ void Framework::update()
     data.clDrawSize       = std::clamp(data.clDrawSize      , 1, 1000);
     data.clDrawChance     = std::clamp(data.clDrawChance    , 1,  100);
     data.clColourVariance = std::clamp(data.clColourVariance, 1,  255);
+    data.clScaleFactor    = std::clamp(data.clScaleFactor   , 1,   10);
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
     if (io.MouseDown[0]) mouseDraw();
     if (data.resetSim  ) game->reset(0, data.resetSim);
-    game->update(data.runSim);
+    game->update(data);
 
     textureData = game->getTextureData();
     updateTexture();
@@ -139,7 +136,7 @@ void Framework::render()
     // Placed After ^^ to prevent ImGui HUD overwriting it.
     if (ImGui::GetFrameCount() == 2) {
         createTexture();
-        game->init(textureData, data.texW, data.texH, 1);
+        game->init(textureData, data.texW, data.texH, data.clScaleFactor);
     }
 
     // Loads Texture on init, on Window Size Changed, Prevents Reloading Texture too soon (>120 Frames)
@@ -152,7 +149,7 @@ void Framework::render()
 
         createTexture();
         //game->reload(textureData, data.texW, data.texH);
-        game->init(textureData, data.texW, data.texH, 1);
+        game->init(textureData, data.texW, data.texH, data.clScaleFactor);
         framesSinceReload = ImGui::GetFrameCount();
     }
 
