@@ -17,18 +17,17 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int sc
 
 //	Types[0] = AIR	 = CellType(0, 188, 231, 255, 255, 0	);
 //	Types[0] = AIR	 = CellType(0, 255, 255, 255, 255, 0	);
-	Types[0] = EMPTY	= CellType(0,  44,  44,  44, 255,	0	);
-	Types[1] = SAND		= CellType(1, 245, 215, 176, 255, 1600	);
-	Types[2] = WATER	= CellType(2, 20 , 20 , 255, 125, 997	);
-	Types[3] = CONCRETE = CellType(3, 200, 200, 200, 255, 2000	);
+	Types[0] = EMPTY	= CellType(0,  44,  44,  44, 255,	 0);
+	Types[1] = SAND		= CellType(1, 245, 215, 176, 255, 1600);
+	Types[2] = WATER	= CellType(2, 20 , 20 , 255, 125,  997);
+	Types[3] = CONCRETE = CellType(3, 200, 200, 200, 255, 2000);
 	
 
 	cells.clear(); // once upon a time, it didn't reset cell arr on reload :/ oops
 
 	const int initType = 0;
 	for (int y = 0; y < cellH; ++y)
-		for (int x = 0; x < cellW; ++x) 
-		{
+		for (int x = 0; x < cellW; ++x) {
 			createCell(0, false, cellIdx(x, y), x, y, initType);
 			updatePixel(cells[cellIdx(x, y)]);
 		}
@@ -76,8 +75,7 @@ void Game::reset(int initType, bool& resetSim)
 	cells.clear();
 
 	for (int y = 0; y < cellH; ++y)
-		for (int x = 0; x < cellW; ++x) 
-		{
+		for (int x = 0; x < cellW; ++x) {
 			createCell(0, false, cellIdx(x, y), x, y, initType);
 			updatePixel(cells[cellIdx(x, y)]);
 		}
