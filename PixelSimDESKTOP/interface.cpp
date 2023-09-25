@@ -61,9 +61,10 @@ void Interface::debugMenu(interfaceData& data)
         if (ImGui::Button("Concrete" )) data.clDrawType  = 3;   //ImGui::SameLine();
 
         ImGui::Text("Draw Shape:    ");
-        if (ImGui::Button("Circlular")) data.clDrawShape = 0; ImGui::SameLine();
-        if (ImGui::Button("Line"     )) data.clDrawShape = 1; ImGui::SameLine();
-        if (ImGui::Button("Square"   )) data.clDrawShape = 2;
+        if (ImGui::Button("Circlular"        )) data.clDrawShape = 0; ImGui::SameLine();
+        if (ImGui::Button("Circlular Outline")) data.clDrawShape = 1; ImGui::SameLine();
+        if (ImGui::Button("Line"             )) data.clDrawShape = 2; ImGui::SameLine();
+        if (ImGui::Button("Square"           )) data.clDrawShape = 3;
 
         ImGui::InputInt("Cell Draw Size (px)" , &data.clDrawSize,       1, 10);
         ImGui::InputInt("Cell Draw Chance (%)", &data.clDrawChance,     1, 10);
@@ -84,6 +85,7 @@ void Interface::debugMenu(interfaceData& data)
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
         ImGui::Text("Application framecount: %d\n", ImGui::GetFrameCount());
+        ImGui::Text("scaleFactor: %d\n"           , data.clScaleFactor    );
         ImGui::Text("textureID:%d\n"              , data.texID            );
         ImGui::Text("Reloaded Texture: %d Times\n", data.texReloadCount   );
         ImGui::Text("textureWidth: %d\n"          , data.texW             );
@@ -91,6 +93,7 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::Text("Mouse X: %d\n"               , data.mousePosX        );
         ImGui::Text("Mouse Y: %d\n"               , data.mousePosY        );
         ImGui::Text("Out of Bounds? %d\n"         , OutofBounds           );
+
     }
 
     ImGui::End();

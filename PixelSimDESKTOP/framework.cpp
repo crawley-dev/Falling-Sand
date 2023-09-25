@@ -80,8 +80,9 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     std::cout << std::endl;
 
     // Init Values
-    data = interfaceData(255, 0, 0, 0, 1, 25, 99, 10, 0, 2, 0, 0, false, false, false, true);
-
+   // data = interfaceData(255, 0, 0, 0, 1, 25, 99, 10, 0, 2, 0, 0, 0, false, false, false, true);
+    data = interfaceData();
+    
     applicationRunning = true;
     return true;
 }
@@ -114,14 +115,14 @@ void Framework::update()
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
     if (io.MouseDown[0]) mouseDraw();
-    if (data.resetSim  ) game->reset(0, data.resetSim);
+    if (data.resetSim  ) game->reset(data.resetSim);
     if (data.doReload) 
     {
         createTexture();
         game->reload(textureData, data.texW, data.texH, data.clScaleFactor);
         data.doReload = false;
     }
-    game->update(data);
+    game->update(data); // 512,120
 
 
     textureData = game->getTextureData();

@@ -2,9 +2,9 @@
 
 struct CellType
 {
-	int id, r, g, b, a, d;
+	int id, r, g, b, a, d, tV;
 	
-	CellType(int ID, int RED, int GREEN, int BLUE, int ALPHA, int DENSITY)
+	CellType(int ID, int RED, int GREEN, int BLUE, int ALPHA, int DENSITY, int TERMINAL_VELOCITY)
 	{
 		id = ID;
 		r = RED;
@@ -12,6 +12,7 @@ struct CellType
 		b = BLUE;
 		a = ALPHA;
 		d = DENSITY;
+		tV = TERMINAL_VELOCITY;
 	}
 	CellType() = default;
 };
@@ -19,15 +20,16 @@ struct CellType
 struct Cell
 {
 	bool flag;
-	int id, x, y;
+	int id, x, y, v;
 	CellType type;
 
-	Cell(bool HAS_MOVED_FLAG, int ID, int X, int Y, CellType CELL_TYPE)
+	Cell(int ID, int X, int Y, int VELOCITY, CellType CELL_TYPE, bool HAS_MOVED_FLAG)
 	{
 		flag = HAS_MOVED_FLAG;
 		id = ID;
 		x = X;
 		y = Y;
+		v = VELOCITY;
 		type = CELL_TYPE;
 	}
 	Cell() = default;
