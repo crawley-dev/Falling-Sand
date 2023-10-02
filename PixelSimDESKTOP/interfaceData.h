@@ -2,10 +2,10 @@
 
 struct interfaceData
 {
-	GLuint texID;
-	int texW, texH, texReloadCount, clDrawType, clDrawSize, clDrawChance, clColourVariance, clDrawShape, 
-		clScaleFactor, mousePosX, mousePosY;
-	bool runSim, resetSim, doReload, doTopBot;
+	GLuint textureID;
+	int textureWidth, textureHeight, textureReloadCount, drawType, drawSize, drawChance, drawColourVariance, drawShape, 
+		scaleFactor, mouseX, mouseY;
+	bool runSim, resetSim, reloadGame, scanTopDown;
 
 #if false // don't even need this lul
 	interfaceData(GLuint TEXTURE_ID, int TEXTURE_WIDTH, int TEXTURE_HEIGHT, int TEXTURE_RELOADED_COUNT, 
@@ -14,16 +14,16 @@ struct interfaceData
 				  bool RUN_SIM, bool RESET_SIM, bool HAS_SIZE_CHANGED)
 	{
 		texID = TEXTURE_ID;
-		texW = TEXTURE_WIDTH;
-		texH = TEXTURE_HEIGHT;
-		texReloadCount = TEXTURE_RELOADED_COUNT;
-		clDrawType = CELL_DRAW_TYPE;
-		clDrawSize = CELL_DRAW_SIZE;
-		clDrawChance = CELL_DRAW_CHANCE;
-		clColourVariance = CELL_COLOUR_VARIANCE;
-		clDrawShape = CELL_DRAW_SHAPE;
-		mousePosX = MOUSE_POS_X;
-		mousePosY = MOUSE_POS_Y;
+		textureWidth = TEXTURE_WIDTH;
+		textureHeight = TEXTURE_HEIGHT;
+		textureReloadCount = TEXTURE_RELOADED_COUNT;
+		drawType = CELL_DRAW_TYPE;
+		drawSize = CELL_DRAW_SIZE;
+		drawChance = CELL_DRAW_CHANCE;
+		drawColourVariance = CELL_COLOUR_VARIANCE;
+		drawShape = CELL_DRAW_SHAPE;
+		mouseX = MOUSE_POS_X;
+		mouseY = MOUSE_POS_Y;
 		
 		runSim = RUN_SIM;
 		hasSizeChanged = HAS_SIZE_CHANGED;

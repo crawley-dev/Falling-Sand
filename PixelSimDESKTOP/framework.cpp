@@ -106,20 +106,20 @@ void Framework::update()
     interface->main();
     interface->debugMenu(data);
 
-    data.clDrawSize      += (int)io.MouseWheel;
-    data.clDrawSize       = std::clamp(data.clDrawSize      , 1, 1000);
-    data.clDrawChance     = std::clamp(data.clDrawChance    , 1,  100);
-    data.clColourVariance = std::clamp(data.clColourVariance, 1,  255);
-    data.clScaleFactor    = std::clamp(data.clScaleFactor   , 1,   10);
+    data.drawSize      += (int)io.MouseWheel;
+    data.drawSize       = std::clamp(data.drawSize      , 1, 1000);
+    data.drawChance     = std::clamp(data.drawChance    , 1,  100);
+    data.drawColourVariance = std::clamp(data.drawColourVariance, 1,  255);
+    data.scaleFactor    = std::clamp(data.scaleFactor   , 1,   10);
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
     if (io.MouseDown[0]) mouseDraw();
     if (data.resetSim  ) game->reset(0, data.resetSim);
-    if (data.doReload) 
+    if (data.reloadGame)
     {
         createTexture();
-        game->reload(textureData, data.texW, data.texH, data.clScaleFactor);
-        data.doReload = false;
+        game->reload(textureData, data.textureWidth, data.textureHeight, data.scaleFactor);
+        data.reloadGame = false;
     }
     game->update(data);
 
@@ -142,7 +142,7 @@ void Framework::render()
     // Placed After ^^ to prevent ImGui HUD overwriting it.
     if (ImGui::GetFrameCount() == 2) {
         createTexture();
-        game->init(textureData, data.texW, data.texH, data.clScaleFactor);
+        game->init(textureData, data.textureWidth, data.textureHeight, data.scaleFactor);
     }
 
     // Handling Multiple Viewports && Swaps between 2 texture buffers for smoother rendering
@@ -164,7 +164,7 @@ void Framework::clean()
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    glDeleteTextures(1, &data.texID);
+    glDeleteTextures(1, &data.textureID);
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
@@ -175,28 +175,28 @@ void Framework::clean()
 void Framework::createTexture()
 {
     // deletes excess textures.
-    if (data.texID >= 2) {
-        glDeleteTextures(1, &data.texID);
-        data.texReloadCount++;
+    if (data.textureID >= 2) {
+        glDeleteTextures(1, &data.textureID);
+        data.textureReloadCount++;
     }
 
-    glGenTextures(1, &data.texID);
-    glBindTexture(GL_TEXTURE_2D, data.texID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, data.texW, data.texH, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glGenTextures(1, &data.textureID);
+    glBindTexture(GL_TEXTURE_2D, data.textureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, data.textureWidth, data.textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);   // GL_LINEAR --> GL_NEAREST
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // FASTER but produces blocky, pixelated texture (not noticeable-ish)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);// GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);// GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
 
-    textureData = std::vector<GLubyte>(data.texW * data.texH * 4, 255);
+    textureData = std::vector<GLubyte>(data.textureWidth * data.textureHeight * 4, 255);
 
     updateTexture();
 }
 
 void Framework::updateTexture() 
 { 
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.texW, data.texH, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data()); 
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.textureWidth, data.textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data());
 }
 
 void Framework::mouseDraw()
@@ -211,7 +211,7 @@ void Framework::mouseDraw()
     } 
     
     // Mouse pos updated in interface->debugMenu() each frame. called before mouseDraw event so correct.
-    game->mouseDraw(data.mousePosX, data.mousePosY, data.clDrawSize, data.clDrawChance, data.clDrawType, data.clDrawShape, data.clColourVariance);
+    game->mouseDraw(data.mouseX, data.mouseY, data.drawSize, data.drawChance, data.drawType, data.drawShape, data.drawColourVariance);
 }
 
 #if false
@@ -221,7 +221,7 @@ void Framework::mouseDraw()
     //if (data.hasSizeChanged && ImGui::GetFrameCount() - framesSinceReload > MIN_FRAMES_TIL_RELOAD)
     //{
     //    createTexture();
-    //    game->reload(textureData, data.texW, data.texH, data.clScaleFactor);
+    //    game->reload(textureData, data.textureWidth, data.textureHeight, data.scaleFactor);
     //    framesSinceReload = ImGui::GetFrameCount();
     //}
 #endif

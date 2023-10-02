@@ -19,36 +19,33 @@ public:
 	Game();
 	~Game();
 
-	void init(std::vector<GLubyte> texData, int textureW, int textureH, int scale);
-	void reload(std::vector<GLubyte> texData, int textureW, int textureH, int newScaleFactor);
-	void reset(int CellTypeID, bool& resetSim);
+	void init(std::vector<GLubyte> textureData, int textureWidth, int textureHeight, int scale);
+	void reload(std::vector<GLubyte> textureData, int textureWidth, int textureHeight, int newScaleFactor);
+	void reset(int cellTypeID, bool& resetSim);
 	void update(interfaceData& data);
 	void cellUpdate(Cell& p);
 
-	void createCell(int range, bool flag, int texIdx, int x, int y, int CellTypeID);
+	void createCell(int range, bool flag, int textureIdx, int x, int y, int cellTypeID);
 	void updatePixel(int x, int y, int r, int g, int b, int a);
 	void updatePixel(Cell& c);
 	
-	CellType varyPixelColour(int range, int CellTypeID);
-	void mouseDraw(int x, int y, int radius, int chance, int CellTypeID, int CellDrawShape, int range);
+	CellType varyPixelColour(int range, int cellTypeID);
+	void mouseDraw(int x, int y, int radius, int chance, int cellTypeID, int cellDrawShape, int range);
 
-	void changeCellType(int x, int y, int CellTypeID, int range);
-	//void swapCells(int x1, int y1, int x2, int y2);
+	void changeCellType(int x, int y, int cellTypeID, int range);
 	void swapCells(Cell& p1, Cell& p2);
-	//bool checkDensity(int x1, int y1, int x2, int y2);
-	bool checkDensity(Cell& p1, int delX, int delY);
+	bool checkDensity(Cell& p1, int deltaX, int deltaY);
 
 	void updateSand(Cell& c);
 	void updateWater(Cell& c);
 
-	inline bool outOfBounds(int x, int y) { return (x >= cellW || x < 0 || y >= cellH || y < 0); }
-	//inline int cellIdx(int x, int y) { return (outOfBounds(x,y)) ? (y * texW) + x : 0; }
-	inline int cellIdx(int x, int y) { return (y * cellW) + x; }
-	inline int texIdx(int x, int y) { return 4 * (y * texW + x); }
+	inline bool outOfBounds(int x, int y) { return (x >= cellWidth || x < 0 || y >= cellHeight || y < 0); }
+	inline int cellIdx(int x, int y) { return (y * cellWidth) + x; }
+	inline int texIdx(int x, int y) { return 4 * (y * textureWidth + x); }
 	inline std::vector<GLubyte> getTextureData() { return textureData; }
 
 private:
-	int texW, texH, cellScale, cellW, cellH;	
+	int textureWidth, textureHeight, cellScale, cellWidth, cellHeight;	
 	std::vector<Cell> cells;
 	std::vector<GLubyte> textureData;
 	CellType Types[4];
