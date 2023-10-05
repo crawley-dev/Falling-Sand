@@ -13,9 +13,10 @@ struct interfaceData
 	int clColourVariance = 10;
 	int clScaleFactor	 =	2;
 
-	bool runSim   = false;
-	bool resetSim = false;
-	bool doReload = false;
-	bool doTopBot = true;
+	bool runSim			= false;
+	bool resetSim		= false;
+	bool doReload		= false;
+	bool doTopBot		= true;
+	bool playGameOfLife = false;
 
 };

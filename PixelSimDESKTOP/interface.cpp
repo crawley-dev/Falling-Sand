@@ -31,15 +31,17 @@ void Interface::debugMenu(interfaceData& data)
         if (stepFrame == ImGui::GetFrameCount()) data.runSim = true;
         else if (stepFrame + 1 == ImGui::GetFrameCount()) data.runSim = false;
 
-        ImGui::Checkbox("Toggle Demo Window" , &showDemoWindow);         
-        ImGui::Checkbox("Run Simulation Game", &data.runSim   );  //ImGui::SameLine();
+        ImGui::Checkbox("Toggle Demo Window"        , &showDemoWindow     );         
+        ImGui::Checkbox("Run Simulation Game"       , &data.runSim        );  //ImGui::SameLine();
+        ImGui::Checkbox("Play Conway's Game of Life", &data.playGameOfLife);
 
         // doesn't work as ImGui framecount is independent of the simulation.
         //ImGui::InputInt("", &stepFrame, 1, 10); ImGui::SameLine();
         if (ImGui::Button("Step n Frames:")) stepFrame = ImGui::GetFrameCount() + 1;
         if (ImGui::Button("Reset Sim"     )) data.resetSim = true;
-        if (ImGui::Button("Top->Bot")) data.doTopBot = true; ImGui::SameLine();
-        if (ImGui::Button("Bot->Top")) data.doTopBot = false;
+        if (ImGui::Button("Scan Top->Bot" )) data.doTopBot = true; ImGui::SameLine();
+        if (ImGui::Button("Scan Bot->Top" )) data.doTopBot = false;
+
         if (ImGui::Button("Decrease Cell Scale")) {
             data.clScaleFactor--;
             data.doReload = true;
@@ -55,10 +57,16 @@ void Interface::debugMenu(interfaceData& data)
         // doesn't currently highlight which type is selected.
         // dig into deeper logic of ImGui.. ugh
         ImGui::Text("Draw Type: "    );
-        if (ImGui::Button("Eraser"   )) data.clDrawType  = 0;   ImGui::SameLine();
-        if (ImGui::Button("Sand"     )) data.clDrawType  = 1;   ImGui::SameLine();
-        if (ImGui::Button("Water"    )) data.clDrawType  = 2;   ImGui::SameLine();
-        if (ImGui::Button("Concrete" )) data.clDrawType  = 3;   //ImGui::SameLine();
+        
+        if (data.playGameOfLife) {
+            if (ImGui::Button("Dead Cell" )) data.clDrawType = 0; ImGui::SameLine();
+            if (ImGui::Button("Alive Cell")) data.clDrawType = 4; //ImGui::SameLine();
+        } else {
+            if (ImGui::Button("Eraser"   )) data.clDrawType  = 0;   ImGui::SameLine();
+            if (ImGui::Button("Sand"     )) data.clDrawType  = 1;   ImGui::SameLine();
+            if (ImGui::Button("Water"    )) data.clDrawType  = 2;   ImGui::SameLine();
+            if (ImGui::Button("Concrete" )) data.clDrawType  = 3;   //ImGui::SameLine();
+        }
 
         ImGui::Text("Draw Shape:    ");
         if (ImGui::Button("Circlular"        )) data.clDrawShape = 0; ImGui::SameLine();

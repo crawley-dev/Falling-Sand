@@ -1,0 +1,46 @@
+	std::vector<ImVec2> freeCells;
+	for (int radius = 1; radius <= c.v; radius++)
+	{
+		int tX = 0;
+		int tY = radius;
+		int d = 3 - 2 * radius;
+		freeCells.push_back(ImVec2(c.x + tX, c.y + tY));
+
+
+		while (tY >= tX)
+		{
+			tX++;
+			if (d > 0) {
+				tY--;
+				d = d + 4 * (tX - tY) + 10;
+			}
+			else d = d + 4 * tX + 6;
+			if (checkDensity(c, tX, tY)) { // BR
+				freeCells.push_back(ImVec2(c.x + tX, c.y + tY));
+				//printf("idx: (%d,%d)\n", c.x + tX, c.y + tY);
+
+				break;
+			}
+			if (checkDensity(c, -tX, tY)) { // BL
+				freeCells.push_back(ImVec2(c.x - tX, c.y + tY));
+				//printf("idx: (%d,%d)\n", c.x - tX, c.y + tY);
+
+				break;
+			}
+			//changeCellType(xc + x, yc + y, PixelTypeID, 0); // BL
+			//changeCellType(xc - x, yc + y, PixelTypeID, 0); // BR
+		}
+
+	}
+	
+	ImVec2 cell(-1,-1);
+	for (auto idx : freeCells)
+	{
+		if (cell.y < idx.y)
+			cell = idx;
+		//printf("idx: (%d,%d)\n", idx.x, idx.y);
+	}
+	//Cell& c2 = cells[cellIdx(freeCells.back().x, freeCells.back().y)];
+	if (outOfBounds(cell.x, cell.y)) return;
+	Cell& c2 = cells[cellIdx(cell.x, cell.y)];
+	swapCells(c, c2);

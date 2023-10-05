@@ -21,13 +21,14 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int sc
 	Types[1] = SAND		= CellType(1, 245, 215, 176, 255, 1600, 4);
 	Types[2] = WATER	= CellType(2, 20 , 20 , 255, 125,  997, 4);
 	Types[3] = CONCRETE = CellType(3, 200, 200, 200, 255, 2000, 4);
+	Types[4] = ALIVE	= CellType(4, 255, 255, 255, 255,    0, 0);
 	
 
 	cells.clear(); // once upon a time, it didn't reset cell arr on reload :/ oops
 
 	for (int y = 0; y < cellH; ++y)
 		for (int x = 0; x < cellW; ++x) {
-			cells.push_back(Cell(cellIdx(x, y), x, y, 1, EMPTY, false));
+			cells.push_back(Cell(cellIdx(x, y), x, y, 5, EMPTY, false));
 			updatePixel(cells[cellIdx(x,y)]);
 		}
 
@@ -69,7 +70,7 @@ void Game::reset(bool& resetSim)
 
 	for (int y = 0; y < cellH; ++y)
 		for (int x = 0; x < cellW; ++x) {
-			cells.push_back(Cell(cellIdx(x, y), x, y, 1, EMPTY, false));
+			cells.push_back(Cell(cellIdx(x, y), x, y, 5, EMPTY, false));
 			updatePixel(cells[cellIdx(x,y)]);
 		}
 	resetSim = false;
@@ -81,9 +82,11 @@ void Game::update(interfaceData& data)
 	//if (data.runSim) mouseDraw(cellW, cellH, (data.frame % cellH) -1 , 100, 0, 1, 0);
 	//if (data.runSim) mouseDraw(cellW, cellH,       data.frame % cellH, 100, 1, 1, 0);
 
-	if (data.doTopBot) {
+	if (data.playGameOfLife) gameOfLifeUpdate(data);
+	else if (data.doTopBot) {
 		for (Cell& c : cells) {
 			if (data.runSim) {
+				//if (c.type.id == ALIVE.id) c.type.id = EMPTY.id;
 				cellUpdate(c);
 				c.flag = false; // to this day (25.9.23) i don't know why i can do this. 
 			}
@@ -95,7 +98,8 @@ void Game::update(interfaceData& data)
 		for (int y = cellH - 1; y >= 0; --y)	
 			for (int x = cellW - 1; x >= 0; --x) {
 				Cell& c = cells[cellIdx(x,y)];
-		
+				//if (c.type.id == ALIVE.id) c.type.id = EMPTY.id;
+
 				if (data.runSim) cellUpdate(c);
 				updatePixel(c);
 				c.flag = false;
@@ -103,6 +107,41 @@ void Game::update(interfaceData& data)
 			}
 	}
 	if (data.runSim) data.frame++;
+}
+
+void Game::gameOfLifeUpdate(interfaceData& data)
+{
+	std::vector<Cell> nextFrameCells = cells;
+	for (int y = 0; y < cellH - 1; y++)
+		for (int x = 0; x < cellW - 1; x++) {
+			Cell& c = nextFrameCells[cellIdx(x, y)];
+			//if (c.type.id != EMPTY.id || c.type.id != ALIVE.id) c.type.id = EMPTY.id;
+
+			// 100% faster to just compare against value == TEST.id instead of accessing that memory.
+			if (!data.runSim) {
+				updatePixel(c);
+				continue;
+			}
+
+
+			int adjAlive = 0;
+			for (int i = -1; i <= 1; i++)
+				for (int j = -1; j <= 1; j++) {
+					if (outOfBounds(x + i, y + j) || i == 0 && j == 0) continue;
+					if (cells[cellIdx(x + i, y + j)].type.id == ALIVE.id) adjAlive++;
+				}
+
+			if (c.type.id == ALIVE.id) {
+				if (adjAlive < 2) c.type = EMPTY;
+				else if (adjAlive >= 4) c.type = EMPTY;
+				else c.type = ALIVE;
+			}
+			else if (c.type.id == EMPTY.id)
+				if (adjAlive == 3) c.type = ALIVE;
+
+			updatePixel(c);
+		}
+	cells = nextFrameCells;
 }
 
 void Game::cellUpdate(Cell& c)
@@ -141,12 +180,12 @@ void Game::drawCircle(int xc, int yc, int x, int y, int PixelTypeID)
 {
 	changeCellType(xc + x, yc + y, PixelTypeID, 0); // BL
 	changeCellType(xc - x, yc + y, PixelTypeID, 0); // BR
-	//changeCellType(xc + x, yc - y, PixelTypeID, 0);
-	//changeCellType(xc - x, yc - y, PixelTypeID, 0);
-	//changeCellType(xc + y, yc + x, PixelTypeID, 0);
-	//changeCellType(xc - y, yc + x, PixelTypeID, 0);
-	//changeCellType(xc + y, yc - x, PixelTypeID, 0);
-	//changeCellType(xc - y, yc - x, PixelTypeID, 0);
+	changeCellType(xc + x, yc - y, PixelTypeID, 0);
+	changeCellType(xc - x, yc - y, PixelTypeID, 0);
+	changeCellType(xc + y, yc + x, PixelTypeID, 0);
+	changeCellType(xc - y, yc + x, PixelTypeID, 0);
+	changeCellType(xc + y, yc - x, PixelTypeID, 0);
+	changeCellType(xc - y, yc - x, PixelTypeID, 0);
 }
 
 void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int CellDrawShape, int range)
@@ -156,7 +195,9 @@ void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int
 
 	if (outOfBounds(x, y)) return;
 
-	if (CellDrawShape == 0) {
+
+	if (radius == 1) changeCellType(x, y, CellTypeID, range);
+	else if (CellDrawShape == 0) {
 		int r2 = radius * radius;
 		int area = r2 << 2;
 		int rr = radius << 1;
@@ -174,8 +215,7 @@ void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int
 		int tY = radius;
 		int d = 3 - 2 * radius;
 		drawCircle(x, y, tX, tY, CellTypeID);
-		while (tY >= tX)
-		{
+		while (tY >= tX) {
 			tX++;
 			if (d > 0){
 				tY--;
@@ -222,8 +262,8 @@ bool Game::checkDensity(Cell& c1, int delX, int delY)
 {
 	if (outOfBounds(c1.x + delX, c1.y + delY)) return false;
 	Cell& c2 = cells[cellIdx(c1.x + delX, c1.y + delY)];
-
 	if (c1.type.d <= c2.type.d) return false;
+
 	swapCells(c1, c2);
 
 	return true;
@@ -235,18 +275,14 @@ bool Game::checkDensity(Cell& c1, int delX, int delY)
 // can't send each rand to gpu each time, want to group them together..
 void Game::updateSand(Cell& c)
 {
-	//for (int dY = 0; dY < c.v; dY++)
-	//	for (int dX = 0; dX < c.v; dX++) {
-	//	
-	//	}
-	
-	
+#if 1
 	if		(checkDensity(c,  0, 1)) return;
 	else if (checkDensity(c,  1, 1)) return;
 	else if (checkDensity(c, -1, 1)) return;
-	
-		//c.v = 1; // didnt move so reset velocity. 
-		//++c.v = std::clamp(c.v, 0, c.type.tV); // this looks proper autistic
+#else 
+	//c.v = 1; // didnt move so reset velocity. 
+	//++c.v = std::clamp(c.v, 0, c.type.tV); // this looks proper autistic
+#endif
 }
 
 void Game::updateWater(Cell& c)

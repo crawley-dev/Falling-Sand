@@ -28,6 +28,7 @@ public:
 	void update(interfaceData& data);
 
 	void cellUpdate(Cell& p);
+	void gameOfLifeUpdate(interfaceData& data);
 	void updatePixel(Cell& c);
 	
 	CellType varyPixelColour(int range, int CellTypeID);
@@ -62,6 +63,6 @@ private:
 	int texW, texH, cellScale, cellW, cellH;	
 	std::vector<Cell> cells;
 	std::vector<GLubyte> textureData;
-	CellType Types[4];
-	CellType EMPTY, SAND, WATER, CONCRETE;
+	CellType Types[5];
+	CellType EMPTY, SAND, WATER, CONCRETE, ALIVE;
 };
