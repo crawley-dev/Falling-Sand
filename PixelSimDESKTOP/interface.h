@@ -25,4 +25,5 @@ private:
     bool showDemoWindow = true;
     float frameRate = 0;
     ImGuiIO& io = ImGui::GetIO();
+    //TextureData texture;
 };

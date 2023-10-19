@@ -79,9 +79,9 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     std::cout << "Setup Complete! .." << std::endl;
     std::cout << std::endl;
 
-    // Init Values
-   // data = interfaceData(255, 0, 0, 0, 1, 25, 99, 10, 0, 2, 0, 0, 0, false, false, false, true);
     data = interfaceData();
+    data.textures.push_back(TextureData(GAME_TEXTURE_IDX, 0, 0, {}));
+    data.textures.push_back(TextureData(BACKGROUND_TEXTURE_IDX, 0, 0, {}));
     
     applicationRunning = true;
     return true;
@@ -102,32 +102,34 @@ void Framework::handleEvents()
 
 void Framework::update()
 {
-    ImGuiIO& io = ImGui::GetIO();
-    
     interface->main();
     interface->debugMenu(data);
 
-    data.clDrawSize      += (int)io.MouseWheel;
-    data.clDrawSize       = std::clamp(data.clDrawSize      , 1, 1000);
-    data.clDrawChance     = std::clamp(data.clDrawChance    , 1,  100);
-    data.clColourVariance = std::clamp(data.clColourVariance, 1,  255);
-    data.clScaleFactor    = std::clamp(data.clScaleFactor   , 1,   10);
+    if (ImGui::GetFrameCount() < 2) return;
+    ImGuiIO& io = ImGui::GetIO();
+    TextureData& texture = data.textures[GAME_TEXTURE_IDX];
+
+    data.drawSize           += (int)io.MouseWheel;
+    data.drawSize           = std::clamp(data.drawSize          , 1,1000);
+    data.drawChance         = std::clamp(data.drawChance        , 1, 100);
+    data.drawColourVariance = std::clamp(data.drawColourVariance, 1, 255);
+    data.scaleFactor        = std::clamp(data.scaleFactor       , 1,  10);
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
     if (io.MouseDown[0]) mouseDraw();
-    if (data.resetSim  ) game->reset(data.resetSim);
-    if (data.doReload) 
-    {
-        createTexture();
-        game->reload(textureData, data.texW, data.texH, data.clScaleFactor);
-        data.doReload = false;
+    if (data.resetSim) game->reset(data.resetSim);
+    if (data.reloadGame) {
+        reloadTextures();
+        game->reload(texture.data, texture.width, texture.height, data.scaleFactor);
+        data.reloadGame = false;
     }
-    game->update(data); // 512,120
+    game->update(data);
 
+    texture.data = game->getTextureData();
+    //for (int i = 0; i < data.textures.size() - 1; i++)
+       // updateTexture(i);
+    updateTexture(GAME_TEXTURE_IDX);
 
-    textureData = game->getTextureData();
-    updateTexture();
-    
     interface->gameWindow(data);
 }
 
@@ -140,10 +142,12 @@ void Framework::render()
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    // Placed After ^^ to prevent ImGui HUD overwriting it.
+    // Placed After ImGui::Render() to prevent ImGui HUD overwriting my textures.
     if (ImGui::GetFrameCount() == 2) {
-        createTexture();
-        game->init(textureData, data.texW, data.texH, data.clScaleFactor);
+        createTexture(GAME_TEXTURE_IDX);
+        createTexture(BACKGROUND_TEXTURE_IDX);
+        TextureData texture = data.textures[GAME_TEXTURE_IDX];
+        game->init(texture.data, texture.width, texture.height, data.scaleFactor);
     }
 
     // Handling Multiple Viewports && Swaps between 2 texture buffers for smoother rendering
@@ -165,7 +169,12 @@ void Framework::clean()
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    glDeleteTextures(1, &data.texID);
+    //glDeleteTextures(1, &data.textures.id);
+
+    // delete all existing textures.
+    for (TextureData& tex : data.textures)
+        glDeleteTextures(1, &tex.id);
+
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
@@ -173,31 +182,40 @@ void Framework::clean()
     std::cout << "Game Cleaned! .." << std::endl;
 }
 
-void Framework::createTexture()
+void Framework::createTexture(int id)
 {
-    // deletes excess textures.
-    if (data.texID >= 2) {
-        glDeleteTextures(1, &data.texID);
-        data.texReloadCount++;
-    }
+    // basically just reloading textures..
+    TextureData& texture = data.textures[id];
 
-    glGenTextures(1, &data.texID);
-    glBindTexture(GL_TEXTURE_2D, data.texID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, data.texW, data.texH, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glGenTextures(1, &texture.id);
+    glBindTexture(GL_TEXTURE_2D, texture.id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);   // GL_LINEAR --> GL_NEAREST
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // FASTER but produces blocky, pixelated texture (not noticeable-ish)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);// GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);// GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
 
-    textureData = std::vector<GLubyte>(data.texW * data.texH * 4, 255);
+    texture.data = std::vector<GLubyte>(texture.width * texture.height * 4, 255);
 
-    updateTexture();
+    updateTexture(id);
 }
 
-void Framework::updateTexture() 
+void Framework::reloadTextures()
+{
+    // texture id 0 & 1 are taken. My textures start indexing at 2
+    for (int i = 0; i < data.textures.size() - 1; i++) {
+        glDeleteTextures(1, &data.textures[i].id); // delete old textures
+        createTexture(i); // create new texture.
+        updateTexture(i); // push to renderer
+    }
+    data.texReloadCount++;
+}
+
+void Framework::updateTexture(int id)
 { 
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.texW, data.texH, GL_RGBA, GL_UNSIGNED_BYTE, textureData.data()); 
+    TextureData texture = data.textures[id];
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texture.width, texture.height, GL_RGBA, GL_UNSIGNED_BYTE, texture.data.data()); // data.data, weird..
 }
 
 void Framework::mouseDraw()
@@ -212,17 +230,5 @@ void Framework::mouseDraw()
     } 
     
     // Mouse pos updated in interface->debugMenu() each frame. called before mouseDraw event so correct.
-    game->mouseDraw(data.mousePosX, data.mousePosY, data.clDrawSize, data.clDrawChance, data.clDrawType, data.clDrawShape, data.clColourVariance);
+    game->mouseDraw(data.mouseX, data.mouseY, data.drawSize, data.drawChance, data.drawType, data.drawShape, data.drawColourVariance);
 }
-
-#if false
-    // Loads Texture on init, on Window Size Changed, Prevents Reloading Texture too soon (>120 Frames)
-    //static int framesSinceReload = 0;
-    //const int MIN_FRAMES_TIL_RELOAD = 10;
-    //if (data.hasSizeChanged && ImGui::GetFrameCount() - framesSinceReload > MIN_FRAMES_TIL_RELOAD)
-    //{
-    //    createTexture();
-    //    game->reload(textureData, data.texW, data.texH, data.clScaleFactor);
-    //    framesSinceReload = ImGui::GetFrameCount();
-    //}
-#endif

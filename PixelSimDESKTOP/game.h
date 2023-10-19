@@ -38,7 +38,7 @@ public:
 	void swapCells(Cell& p1, Cell& p2);
 	bool checkDensity(Cell& p1, int delX, int delY);
 
-	void drawCircle(int xc, int yc, int x, int y, int PixelTypeID);
+	void drawCircle(int xc, int yc, int x, int y, int PixelTypeID, int range);
 
 	void updateSand(Cell& c);
 	void updateWater(Cell& c);

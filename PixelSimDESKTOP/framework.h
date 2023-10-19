@@ -24,10 +24,10 @@ class Game;
 class Framework
 {
 public:
-	Framework();		// Constructor
+	Framework();	// Constructor
 	~Framework();	// Deconstructor
 
-	// Application Abstraction Functions
+	// Application Cycle Abstraction
 	bool init(const char* title, int xpos, int ypos, int width, int height);
 	void handleEvents();
 	void update();
@@ -35,8 +35,9 @@ public:
 	void clean();
 
 	// Internal Functions
-	void createTexture();
-	void updateTexture();
+	void createTexture(int id);
+	void reloadTextures();
+	void updateTexture(int id);
 	void mouseDraw();
 
 	inline bool running() { return applicationRunning; }
@@ -44,7 +45,6 @@ public:
 private:
 	interfaceData data;
 	bool applicationRunning = false;
-	std::vector<GLubyte> textureData; // declare to make big enough 
 
 	Game* game = nullptr;
 	Interface* interface = nullptr;

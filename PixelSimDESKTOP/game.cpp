@@ -32,13 +32,7 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int sc
 			updatePixel(cells[cellIdx(x,y)]);
 		}
 
-	//printf("texureData Size: %d\n", (int)textureData.size());
-	//printf("cells Size: %d\n", (int)cells.size());
-	//printf("tex width: %d\n", texW);
-	//printf("tex height: %d\n", texH);
-	//printf("cell width: %d\n", cellW);
-	//printf("cell height: %d\n", cellH);
-	//printf("\n");
+
 }
 
 void Game::reload(std::vector<GLubyte> newTexData, int newTexW, int newTexH, int newScaleFactor)
@@ -47,7 +41,7 @@ void Game::reload(std::vector<GLubyte> newTexData, int newTexW, int newTexH, int
 	int newCellH = newTexH / newScaleFactor;
 	std::vector<Cell> newCells;
 
-	for (int y = 0; y < newCellH; ++y) 
+	for (int y = 0; y < newCellH; ++y)
 		for (int x = 0; x < newCellW; ++x) {
 			if (outOfBounds(x, y)) 
 				newCells.push_back(Cell(cellIdx(x, y), x, y, 1, EMPTY, false));
@@ -83,7 +77,7 @@ void Game::update(interfaceData& data)
 	//if (data.runSim) mouseDraw(cellW, cellH,       data.frame % cellH, 100, 1, 1, 0);
 
 	if (data.playGameOfLife) gameOfLifeUpdate(data);
-	else if (data.doTopBot) {
+	else if (data.scanTopDown) {
 		for (Cell& c : cells) {
 			if (data.runSim) {
 				//if (c.type.id == ALIVE.id) c.type.id = EMPTY.id;
@@ -176,16 +170,16 @@ CellType Game::varyPixelColour(int range, int PixelTypeID)
 	return material;
 }
 
-void Game::drawCircle(int xc, int yc, int x, int y, int PixelTypeID)
+void Game::drawCircle(int xc, int yc, int x, int y, int PixelTypeID, int range)
 {
-	changeCellType(xc + x, yc + y, PixelTypeID, 0); // BL
-	changeCellType(xc - x, yc + y, PixelTypeID, 0); // BR
-	changeCellType(xc + x, yc - y, PixelTypeID, 0);
-	changeCellType(xc - x, yc - y, PixelTypeID, 0);
-	changeCellType(xc + y, yc + x, PixelTypeID, 0);
-	changeCellType(xc - y, yc + x, PixelTypeID, 0);
-	changeCellType(xc + y, yc - x, PixelTypeID, 0);
-	changeCellType(xc - y, yc - x, PixelTypeID, 0);
+	changeCellType(xc + x, yc + y, PixelTypeID, range); // BL
+	changeCellType(xc - x, yc + y, PixelTypeID, range); // BR
+	changeCellType(xc + x, yc - y, PixelTypeID, range);
+	changeCellType(xc - x, yc - y, PixelTypeID, range);
+	changeCellType(xc + y, yc + x, PixelTypeID, range);
+	changeCellType(xc - y, yc + x, PixelTypeID, range);
+	changeCellType(xc + y, yc - x, PixelTypeID, range);
+	changeCellType(xc - y, yc - x, PixelTypeID, range);
 }
 
 void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int CellDrawShape, int range)
@@ -214,7 +208,7 @@ void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int
 		int tX = 0;
 		int tY = radius;
 		int d = 3 - 2 * radius;
-		drawCircle(x, y, tX, tY, CellTypeID);
+		drawCircle(x, y, tX, tY, CellTypeID, range);
 		while (tY >= tX) {
 			tX++;
 			if (d > 0){
@@ -222,7 +216,7 @@ void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int
 				d = d + 4 * (tX - tY) + 10;
 			} 
 			else d = d + 4 * tX + 6;
-			drawCircle(x, y, tX, tY, CellTypeID);
+			drawCircle(x, y, tX, tY, CellTypeID, range);
 		}
 	}
 	else if (CellDrawShape == 2) {
