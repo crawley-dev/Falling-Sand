@@ -4,16 +4,19 @@
 #include "framework.h"
 #include "interface.h"
     
-//#include "interfaceData.h"
+// >> TODO << \\
+// Abstract out functions:
+// init, update, render
 
 Framework::Framework() {}
 Framework::~Framework() {}
 
+// Full path is : C:\Users\Tom\source\repos\TheCookiess\PixelPhysV2\PixelSimDESKTOP\ //
 bool Framework::init(const char* title, int xpos, int ypos, int width, int height)
 {
     // Setup SDL
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) return false;
-    //if (IMG_Init(IMG_INIT_JPG) != 1) return false;
+    if (!(IMG_Init(IMG_INIT_JPG) & IMG_INIT_JPG)) return false; // on success, returns int that the macro expands to, png == 2
     std::cout << "SDL Initialised! .. " << std::endl;
 
     // GL 3.0 + GLSL 130
@@ -79,9 +82,10 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     std::cout << "Setup Complete! .." << std::endl;
     std::cout << std::endl;
 
+    // Creating Textures.
     data = interfaceData();
-    data.textures.push_back(TextureData(GAME_TEXTURE_IDX, 0, 0, {}));
-    data.textures.push_back(TextureData(BACKGROUND_TEXTURE_IDX, 0, 0, {}));
+    data.textures.push_back(TextureData(GAME_TEXTURE_ID      , GAME_TEXTURE_IDX      , 0, 0, {}));
+    data.textures.push_back(TextureData(BACKGROUND_TEXTURE_ID, BACKGROUND_TEXTURE_IDX, 0, 0, {}));
     
     applicationRunning = true;
     return true;
@@ -126,9 +130,8 @@ void Framework::update()
     game->update(data);
 
     texture.data = game->getTextureData();
-    //for (int i = 0; i < data.textures.size() - 1; i++)
-       // updateTexture(i);
-    updateTexture(GAME_TEXTURE_IDX);
+    for (int i = 0; i < data.textures.size() - 1; i++)
+        updateTexture(i);
 
     interface->gameWindow(data);
 }
@@ -146,7 +149,10 @@ void Framework::render()
     if (ImGui::GetFrameCount() == 2) {
         createTexture(GAME_TEXTURE_IDX);
         createTexture(BACKGROUND_TEXTURE_IDX);
-        TextureData texture = data.textures[GAME_TEXTURE_IDX];
+        loadImageRGB("../Resources/patColour.jpg", BACKGROUND_TEXTURE_IDX); //TODO imgui load img from file.
+        //TextureData& texture = data.textures[GAME_TEXTURE_IDX];
+        TextureData& texture = data.textures[BACKGROUND_TEXTURE_IDX];
+
         game->init(texture.data, texture.width, texture.height, data.scaleFactor);
     }
 
@@ -169,36 +175,156 @@ void Framework::clean()
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    //glDeleteTextures(1, &data.textures.id);
-
-    // delete all existing textures.
-    for (TextureData& tex : data.textures)
+    for (TextureData& tex : data.textures) 
         glDeleteTextures(1, &tex.id);
+
+    // free heap memory.
+    delete game;
+    delete interface;
+    delete window;
 
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
-    SDL_Quit();
     IMG_Quit();
+    SDL_Quit();
     std::cout << "Game Cleaned! .." << std::endl;
 }
 
-void Framework::createTexture(int id)
+//.bmp loading slanted? weird.. 
+// TODO: Investigate SDL_ConvertSurfaceFormat
+void Framework::loadImageRGB(std::string path, int textureIndex)
 {
-    // basically just reloading textures..
-    TextureData& texture = data.textures[id];
+    TextureData& texture = data.textures[BACKGROUND_TEXTURE_IDX];
+    SDL_Surface* image = IMG_Load(path.c_str());
+    if (image == NULL) {
+        printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
+        return;
+    }
+
+    const int formatRGB24 = 386930691; // a magic number you might say.
+    if (image->format->format != formatRGB24) {
+        image = SDL_ConvertSurfaceFormat(image, SDL_PIXELFORMAT_RGB24, 0); 
+        if (image->format->format != formatRGB24) { // last chance Surface Convert.
+            printf("Unable to load image Pixel Format: ");
+            std::cout << SDL_GetPixelFormatName(image->format->format) << '\n';
+            return;
+        }
+    }
+
+    // have to (un)lock surface to stop SDL2 breaking 
+    SDL_LockSurface(image);
+    Uint8* pixel = (Uint8*)image->pixels;
+    SDL_UnlockSurface(image);
+
+    // R | G | B | A 
+    // 1 * 4  = 4 bytes 
+    const int bytesPerPixel = 4; 
+    int size = image->w * image->h * bytesPerPixel;
+
+    texture.data = std::vector<GLubyte>(size);
+    texture.width = image->w;
+    texture.height = image->h;
+
+    // Mapping RGB --> RGBA
+    for (int i = 0; i < size; i+=4) {
+        texture.data[i + 0] = *pixel; pixel++;
+        texture.data[i + 1] = *pixel; pixel++;
+        texture.data[i + 2] = *pixel; pixel++;
+        texture.data[i + 3] = 255;
+    }
+
+    SDL_FreeSurface(image);
 
     glGenTextures(1, &texture.id);
     glBindTexture(GL_TEXTURE_2D, texture.id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.data.data());
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);   // GL_LINEAR --> GL_NEAREST
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // FASTER but produces blocky, pixelated texture (not noticeable-ish)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);// GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);// GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
+
+}
+
+void Framework::loadImageRGBA(std::string path, int textureIndex)
+{
+    TextureData& texture = data.textures[BACKGROUND_TEXTURE_IDX];
+    SDL_Surface* image = IMG_Load(path.c_str());
+    if (image == NULL) {
+        printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
+        return;
+    }
+    image = SDL_ConvertSurfaceFormat(image, SDL_PIXELFORMAT_RGBA8888, 0); // 24 bit --> 32 bit
+    SDL_PixelFormat* fmt = image->format;
+    std::cout << SDL_GetPixelFormatName(fmt->format) << std::endl;
+    printf("Bytes Per Pixel: %d \n", fmt->BytesPerPixel);
+
+    SDL_LockSurface(image);
+    Uint32* pixels = (Uint32*)image->pixels;
+    SDL_UnlockSurface(image);
+
+    texture.width = image->w;
+    texture.height = image->h;
+    texture.data = std::vector<GLubyte>(texture.width * texture.height * fmt->BytesPerPixel);
+    int temp = 0;
+    
+    for (int y = 0; y < texture.height; y++) 
+        for (int x = 0; x < texture.width; x++) { 
+            // A Uint32 is 4 bytes, so each time you step your byte offset forward by 1 pixel by incrementing x by 1, 
+            // your index into the pixel data leaps forward 4 * 4 = 16 bytes:
+            Uint32 i = (y * texture.width) + x;
+            auto pixel = pixels[i];
+    
+            /* Get Red component */
+            temp = pixel & fmt->Rmask;  /* Isolate red component */
+            temp = temp >> fmt->Rshift; /* Shift it down to 8-bit */
+            temp = temp << fmt->Rloss;  /* Expand to a full 8-bit number */
+            texture.data[i + 0] = (Uint8)temp;
+    
+            /* Get Green component */
+            temp = pixel & fmt->Gmask;  /* Isolate green component */
+            temp = temp >> fmt->Gshift; /* Shift it down to 8-bit */
+            temp = temp << fmt->Gloss;  /* Expand to a full 8-bit number */
+            texture.data[i + 1] = (Uint8)temp;
+    
+            /* Get Blue component */
+            temp = pixel & fmt->Bmask;  /* Isolate blue component */
+            temp = temp >> fmt->Bshift; /* Shift it down to 8-bit */
+            temp = temp << fmt->Bloss;  /* Expand to a full 8-bit number */
+            texture.data[i + 2] = (Uint8)temp;
+    
+            /* Get Alpha component */
+            temp = pixel & fmt->Amask;  /* Isolate alpha component */
+            temp = temp >> fmt->Ashift; /* Shift it down to 8-bit */
+            temp = temp << fmt->Aloss;  /* Expand to a full 8-bit number */
+            texture.data[i + 3] = temp;
+        }
+
+    SDL_FreeSurface(image);
+
+    glGenTextures(1, &texture.id);
+    glBindTexture(GL_TEXTURE_2D, texture.id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.data.data());
+     
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);   // GL_LINEAR --> GL_NEAREST
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // FASTER but produces blocky, pixelated texture (not noticeable-ish)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);// GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);// GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
+}
+
+void Framework::createTexture(int textureIndex)
+{
+    TextureData& texture = data.textures[textureIndex];
+    texture.data = std::vector<GLubyte>(texture.width * texture.height * 4, 255);
+
+    glGenTextures(1, &texture.id);
+    glBindTexture(GL_TEXTURE_2D, texture.id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.data.data());
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);   // GL_LINEAR --> GL_NEAREST
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // FASTER but produces blocky, pixelated texture (not noticeable-ish)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);// GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);// GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
-
-    texture.data = std::vector<GLubyte>(texture.width * texture.height * 4, 255);
-
-    updateTexture(id);
 }
 
 void Framework::reloadTextures()
@@ -207,14 +333,13 @@ void Framework::reloadTextures()
     for (int i = 0; i < data.textures.size() - 1; i++) {
         glDeleteTextures(1, &data.textures[i].id); // delete old textures
         createTexture(i); // create new texture.
-        updateTexture(i); // push to renderer
     }
     data.texReloadCount++;
 }
 
-void Framework::updateTexture(int id)
+void Framework::updateTexture(int textureIndex)
 { 
-    TextureData texture = data.textures[id];
+    TextureData& texture = data.textures[textureIndex];
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texture.width, texture.height, GL_RGBA, GL_UNSIGNED_BYTE, texture.data.data()); // data.data, weird..
 }
 

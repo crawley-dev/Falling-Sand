@@ -15,24 +15,24 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int sc
 	cellW       = texW / cellScale;
 	cellH       = texH / cellScale;
 
-//	Types[0] = AIR	 = CellType(0, 188, 231, 255, 255, 0	);
-//	Types[0] = AIR	 = CellType(0, 255, 255, 255, 255, 0	);
-	Types[0] = EMPTY	= CellType(0,  44,  44,  44, 255,    0, 0);
+//	Types[0] = AIR	    = CellType(0, 188, 231, 255, 255, 0	);
+//	Types[0] = AIR	    = CellType(0, 255, 255, 255, 255, 0	);
+	Types.reserve(5);
+	Types[0] = EMPTY    = CellType(0,  44,  44,  44, 255,    0, 0);
 	Types[1] = SAND		= CellType(1, 245, 215, 176, 255, 1600, 4);
 	Types[2] = WATER	= CellType(2, 20 , 20 , 255, 125,  997, 4);
 	Types[3] = CONCRETE = CellType(3, 200, 200, 200, 255, 2000, 4);
 	Types[4] = ALIVE	= CellType(4, 255, 255, 255, 255,    0, 0);
-	
 
 	cells.clear(); // once upon a time, it didn't reset cell arr on reload :/ oops
+	cells.reserve(cellW * cellH); // memory leak if the function below is aborted before completion !!	
 
 	for (int y = 0; y < cellH; ++y)
 		for (int x = 0; x < cellW; ++x) {
-			cells.push_back(Cell(cellIdx(x, y), x, y, 5, EMPTY, false));
+			int idx = (y * cellW) + x;
+			cells[idx] = Cell(cellIdx(x, y), x, y, 5, EMPTY, false);
 			updatePixel(cells[cellIdx(x,y)]);
 		}
-
-
 }
 
 void Game::reload(std::vector<GLubyte> newTexData, int newTexW, int newTexH, int newScaleFactor)
@@ -40,13 +40,15 @@ void Game::reload(std::vector<GLubyte> newTexData, int newTexW, int newTexH, int
 	int newCellW = newTexW / newScaleFactor;
 	int newCellH = newTexH / newScaleFactor;
 	std::vector<Cell> newCells;
+	newCells.reserve(newCellW * newCellH);
 
 	for (int y = 0; y < newCellH; ++y)
 		for (int x = 0; x < newCellW; ++x) {
+			int idx = (y * newCellW) + x;
 			if (outOfBounds(x, y)) 
-				newCells.push_back(Cell(cellIdx(x, y), x, y, 1, EMPTY, false));
+				newCells[idx] = Cell(cellIdx(x, y), x, y, 1, EMPTY, false);
 			else
-				newCells.push_back(cells[cellIdx(x, y)]);
+				newCells[idx] = cells[cellIdx(x, y)];
 		}
 
 	cellScale = newScaleFactor;
@@ -61,10 +63,12 @@ void Game::reload(std::vector<GLubyte> newTexData, int newTexW, int newTexH, int
 void Game::reset(bool& resetSim)
 {
 	cells.clear();
+	cells.reserve(cellW * cellH);
 
 	for (int y = 0; y < cellH; ++y)
 		for (int x = 0; x < cellW; ++x) {
-			cells.push_back(Cell(cellIdx(x, y), x, y, 5, EMPTY, false));
+			int idx = (y * cellW) + x;
+			cells[idx] = Cell(cellIdx(x, y), x, y, 5, EMPTY, false);
 			updatePixel(cells[cellIdx(x,y)]);
 		}
 	resetSim = false;
@@ -76,7 +80,8 @@ void Game::update(interfaceData& data)
 	//if (data.runSim) mouseDraw(cellW, cellH, (data.frame % cellH) -1 , 100, 0, 1, 0);
 	//if (data.runSim) mouseDraw(cellW, cellH,       data.frame % cellH, 100, 1, 1, 0);
 
-	if (data.playGameOfLife) gameOfLifeUpdate(data);
+	if (data.playGameOfLife) 
+		gameOfLifeUpdate(data);
 	else if (data.scanTopDown) {
 		for (Cell& c : cells) {
 			if (data.runSim) {
@@ -117,12 +122,12 @@ void Game::gameOfLifeUpdate(interfaceData& data)
 				continue;
 			}
 
-
 			int adjAlive = 0;
 			for (int i = -1; i <= 1; i++)
 				for (int j = -1; j <= 1; j++) {
 					if (outOfBounds(x + i, y + j) || i == 0 && j == 0) continue;
-					if (cells[cellIdx(x + i, y + j)].type.id == ALIVE.id) adjAlive++;
+					if (cells[cellIdx(x + i, y + j)].type.id == ALIVE.id) 
+						adjAlive++;
 				}
 
 			if (c.type.id == ALIVE.id) {
@@ -131,18 +136,26 @@ void Game::gameOfLifeUpdate(interfaceData& data)
 				else c.type = ALIVE;
 			}
 			else if (c.type.id == EMPTY.id)
-				if (adjAlive == 3) c.type = ALIVE;
+				if (adjAlive == 3) 
+					c.type = ALIVE;
 
 			updatePixel(c);
 		}
 	cells = nextFrameCells;
 }
 
+//void Game::gameOfLifeUpdateOptimised(interfaceData& data)
+
+// for only 2 cases, switch is likely slower.
 void Game::cellUpdate(Cell& c)
 {
-	if (c.flag || c.type.id == 0 || c.type.id == 3) return;
-	else if (c.type.id == 1) updateSand(c);
-	else if (c.type.id == 2) updateWater(c);
+	if (c.flag) return;
+	switch (c.type.id) 
+	{
+		case 1: updateSand(c); return;
+		case 2: updateWater(c); return;
+		default: return;
+	}
 }
 
 
@@ -170,6 +183,36 @@ CellType Game::varyPixelColour(int range, int PixelTypeID)
 	return material;
 }
 
+void Game::circleFillAlgorithm(int x, int y, int radius, int CellTypeID, int range, int chance)
+{
+	int r2 = radius * radius;
+	int area = r2 << 2;
+	int rr = radius << 1;
+
+	for (int i = 0; i < area; i++) {
+		int tx = (i % rr) - radius;
+		int ty = (i / rr) - radius;
+
+		if (tx * tx + ty * ty <= r2 && rand() % (101 - chance) == 0)
+			changeCellType(x + tx, y + ty, CellTypeID, range);
+	}
+}
+void Game::circleOutlineAlgorithm(int x, int y, int radius, int CellTypeID, int range)
+{
+	int tX = 0;
+	int tY = radius;
+	int d = 3 - 2 * radius;
+	drawCircle(x, y, tX, tY, CellTypeID, range);
+	while (tY >= tX) {
+		tX++;
+		if (d > 0) {
+			tY--;
+			d = d + 4 * (tX - tY) + 10;
+		}
+		else d = d + 4 * tX + 6;
+		drawCircle(x, y, tX, tY, CellTypeID, range);
+	}
+}
 void Game::drawCircle(int xc, int yc, int x, int y, int PixelTypeID, int range)
 {
 	changeCellType(xc + x, yc + y, PixelTypeID, range); // BL
@@ -181,54 +224,42 @@ void Game::drawCircle(int xc, int yc, int x, int y, int PixelTypeID, int range)
 	changeCellType(xc + y, yc - x, PixelTypeID, range);
 	changeCellType(xc - y, yc - x, PixelTypeID, range);
 }
+void Game::lineAlgorithm(int x, int y, int radius, int CellTypeID, int range, int chance)
+{
+	for (int tx = -radius; tx < radius; ++tx)
+		if (rand() % (101 - chance) == 0)
+			changeCellType(x + tx, y, CellTypeID, range);
+}
+void Game::squareAlgorithm(int x, int y, int radius, int CellTypeID, int range, int chance)
+{
+	for (auto ty = -radius / 2; ty < radius / 2; ++ty)
+		for (auto tx = -radius / 2; tx < radius / 2; ++tx)
+			if (rand() % (101 - chance) == 0)
+				changeCellType(x + tx, y + ty, CellTypeID, range);
+}
 
 void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int CellDrawShape, int range)
 {
 	const int x = mx / cellScale;
 	const int y = my / cellScale;
 
+	// edge cases.
 	if (outOfBounds(x, y)) return;
+	else if (radius == 1)
+		changeCellType(x, y, CellTypeID, range);
 
-
-	if (radius == 1) changeCellType(x, y, CellTypeID, range);
-	else if (CellDrawShape == 0) {
-		int r2 = radius * radius;
-		int area = r2 << 2;
-		int rr = radius << 1;
-
-		for (int i = 0; i < area; i++) {
-			int tx = (i % rr) - radius;
-			int ty = (i / rr) - radius;
-
-			if (tx * tx + ty * ty <= r2 && rand() % (101 - chance) == 0)
-				changeCellType(x + tx, y + ty, CellTypeID, range);
-		}
-	}
-	else if (CellDrawShape == 1) {
-		int tX = 0;
-		int tY = radius;
-		int d = 3 - 2 * radius;
-		drawCircle(x, y, tX, tY, CellTypeID, range);
-		while (tY >= tX) {
-			tX++;
-			if (d > 0){
-				tY--;
-				d = d + 4 * (tX - tY) + 10;
-			} 
-			else d = d + 4 * tX + 6;
-			drawCircle(x, y, tX, tY, CellTypeID, range);
-		}
-	}
-	else if (CellDrawShape == 2) {
-		for (int tx = -radius; tx < radius; ++tx)
-			if (rand() % (101 - chance) == 0)
-				changeCellType(x + tx, y, CellTypeID, range);
-	}
-	else if (CellDrawShape == 3) {
-		for (auto ty = -radius/2; ty < radius/2; ++ty)
-			for (auto tx = -radius/2; tx < radius/2; ++tx)
-				if (rand() % (101 - chance) == 0)
-					changeCellType(x + tx, y + ty, CellTypeID, range);
+	// looks cleaner.
+	// quite a few parameters for the functions though..
+	switch (CellDrawShape)
+	{
+	case 0:
+		circleFillAlgorithm(x, y, radius, CellTypeID, range, chance); return;
+	case 1:															  
+		circleOutlineAlgorithm(x, y, radius, CellTypeID, range); return;
+	case 2:															  
+		lineAlgorithm(x, y, radius, CellTypeID, range, chance); return;
+	case 3:															  
+		squareAlgorithm(x, y, radius, CellTypeID, range, chance); return;
 	}
 }
 

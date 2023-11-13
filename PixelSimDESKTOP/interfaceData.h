@@ -1,4 +1,5 @@
 #pragma once
+
 #define GAME_TEXTURE_ID        2
 #define BACKGROUND_TEXTURE_ID  3
 #define GAME_TEXTURE_IDX	   0
@@ -9,16 +10,18 @@
 struct TextureData
 {
 	GLuint id  = 0;
+	int index  = 0; 
 	int width  = 0; 
 	int height = 0;
 	std::vector<GLubyte> data;
 
-	TextureData(GLuint ID, int WIDTH, int HEIGHT, std::vector<GLubyte> DATA)
+	TextureData(GLuint ID, int INDEX, int WIDTH, int HEIGHT, std::vector<GLubyte> DATA)
 	{
-		id = ID;
-		width = WIDTH;
+		id     = ID;
+		index  = INDEX;
+		width  = WIDTH;
 		height = HEIGHT;
-		data = DATA;
+		data   = DATA;
 	}
 	TextureData() = default;
 };

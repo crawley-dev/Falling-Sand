@@ -39,30 +39,39 @@ public:
 	bool checkDensity(Cell& p1, int delX, int delY);
 
 	void drawCircle(int xc, int yc, int x, int y, int PixelTypeID, int range);
+	void circleFillAlgorithm(int x, int y, int radius, int CellTypeID, int range, int chance);
+	void circleOutlineAlgorithm(int x, int y, int radius, int CellTypeID, int range);
+	void squareAlgorithm(int x, int y, int radius, int CellTypeID, int range, int chance);
+	void lineAlgorithm(int x, int y, int radius, int CellTypeID, int range, int chance);
 
 	void updateSand(Cell& c);
 	void updateWater(Cell& c);
 	
+	// shouldn't really have code in a header ..
 	inline bool outOfBounds(int x, int y) { return (x >= cellW || x < 0 || y >= cellH || y < 0); }
 	inline int cellIdx(int x, int y) { return (y * cellW) + x; }
 	inline int texIdx(int x, int y) { return 4 * (y * texW + x); }
 	inline std::vector<GLubyte> getTextureData() { return textureData; }
 	
-	/* Main problem THIS DOESNT FIX: escaping a function that wants to do stuff on an invalid cell.
-	* inline Cell& getCell(int x, int y) 
-	*	if (outOfBounds(x,y) {
-	* 		printf("out of bounds: (%d,%d)\n", x, y);
-	* 		throw std::invalid_argument("out of vector range.");
-	* 		//return cells[0];
-	* 	}
-	*	return cells[cellIdx(x, y)];
-	* }
-	*/
+	/** Main problem THIS DOESNT FIX: escaping a function that wants to do stuff on an invalid cell.
+	  * .. Could instead use pointers, give out a ptr that can be == nullptr. hmm doesn't solve anything.
+	  * .. .. Best idea would be to just throw an exception, but i guess the compiler does that for me.
+	  * 
+	  * inline Cell& getCell(int x, int y) 
+	  *	if (outOfBounds(x,y) {
+	  * 		printf("out of bounds: (%d,%d)\n", x, y);
+	  * 		throw std::invalid_argument("out of vector range.");
+	  * 		//return cells[0];
+	  * 	}
+	  *	return cells[cellIdx(x, y)];
+	  * }
+	  **/
 
 private:
 	int texW, texH, cellScale, cellW, cellH;	
 	std::vector<Cell> cells;
 	std::vector<GLubyte> textureData;
-	CellType Types[5];
+	//CellType Types[5]; // raw arrays aren't great.
+	std::vector<CellType> Types{};
 	CellType EMPTY, SAND, WATER, CONCRETE, ALIVE;
 };

@@ -83,7 +83,7 @@ void Interface::debugMenu(interfaceData& data)
     ImGui::SeparatorText("Debug Values"); 
     {
         bool OutofBounds = false;
-        TextureData& texture = data.textures[GAME_TEXTURE_IDX];
+        TextureData& texture = data.textures[BACKGROUND_TEXTURE_IDX];
         if (data.mouseX > texture.width || data.mouseX < 0 || data.mouseY > texture.height || data.mouseY < 0) OutofBounds = true;
 
         ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
@@ -115,6 +115,7 @@ void Interface::gameWindow(interfaceData& data)
 {
     ImGui::Begin("GameWindow");
     frameRate = io.Framerate;
+    TextureData& bg = data.textures[BACKGROUND_TEXTURE_IDX];
     TextureData& texture = data.textures[GAME_TEXTURE_IDX];
 
     // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow", not win32 application
@@ -131,9 +132,9 @@ void Interface::gameWindow(interfaceData& data)
 
     {
         ImGui::BeginChild("GameRender");
-        ImVec2 textureRenderSize = ImVec2(texture.width, texture.height);
-        //ImGui::Image((ImTextureID)(data.backgroundID), textureRenderSize, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+        ImVec2 textureRenderSize = ImVec2(texture.width, texture.height); // STRETCHING: bg --> texture 
         ImGui::Image((ImTextureID)texture.id, textureRenderSize, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+        //ImGui::Image((ImTextureID)bg.id, textureRenderSize, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
         ImGui::EndChild();
     }
     ImGui::End();
