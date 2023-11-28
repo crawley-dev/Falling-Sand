@@ -1,8 +1,9 @@
 #pragma once
 
-#include "game.h"
+#include "pch.h"
 #include "framework.h"
 #include "interface.h"
+#include "game.h"
     
 // >> TODO << \\
 // Abstract out functions:
@@ -121,6 +122,7 @@ void Framework::update()
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
     if (io.MouseDown[0]) mouseDraw();
+    if (data.loadImage) loadImageRGB(data.imagePath, BACKGROUND_TEXTURE_IDX);
     if (data.resetSim) game->reset(data.resetSim);
     if (data.reloadGame) {
         reloadTextures();
@@ -149,14 +151,14 @@ void Framework::render()
     if (ImGui::GetFrameCount() == 2) {
         createTexture(GAME_TEXTURE_IDX);
         createTexture(BACKGROUND_TEXTURE_IDX);
-        loadImageRGB("../Resources/patColour.jpg", BACKGROUND_TEXTURE_IDX); //TODO imgui load img from file.
-        //TextureData& texture = data.textures[GAME_TEXTURE_IDX];
-        TextureData& texture = data.textures[BACKGROUND_TEXTURE_IDX];
+        TextureData& texture = data.textures[GAME_TEXTURE_IDX];
+        //loadImageRGB("../Resources/patColour.jpg", BACKGROUND_TEXTURE_IDX); //TODO imgui load img 
+        //TextureData& texture = data.textures[BACKGROUND_TEXTURE_IDX];
 
         game->init(texture.data, texture.width, texture.height, data.scaleFactor);
     }
 
-    // Handling Multiple Viewports && Swaps between 2 texture buffers for smoother rendering
+    // Handles Multiple Viewports && Swaps between 2 texture buffers for smoother rendering
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) 
     {
         SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
@@ -181,7 +183,6 @@ void Framework::clean()
     // free heap memory.
     delete game;
     delete interface;
-    delete window;
 
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);

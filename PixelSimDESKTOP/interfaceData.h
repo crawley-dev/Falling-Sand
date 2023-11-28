@@ -1,11 +1,14 @@
 #pragma once
 
+// probably shouldn't use macros..
 #define GAME_TEXTURE_ID        2
 #define BACKGROUND_TEXTURE_ID  3
 #define GAME_TEXTURE_IDX	   0
 #define BACKGROUND_TEXTURE_IDX 1
 
-#include <vector>
+//#include <vector>
+//#include <string>
+#include "pch.h"
 
 struct TextureData
 {
@@ -28,11 +31,8 @@ struct TextureData
 
 struct interfaceData
 {
-	//GLuint texID = 0;
-	//GLuint backgroundID = 0;
-	//int texH,		  texReloadCount,  mouseX,  mouseY,  frame;
-	//int texW = texH = texReloadCount = mouseX = mouseY = frame = 0;
 	std::vector<TextureData> textures;
+	std::string imagePath;
 
 	int texReloadCount	   =  0;
 	int mouseX			   =  0;
@@ -46,10 +46,11 @@ struct interfaceData
 	int drawChance		   = 99;
 	int drawColourVariance = 10;
 
-	bool runSim			= false;
-	bool resetSim		= false;
-	bool reloadGame		= false;
-	bool scanTopDown	= true;
-	bool playGameOfLife = false;
+	bool runSim			   = false;
+	bool resetSim		   = false;
+	bool reloadGame		   = false;
+	bool playGameOfLife	   = false;
+	bool loadImage		   = false;
+	bool scanTopDown	   = true;
 
 };

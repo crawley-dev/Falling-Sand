@@ -1,22 +1,24 @@
 #pragma once
 
-#include "imgui.h"
-#include "imgui_impl_sdl2.h"
-#include "imgui_impl_opengl3.h"
-#include <stdio.h>
-#include <SDL.h>
-#include <SDL_opengl.h>
-#include <SDL_image.h>	
-#include <OpenImageIO/imageio.h> // OpenImageIO
+//#include "pch.h"
+//#include "imgui.h"
+//#include "imgui_impl_sdl2.h"
+//#include "imgui_impl_opengl3.h"
+//#include <stdio.h>
+//#include <SDL.h>
+//#include <SDL_opengl.h>
+//#include <SDL_image.h>	
+////#include <OpenImageIO/imageio.h> // OpenImageIO
+//
+//#include <iostream>
+//#include <thread>
+//#include <iomanip>
+//#include <vector>
+//#include <chrono>
+//#include <algorithm>
+//#include <memory>
 
-#include <iostream>
-#include <thread>
-#include <iomanip>
-#include <vector>
-#include <chrono>
-#include <algorithm>
-#include <memory>
-
+#include "pch.h"
 #include "interfaceData.h"
 
 // make compiler happy
@@ -51,8 +53,8 @@ private:
 	interfaceData data;
 	bool applicationRunning = false;
 
-	/*std::unique_ptr<Game>     */ Game*	  game = nullptr;
-	/*std::unique_ptr<Interface>*/ Interface* interface = nullptr;
-	SDL_Window* window = nullptr;
+	Game* game				 = nullptr; /* std::unique_ptr<Game>      */
+	Interface* interface	 = nullptr;	/* std::unique_ptr<Interface> */
+	SDL_Window* window		 = nullptr;
 	SDL_GLContext gl_context = nullptr;
 };

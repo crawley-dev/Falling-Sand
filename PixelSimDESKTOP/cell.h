@@ -15,7 +15,7 @@ struct CellType
 		tV = TERMINAL_VELOCITY;
 	}
 	CellType() = default;
-};
+};	
 
 struct Cell
 {

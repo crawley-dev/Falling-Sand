@@ -1,0 +1,7 @@
+$(SolutionDir)Libraries\vcpkg\vcpkg\packages\openimageio_x64-windows\include -- c++
+
+$(SolutionDir)Libraries\vcpkg\vcpkg\packages\openimageio_x64-windows\lib -- linker
+
+-- libraries
+OpenImageIO.lib 
+OpenImageIO_Util.lib

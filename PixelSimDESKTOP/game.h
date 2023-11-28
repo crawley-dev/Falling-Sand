@@ -1,18 +1,19 @@
 #pragma once
 
-#include "imgui.h"
-#include "imgui_impl_sdl2.h"
-#include "imgui_impl_opengl3.h"
-#include <stdio.h>
-#include <SDL.h>
-#include <SDL_opengl.h>
+//#include "imgui.h"
+//#include "imgui_impl_sdl2.h"
+//#include "imgui_impl_opengl3.h"
+//#include <stdio.h>
+//#include <SDL.h>
+//#include <SDL_opengl.h>
+//
+//#include <vector>
+//#include <ranges>
+//#include <algorithm>
+//#include <stdexcept>
 
-#include <vector>
-#include <ranges>
-#include <algorithm>
-#include <stdexcept>
 
-
+#include "pch.h"
 #include "cell.h"
 #include "interfaceData.h"
 
@@ -47,7 +48,6 @@ public:
 	void updateSand(Cell& c);
 	void updateWater(Cell& c);
 	
-	// shouldn't really have code in a header ..
 	inline bool outOfBounds(int x, int y) { return (x >= cellW || x < 0 || y >= cellH || y < 0); }
 	inline int cellIdx(int x, int y) { return (y * cellW) + x; }
 	inline int texIdx(int x, int y) { return 4 * (y * texW + x); }
@@ -68,10 +68,11 @@ public:
 	  **/
 
 private:
+	bool altCheck = false;
 	int texW, texH, cellScale, cellW, cellH;	
 	std::vector<Cell> cells;
 	std::vector<GLubyte> textureData;
+	std::vector<CellType> Types;
 	//CellType Types[5]; // raw arrays aren't great.
-	std::vector<CellType> Types{};
 	CellType EMPTY, SAND, WATER, CONCRETE, ALIVE;
 };
