@@ -53,8 +53,8 @@ private:
 	interfaceData data;
 	bool applicationRunning = false;
 
-	Game* game				 = nullptr; /* std::unique_ptr<Game>      */
-	Interface* interface	 = nullptr;	/* std::unique_ptr<Interface> */
-	SDL_Window* window		 = nullptr;
-	SDL_GLContext gl_context = nullptr;
+	Game* game				 = nullptr; // std::unique_ptr<Game>      
+	Interface* interface	 = nullptr;	// std::unique_ptr<Interface>  
+	SDL_Window* window		 = nullptr; // could use a unique ptr but would require a refactor, 
+	SDL_GLContext gl_context = nullptr; // thats too much effort for some memory management.
 };

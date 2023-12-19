@@ -56,12 +56,12 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::SeparatorText("Manipulating Textures");
 
         static char str[128] = ""; // could overflow the buffer. yay.. this will probably not work at some point..
-        ImGui::InputTextWithHint("Enter File Location", "../Resources", str, IM_ARRAYSIZE(str));
+        ImGui::InputTextWithHint("Enter File Location", "../Resources/", str, IM_ARRAYSIZE(str));
         
         if (ImGui::Button("Change Texture")) loadedTex++; ImGui::SameLine();
         if (ImGui::Button("Load Image")) {
             data.loadImage = true;
-            data.imagePath = str;
+            data.imagePath = "../Resources/" + std::string(str);
         }
         else data.loadImage = false;
 
@@ -73,8 +73,8 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::SeparatorText("Frame Stepping");
         
         static int framesToStep = 0;
-        static int pseudoFrames = 0;
-        static bool doFrameStepping = false;
+        static int pseudoFrames = 1;
+        static bool doFrameStepping     = false;
 
         if (framesToStep > 0 && doFrameStepping) {
             data.runSim = true;
@@ -151,7 +151,7 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::Text("Game Framecount: %d\n"        , data.frame          );
         ImGui::Text("Scale Factor: %d\n"           , data.scaleFactor    );
         ImGui::Text("Reloaded Texture: %d Times\n" , data.texReloadCount );
-        ImGui::Text("Displayed Texture: \n"        , loadedTex           );
+        ImGui::Text("Displayed Texture: %d\n"      , loadedTex           );
         ImGui::Text("Texture Width: %d\n"          , texture.width       );
         ImGui::Text("Texture Height: %d\n"         , texture.height      );
         ImGui::Text("Mouse X: %d\n"                , data.mouseX         );
@@ -171,7 +171,8 @@ void Interface::gameWindow(interfaceData& data)
     ImGui::Begin("GameWindow");
     frameRate = io.Framerate;
 
-    loadedTex = loadedTex % data.textures.size(); // should be fiine
+    //loadedTex = loadedTex % data.textures.size(); // should be fiine
+    loadedTex = loadedTex % 2;
     TextureData& texture = data.textures[loadedTex];
     // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow",
     //       Not the SDL2 generated win32 window

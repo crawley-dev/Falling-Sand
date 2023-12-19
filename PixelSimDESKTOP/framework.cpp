@@ -1,5 +1,4 @@
 #pragma once
-
 #include "pch.h"
 #include "framework.h"
 #include "interface.h"
@@ -85,8 +84,9 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
 
     // Creating Textures.
     data = interfaceData();
-    data.textures.push_back(TextureData(GAME_TEXTURE_ID      , GAME_TEXTURE_IDX      , 0, 0, {}));
-    data.textures.push_back(TextureData(BACKGROUND_TEXTURE_ID, BACKGROUND_TEXTURE_IDX, 0, 0, {}));
+    data.textures.push_back(TextureData(GAME_TEXTURE_ID      , 0, 0, {}));
+    data.textures.push_back(TextureData(BACKGROUND_TEXTURE_ID, 0, 0, {}));
+    //data.textures.push_back(TextureData(PRESENT_TEXTURE_ID   , 0, 0, {}));
     
     applicationRunning = true;
     return true;
@@ -122,13 +122,19 @@ void Framework::update()
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
     if (io.MouseDown[0]) mouseDraw();
-    if (data.loadImage) loadImageRGB(data.imagePath, BACKGROUND_TEXTURE_IDX);
     if (data.resetSim) game->reset(data.resetSim);
+    if (data.loadImage) {
+        loadImageRGB(data.imagePath, BACKGROUND_TEXTURE_IDX);
+        TextureData& img = data.textures[BACKGROUND_TEXTURE_IDX];
+        game->loadImage(img.data, img.width, img.height);
+        data.loadImage = false;
+    }
     if (data.reloadGame) {
         reloadTextures();
         game->reload(texture.data, texture.width, texture.height, data.scaleFactor);
         data.reloadGame = false;
     }
+
     game->update(data);
 
     texture.data = game->getTextureData();
@@ -149,12 +155,9 @@ void Framework::render()
 
     // Placed After ImGui::Render() to prevent ImGui HUD overwriting my textures.
     if (ImGui::GetFrameCount() == 2) {
-        createTexture(GAME_TEXTURE_IDX);
-        createTexture(BACKGROUND_TEXTURE_IDX);
+        for (auto texture : data.textures)
+            createTexture(texture.id - 2); // (id - 2) == texture index.
         TextureData& texture = data.textures[GAME_TEXTURE_IDX];
-        //loadImageRGB("../Resources/patColour.jpg", BACKGROUND_TEXTURE_IDX); //TODO imgui load img 
-        //TextureData& texture = data.textures[BACKGROUND_TEXTURE_IDX];
-
         game->init(texture.data, texture.width, texture.height, data.scaleFactor);
     }
 
@@ -196,15 +199,17 @@ void Framework::clean()
 void Framework::loadImageRGB(std::string path, int textureIndex)
 {
     TextureData& texture = data.textures[BACKGROUND_TEXTURE_IDX];
+    TextureData& gameTexture = data.textures[GAME_TEXTURE_IDX];
+
     SDL_Surface* image = IMG_Load(path.c_str());
     if (image == NULL) {
         printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
         return;
     }
 
-    const int formatRGB24 = 386930691; // a magic number you might say.
+    constexpr int formatRGB24 = 386930691; // a magic number you might say. constexpr is const but better.
     if (image->format->format != formatRGB24) {
-        image = SDL_ConvertSurfaceFormat(image, SDL_PIXELFORMAT_RGB24, 0); 
+        image = SDL_ConvertSurfaceFormat(image, SDL_PIXELFORMAT_RGB24, 0);
         if (image->format->format != formatRGB24) { // last chance Surface Convert.
             printf("Unable to load image Pixel Format: ");
             std::cout << SDL_GetPixelFormatName(image->format->format) << '\n';
@@ -212,39 +217,54 @@ void Framework::loadImageRGB(std::string path, int textureIndex)
         }
     }
 
-    // have to (un)lock surface to stop SDL2 breaking 
+    // if texture is larger than the game area:
+    // scale it down, either x2 or --> game area bounds..
+    /*if (image->w * image->h * 4 > gameTexture.data.size()) {
+        SDL_Surface* temp = NULL;
+        SDL_Rect destinationRect;
+        destinationRect.x = 0;
+        destinationRect.y = 0;
+        destinationRect.w = gameTexture.width;
+        destinationRect.h = gameTexture.height;
+        SDL_LowerBlitScaled(image, NULL, temp, &destinationRect);
+        *image = *temp; // changes data, not the ptr.
+        SDL_FreeSurface(temp);
+    }*/
+
+   // have to (un)lock surface to stop SDL2 breaking 
     SDL_LockSurface(image);
     Uint8* pixel = (Uint8*)image->pixels;
     SDL_UnlockSurface(image);
 
     // R | G | B | A 
     // 1 * 4  = 4 bytes 
-    const int bytesPerPixel = 4; 
+    constexpr int bytesPerPixel = 4;
     int size = image->w * image->h * bytesPerPixel;
 
-    texture.data = std::vector<GLubyte>(size);
-    texture.width = image->w;
+    texture.data   = std::vector<GLubyte>(size);
+    texture.width  = image->w;
     texture.height = image->h;
 
     // Mapping RGB --> RGBA
-    for (int i = 0; i < size; i+=4) {
+    for (int i = 0; i < size; i += 4) {
         texture.data[i + 0] = *pixel; pixel++;
         texture.data[i + 1] = *pixel; pixel++;
         texture.data[i + 2] = *pixel; pixel++;
         texture.data[i + 3] = 255;
     }
 
+
     SDL_FreeSurface(image);
-
-    glGenTextures(1, &texture.id);
-    glBindTexture(GL_TEXTURE_2D, texture.id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.data.data());
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);   // GL_LINEAR --> GL_NEAREST
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // FASTER but produces blocky, pixelated texture (not noticeable-ish)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);// GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);// GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
-
+    updateTexture(textureIndex);
+    
+    // downscaling texture if necessary
+    //TextureData& gameTexture = data.textures[GAME_TEXTURE_ID];
+    //while (texture.data.size() > gameTexture.data.size()) {
+    //    glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+    //    glBindTexture(GL_TEXTURE_2D, texture.id);
+    //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 2); // downscale x2
+    //    glGenerateMipMap()
+    //}
 }
 
 void Framework::loadImageRGBA(std::string path, int textureIndex)
@@ -302,15 +322,7 @@ void Framework::loadImageRGBA(std::string path, int textureIndex)
         }
 
     SDL_FreeSurface(image);
-
-    glGenTextures(1, &texture.id);
-    glBindTexture(GL_TEXTURE_2D, texture.id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.data.data());
-     
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);   // GL_LINEAR --> GL_NEAREST
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // FASTER but produces blocky, pixelated texture (not noticeable-ish)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);// GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);// GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
+    updateTexture(textureIndex);
 }
 
 void Framework::createTexture(int textureIndex)
@@ -349,7 +361,7 @@ void Framework::mouseDraw()
     ImGuiIO& io = ImGui::GetIO();
 
     static int lastFrameCall   = 0;
-    const int minFramesTilDraw = 5;
+    constexpr int minFramesTilDraw = 5;
     if (ImGui::GetFrameCount() - lastFrameCall > minFramesTilDraw) {
         lastFrameCall = ImGui::GetFrameCount();
         return;

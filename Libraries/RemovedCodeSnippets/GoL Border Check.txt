@@ -1,0 +1,51 @@
+#elif 1 // padding so I can remove a single IF statement. seems stupid..
+		// questionable whether copying the ENTIRE cells vec just to avoid an if statement is optimal.
+		// shouldn't need to copy all information stored in each cell. get it working then change.
+	int paddedW = cellW + 1;
+	int paddedH = cellH + 1;
+	std::vector<Cell> newCells;
+
+	newCells.reserve(paddedW * paddedH);
+
+	// Map cells with padding.
+	for (int y = 1; y < paddedH - 1; y++)	// start 1 deep and stop 1 short for padding.
+		for (int x = 1; x < paddedW - 1; x++)	
+			newCells[y * paddedH + x] = cells[cellIdx(x - 1, y - 1)];
+
+	for (int x = 0; x < paddedW; x++) {					  // Horizontal Padding
+		newCells[x].type = EMPTY;						  // top row		
+		newCells[paddedW * paddedH - x - 1].type = EMPTY; // bottom row
+	}
+	for (int y = 0; y < paddedH; y++) {					  // Vertical Padding
+		newCells[y * paddedW].type = EMPTY;				  // left column
+		newCells[y * paddedW + paddedW - 1].type = EMPTY; // right column, should work ?
+	}
+
+	// Check within padding.
+	for (int y = 1; y < cellH - 1; y++) 
+		for (int x = 1; x < cellW - 1; x++) {
+			Cell& c = newCells[cellIdx(x, y)];
+
+			// unrolling the for loop, bit cheeky
+			int adjAlive = 0;
+			adjAlive += (newCells[cellIdx(x - 1, y - 1)].type.id == ALIVE.id); // TL
+			adjAlive += (newCells[cellIdx(x + 0, y - 1)].type.id == ALIVE.id); // TM
+			adjAlive += (newCells[cellIdx(x + 1, y - 1)].type.id == ALIVE.id); // TR
+			adjAlive += (newCells[cellIdx(x - 1, y + 0)].type.id == ALIVE.id); // ML
+			adjAlive += (newCells[cellIdx(x + 1, y + 0)].type.id == ALIVE.id); // MR
+			adjAlive += (newCells[cellIdx(x - 1, y + 1)].type.id == ALIVE.id); // BL
+			adjAlive += (newCells[cellIdx(x + 0, y + 1)].type.id == ALIVE.id); // BM
+			adjAlive += (newCells[cellIdx(x + 1, y + 1)].type.id == ALIVE.id); // BR
+
+			if (c.type.id == ALIVE.id) {
+				if (adjAlive < 2) c.type = EMPTY;
+				else if (adjAlive >= 4) c.type = EMPTY;
+				else c.type = ALIVE;
+			}
+			else if (c.type.id == EMPTY.id)
+				if (adjAlive == 3)
+					c.type = ALIVE;
+
+			updatePixel(c);
+		}
+

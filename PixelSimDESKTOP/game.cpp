@@ -16,12 +16,9 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int sc
 	cellW       = texW / cellScale;
 	cellH       = texH / cellScale;
 
-//	Types[0] = AIR	    = CellType(0, 188, 231, 255, 255, 0	);
-//	Types[0] = AIR	    = CellType(0, 255, 255, 255, 255, 0	);
-	
 	Types.clear();
-	EMPTY    = CellType(0,  44,  44,  44, 255,    0, 0); Types.push_back(EMPTY   );
-	SAND	 = CellType(1, 245, 215, 176, 255, 1600, 4); Types.push_back(SAND    );
+	EMPTY    = CellType(0, 75, 75, 75, 255, 0, 0); Types.push_back(EMPTY);
+	SAND     = CellType(1, 245, 215, 176, 255, 1600, 4); Types.push_back(SAND    );
 	WATER	 = CellType(2, 20 , 20 , 255, 125,  997, 4); Types.push_back(WATER   );
 	CONCRETE = CellType(3, 200, 200, 200, 255, 2000, 4); Types.push_back(CONCRETE);
 	ALIVE	 = CellType(4, 255,   0, 255, 255,    0, 0); Types.push_back(ALIVE   );
@@ -62,6 +59,30 @@ void Game::reload(std::vector<GLubyte> newTexData, int newTexW, int newTexH, int
 	cells = newCells;
 }
 
+void Game::loadImage(std::vector<GLubyte>& imageData, int imageW, int imageH)
+{
+	// some out of bounds stuff whoops.
+	//if (imageData.size() > textureData.size()) { printf("Image too large, unable to load!\n"); return; };
+	if (imageData.size() > textureData.size()) {
+		imageW = texW;
+		imageH = texH;
+	}
+
+	int idx = 0;
+	for (int y = 0; y < imageH / cellScale; y++) 
+		for (int x = 0; x < imageW / cellScale; x++) { // how many cells to traverse across. 
+ 			Cell& c = cells[cellIdx(x, y)]; // 
+			c.flag   = true;
+			c.type   = WATER;
+			c.type.r = imageData[idx + 0];
+			c.type.g = imageData[idx + 1];
+			c.type.b = imageData[idx + 2];
+			c.type.a = imageData[idx + 3]; // equivalent to 255 for RGB textures.
+			idx     += 4; // don't actually know if this is faster than doing all the multiplication??
+			updatePixel(c); // why no wokr >:O .. freezes the grid ?
+		}
+}
+
 void Game::reset(bool& resetSim)
 {
 	cells.clear();
@@ -79,16 +100,16 @@ void Game::reset(bool& resetSim)
 void Game::update(interfaceData& data)
 {
 	if (texH == 0 || texW == 0) return;
-	if (data.runSim && false) {
-		mouseDraw(cellW, cellH, (data.frame % cellH) - 1, 100, 0, 1, 0);
-		mouseDraw(cellW, cellH,       data.frame % cellH, 100, 1, 1, 0);
-	}
 
-	// use return cases they said.
 	if (!data.runSim) {
 		for (Cell& c : cells) 
 			updatePixel(c);
 		return;
+	}
+
+	if (data.frame % 2 == 0 && false) {
+		mouseDraw(texW / 2, texH / 2, (data.frame % texH) - 1, 100, 0, 1, 0);
+		mouseDraw(texW / 2, texH / 2, data.frame % texH,       100, 1, 1, 0);
 	}
 
 	if (data.playGameOfLife) 
@@ -102,45 +123,18 @@ void Game::update(interfaceData& data)
 	}
 	else { // scan Down->Top
 		for (int y = cellH - 1; y >= 0; y--)
-			for (int x = 0; x < cellW - 1; x++) {
+			for (int x = cellW - 1; x >= 0; x--) {
 				Cell& c = cells[cellIdx(x, y)];
+				updatePixel(c); // flipped the order .. and it works !!
 				cellUpdate(c);
 				c.flag = false;
-				updatePixel(c);
-				//cellUpdate(c); // flickers without this.. EH
 			}
 	}
 
+	if (!data.scanTopDown && data.frame % 3 == 0 || data.scanTopDown) // WUNDERBAR
+		data.scanTopDown = altCheck = !data.scanTopDown;
 	data.frame++;
-	//altCheck = !altCheck;
-	//data.scanTopDown = !data.scanTopDown;
-	
-	/*
-	else if (data.scanTopDown) {
-		for (Cell& c : cells) {
-			if (data.runSim) {
-				//if (c.type.id == ALIVE.id) c.type.id = EMPTY.id;
-				cellUpdate(c);
-				c.flag = false; // to this day (25.9.23) i don't know why i can do this. 
-			}
-			updatePixel(c);
-		}
-	}
-	else {
-		for (int y = cellH - 1; y >= 0; y--)	
-			for (int x = 0; x < cellW - 1; x++) {
-				Cell& c = cells[cellIdx(x,y)];
-				//if (c.type.id == ALIVE.id) c.type.id = EMPTY.id;
 
-				if (data.runSim) {
-					cellUpdate(c);
-				}
-				c.flag = false;
-				updatePixel(c);
-				if (data.runSim) cellUpdate(c); // flickers without this.. EH
-			}
-	}
-	*/
 }
 
 // POSSIBLE IMPROVEMENTS
@@ -154,6 +148,7 @@ void Game::gameOfLifeUpdate(interfaceData& data)
 		for (int x = 1; x < cellW - 2; x++) { // ++ gets rid of bounds checking if statement, 8 * cellW * cellH == lots of 'if'
 			Cell& c = nextFrameCells[cellIdx(x, y)];
 			//if (c.type.id != EMPTY.id || c.type.id != ALIVE.id) c.type.id = EMPTY.id;
+			// CONSUME SAND, GROW
 
 			//for (int i = -1; i <= 1; i++)
 			//	for (int j = -1; j <= 1; j++) {
@@ -161,6 +156,7 @@ void Game::gameOfLifeUpdate(interfaceData& data)
 			//		if (cells[cellIdx(x + i, y + j)].type.id == ALIVE.id)		 // bottleneck
 			//			adjAlive++;
 			//	}
+
 			int adjAlive = 0;
 			adjAlive += (cells[cellIdx(x - 1, y - 1)].type.id == ALIVE.id); // TL
 			adjAlive += (cells[cellIdx(x + 0, y - 1)].type.id == ALIVE.id); // TM
@@ -171,156 +167,37 @@ void Game::gameOfLifeUpdate(interfaceData& data)
 			adjAlive += (cells[cellIdx(x + 0, y + 1)].type.id == ALIVE.id); // BM
 			adjAlive += (cells[cellIdx(x + 1, y + 1)].type.id == ALIVE.id); // BR
 
-
-			if (c.type.id == ALIVE.id) {
-				if (adjAlive != 2 && adjAlive != 3) c.type = EMPTY;
-
-				//if (adjAlive < 2) c.type = EMPTY;
-				//else if (adjAlive >= 4) c.type = EMPTY;	
+			if (c.type.id == ALIVE.id)
+				if (adjAlive != 2 && adjAlive != 3) c.type = EMPTY; // seems to work fine 
 				else c.type = ALIVE;
-			}
-			else if (c.type.id == EMPTY.id)
-				if (adjAlive == 3) 
-					c.type = ALIVE;
-
-			updatePixel(c);
-		}
-	cells = nextFrameCells; // Copying all cells is current bottleneck
-
-#elif 1 // padding so I can remove a single IF statement. seems stupid..
-		// questionable whether copying the ENTIRE cells vec just to avoid an if statement is optimal.
-		// shouldn't need to copy all information stored in each cell. get it working then change.
-	int paddedW = cellW + 1;
-	int paddedH = cellH + 1;
-	std::vector<Cell> newCells;
-
-	newCells.reserve(paddedW * paddedH);
-
-	// Map cells with padding.
-	for (int y = 1; y < paddedH - 1; y++)	// start 1 deep and stop 1 short for padding.
-		for (int x = 1; x < paddedW - 1; x++)	
-			newCells[y * paddedH + x] = cells[cellIdx(x - 1, y - 1)];
-
-	for (int x = 0; x < paddedW; x++) {					  // Horizontal Padding
-		newCells[x].type = EMPTY;						  // top row		
-		newCells[paddedW * paddedH - x - 1].type = EMPTY; // bottom row
-	}
-	for (int y = 0; y < paddedH; y++) {					  // Vertical Padding
-		newCells[y * paddedW].type = EMPTY;				  // left column
-		newCells[y * paddedW + paddedW - 1].type = EMPTY; // right column, should work ?
-	}
-
-	// Check within padding.
-	for (int y = 1; y < cellH - 1; y++) 
-		for (int x = 1; x < cellW - 1; x++) {
-			Cell& c = newCells[cellIdx(x, y)];
-
-			// unrolling the for loop, bit cheeky
-			int adjAlive = 0;
-			adjAlive += (newCells[cellIdx(x - 1, y - 1)].type.id == ALIVE.id); // TL
-			adjAlive += (newCells[cellIdx(x + 0, y - 1)].type.id == ALIVE.id); // TM
-			adjAlive += (newCells[cellIdx(x + 1, y - 1)].type.id == ALIVE.id); // TR
-			adjAlive += (newCells[cellIdx(x - 1, y + 0)].type.id == ALIVE.id); // ML
-			adjAlive += (newCells[cellIdx(x + 1, y + 0)].type.id == ALIVE.id); // MR
-			adjAlive += (newCells[cellIdx(x - 1, y + 1)].type.id == ALIVE.id); // BL
-			adjAlive += (newCells[cellIdx(x + 0, y + 1)].type.id == ALIVE.id); // BM
-			adjAlive += (newCells[cellIdx(x + 1, y + 1)].type.id == ALIVE.id); // BR
-
-			if (c.type.id == ALIVE.id) {
-				if (adjAlive < 2) c.type = EMPTY;
-				else if (adjAlive >= 4) c.type = EMPTY;
-				else c.type = ALIVE;
-			}
 			else if (c.type.id == EMPTY.id)
 				if (adjAlive == 3)
 					c.type = ALIVE;
 
 			updatePixel(c);
 		}
+	cells = nextFrameCells; // Copying all cells is current bottleneck
 
 #endif
 }
-
-#if 0
-// uses a save state, storing all cells to be checked next generation
-// PROBLEM: figuring out whether a certain cell has been added to iterate over next frame
-//			having duplicates means its checked multiple times, messes up everything.
-// uses padding to elimanate an if statement. minor tweak.
-static std::vector<Cell> cellsToUpdate = cells; // initially check all cells.
-std::vector<Cell> nextFrameAlive;
-std::unordered_map<int, bool> umap;
-//std::unordered_set<int> set; 
-// could use an unordered_map<int, bool>
-// first init all indexes of nextFrameAlive = false
-// next: each time .push_back wants to be called, 
-// first check the hash map index. very fast!
-for (auto& c : nextFrameAlive) {
-	std::pair<int, bool> temp(cellIdx(c.x, c.y), false);
-	umap.insert(temp);
-}
-
-for (Cell& c : cellsToUpdate) {
-	int adjAlive = 0;
-	for (int i = -1; i <= 1; i++)
-		for (int j = -1; j <= 1; j++) {
-			if (outOfBounds(c.x + i, c.y + j) || i == 0 && j == 0) continue; // could optimisze out.
-
-			//if (set.find(cellIdx(c.x + i, c.y + j)) != set.end()) // check if added to hash map.
-			//	nextFrameAlive.push_back(cells[cellIdx(c.x + i, c.y + j)]); // very slow though..
-			try {
-				if (!umap.at(cellIdx(c.x, c.y)))
-					nextFrameAlive.push_back(cells[cellIdx(c.x + i, c.y + j)]);
-			}
-			catch (...) {}
-
-			if (cells[cellIdx(c.x + i, c.y + j)].type.id == ALIVE.id)
-				adjAlive++;
-		}
-
-	if (c.type.id == ALIVE.id) {
-		if (adjAlive < 2) c.type = EMPTY;
-		else if (adjAlive >= 4) c.type = EMPTY;
-		else {
-			c.type = ALIVE;
-			nextFrameAlive.push_back(c);
-		}
-	}
-	else if (c.type.id == EMPTY.id)
-		if (adjAlive == 3) {
-			c.type = ALIVE;
-			nextFrameAlive.push_back(c);
-		}
-	updatePixel(c);
-}
-for (Cell& c : cellsToUpdate)
-cells[c.x, c.y] = c;
-
-cellsToUpdate = nextFrameAlive; // update cells to iter next frame
-
-#endif
-
-//void Game::gameOfLifeUpdateOptimised(interfaceData& data)
 
 // for only 2 cases, switch is likely slower.
 void Game::cellUpdate(Cell& c)
 {
 	if (c.flag) return;
-	//switch (c.type.id) 
-	//{
-	//	case 1: updateSand(c); return;
-	//	case 2: updateWater(c); return;
-	//	default: return;
-	//}
-	if		(c.type.id == 1) updateSand(c);
-	else if (c.type.id == 2) updateWater(c);
+	switch (c.type.id) {
+		case 1: updateSand(c); return;
+		case 2: updateWater(c); return;
+		default: return;
+	}
 }
 
 // dunno how to make this faster ... but its slow..
 void Game::updatePixel(Cell& c)
 {
-	//if (outOfBounds(c.x, c.y)) return;
-	for (int tY = 0; tY < cellScale; ++tY)
-		for (int tX = 0; tX < cellScale; ++tX) {
+	//if (outOfBounds(c.x, c.y)) return; 
+	for (int tY = 0; tY < cellScale; tY++)
+		for (int tX = 0; tX < cellScale; tX++) {
 			int idx = texIdx((c.x * cellScale) + tX, (c.y * cellScale) + tY);
 			textureData[idx + 0] = c.type.r;
 			textureData[idx + 1] = c.type.g;
@@ -407,17 +284,11 @@ void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int
 	else if (radius == 1)
 		changeCellType(x, y, CellTypeID, range);
 
-	// looks cleaner.
-	// quite a few parameters for the functions though..
-	switch (CellDrawShape) {
-		case 0:
-			circleFillAlgorithm(x, y, radius, CellTypeID, range, chance); return;
-		case 1:															  
-			circleOutlineAlgorithm(x, y, radius, CellTypeID, range); return;
-		case 2:															  
-			lineAlgorithm(x, y, radius, CellTypeID, range, chance); return;
-		case 3:															  
-			squareAlgorithm(x, y, radius, CellTypeID, range, chance); return;
+	switch (CellDrawShape) { // clean, but lots of repeat parameters.
+		case 0: circleFillAlgorithm(x, y, radius, CellTypeID, range, chance); return;
+		case 1: circleOutlineAlgorithm(x, y, radius, CellTypeID, range); return;
+		case 2:	lineAlgorithm(x, y, radius, CellTypeID, range, chance); return;
+		case 3:	squareAlgorithm(x, y, radius, CellTypeID, range, chance); return;
 	}
 }
 
@@ -428,6 +299,7 @@ void Game::changeCellType(int x, int y, int cellTypeID, int range)
 	c.flag = true;
 	c.type = varyPixelColour(range, cellTypeID);
 }
+
 void Game::swapCells(Cell& c1, Cell& c2)
 {
 	CellType t = c1.type;
@@ -437,6 +309,7 @@ void Game::swapCells(Cell& c1, Cell& c2)
 	c1.flag = true;
 	c2.flag = true;
 }
+
 bool Game::checkDensity(Cell& c1, int delX, int delY)
 {
 	if (outOfBounds(c1.x + delX, c1.y + delY)) return false;
@@ -449,33 +322,27 @@ bool Game::checkDensity(Cell& c1, int delX, int delY)
 
 // TODO: update velocity increase to deltaTime based.
 //		i.e: velocity += accel * deltaTime <-- actually increasing acceleration with time
-// Current rand is impacting performance. gpu pseudo rand? 
-// can't send each rand to gpu each time, 
-// would need to group them together in 1 buffer
+// 
+//c.v = 1; // didnt move so reset velocity. 
+//++c.v = std::clamp(c.v, 0, c.type.tV); // this looks proper autistic
+
+// Not too great, getRand() is slow, 
+// but about as optimal 
 void Game::updateSand(Cell& c)
 {
-#if 1
-	// this looks abhorrent
 	if (checkDensity(c, 0, 1)) return;
-	if (altCheck) {
-		if (checkDensity(c,  1, 1)) return;
-		if (checkDensity(c, -1, 1)) return;
-	}					 
-	else {				 
-		if (checkDensity(c, -1, 1)) return;
-		if (checkDensity(c,  1, 1)) return;
-	}
-#else 
-	//c.v = 1; // didnt move so reset velocity. 
-	//++c.v = std::clamp(c.v, 0, c.type.tV); // this looks proper autistic
-#endif
+	if (checkDensity(c, getRand({ -1, 0, 1 }), 1)) return;
 }
- 
+
 void Game::updateWater(Cell& c)
 {
-	if		(checkDensity(c,  0, 1)) return;
-	else if (checkDensity(c, -1, 1)) return;
-	else if (checkDensity(c,  1, 1)) return;
-	else if (checkDensity(c, -1, 0)) return;
-	else if (checkDensity(c,  1, 0)) return;
+	if (checkDensity(c,  0, 1)) return;
+	if (altCheck) {
+		if (checkDensity(c, getRand({-1, 0, 1}), 0)) return;
+		if (checkDensity(c, getRand({-1, 0, 1}), 1)) return;
+	}
+	else {
+		if (checkDensity(c, getRand({-1, 0, 1}), 1)) return;
+		if (checkDensity(c, getRand({-1, 0, 1}), 0)) return;
+	}
 }

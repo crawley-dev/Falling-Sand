@@ -1,18 +1,4 @@
 #pragma once
-
-//#include "imgui.h"
-//#include "imgui_impl_sdl2.h"
-//#include "imgui_impl_opengl3.h"
-//#include <stdio.h>
-//#include <SDL.h>
-//#include <SDL_opengl.h>
-//
-//#include <vector>
-//#include <ranges>
-//#include <algorithm>
-//#include <stdexcept>
-
-
 #include "pch.h"
 #include "cell.h"
 #include "interfaceData.h"
@@ -25,6 +11,7 @@ public:
 
 	void init(std::vector<GLubyte> texData, int textureW, int textureH, int scale);
 	void reload(std::vector<GLubyte> texData, int textureW, int textureH, int newScaleFactor);
+	void loadImage(std::vector<GLubyte>& imageData, int imageW, int imageH);
 	void reset(bool& resetSim);
 	void update(interfaceData& data);
 
@@ -52,7 +39,18 @@ public:
 	inline int cellIdx(int x, int y) { return (y * cellW) + x; }
 	inline int texIdx(int x, int y) { return 4 * (y * texW + x); }
 	inline std::vector<GLubyte> getTextureData() { return textureData; }
-	
+
+	inline constexpr uint64_t nextRand()
+	{
+		uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
+		z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
+		z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
+		return z ^ (z >> 31);
+	}
+
+	inline constexpr int64_t getRand(std::vector<int64_t> range)
+	{ return range[nextRand() % range.size()]; }
+
 	/** Main problem THIS DOESNT FIX: escaping a function that wants to do stuff on an invalid cell.
 	  * .. Could instead use pointers, give out a ptr that can be == nullptr. hmm doesn't solve anything.
 	  * .. .. Best idea would be to just throw an exception, but i guess the compiler does that for me.
@@ -68,11 +66,13 @@ public:
 	  **/
 
 private:
+	uint64_t x = 1234567890987654321; // Splitmix64 pseudo-rand algorithm.
 	bool altCheck = false;
+	const int g = 1;
 	int texW, texH, cellScale, cellW, cellH;	
+
 	std::vector<Cell> cells;
 	std::vector<GLubyte> textureData;
 	std::vector<CellType> Types;
-	//CellType Types[5]; // raw arrays aren't great.
 	CellType EMPTY, SAND, WATER, CONCRETE, ALIVE;
 };
