@@ -1,19 +1,27 @@
 #pragma once
-
 #include "pch.h"
 
-// could come up with a better system than manually adding new constexpr's each time, 
-// change system of "creating textures", textures created at compile time in ID && name only??
-// at runtime they're initialised into OpenGL via "createTexture"
-// 
-// constant expression --> at compilation changes name to value. no memory cost!!
-// constexpr enum ?? isn't that what an enum is by definition.
-constexpr int GAME_TEXTURE_IDX		 = 0;
-constexpr int GAME_TEXTURE_ID        = 2;
-constexpr int BACKGROUND_TEXTURE_IDX = 1;
-constexpr int BACKGROUND_TEXTURE_ID  = 3;
-constexpr int PRESENT_TEXTURE_IDX	 = 2;
-constexpr int PRESENT_TEXTURE_ID	 = 4;
+// enum classes create a new type, with no implicit casting, 
+//	even when explicitly stating their equivalent type???
+// So I created scope blocked enums instead via nesting the enums
+
+class TexIndex { // Scope Blocked Enum.
+public:
+	enum {
+		GAME,
+		BACKGROUND,
+		PRESENTED
+	};
+};
+
+class TexID { // Scope Blocked Enum.
+public:
+	enum {
+		GAME = 2,
+		BACKGROUND,
+		PRESENTED
+	};
+};
 
 struct TextureData
 {
@@ -24,7 +32,7 @@ struct TextureData
 
 	TextureData(GLuint ID, int WIDTH, int HEIGHT, std::vector<GLubyte> DATA)
 	{
-		id     = ID;
+		id	   = ID;
 		width  = WIDTH;
 		height = HEIGHT;
 		data   = DATA;

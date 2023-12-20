@@ -1,23 +1,4 @@
 #pragma once
-
-//#include "pch.h"
-//#include "imgui.h"
-//#include "imgui_impl_sdl2.h"
-//#include "imgui_impl_opengl3.h"
-//#include <stdio.h>
-//#include <SDL.h>
-//#include <SDL_opengl.h>
-//#include <SDL_image.h>	
-////#include <OpenImageIO/imageio.h> // OpenImageIO
-//
-//#include <iostream>
-//#include <thread>
-//#include <iomanip>
-//#include <vector>
-//#include <chrono>
-//#include <algorithm>
-//#include <memory>
-
 #include "pch.h"
 #include "interfaceData.h"
 
@@ -50,9 +31,9 @@ public:
 	inline bool running() { return applicationRunning; }
 
 private:
-	interfaceData data;
 	bool applicationRunning = false;
 
+	interfaceData data;
 	Game* game				 = nullptr; // std::unique_ptr<Game>      
 	Interface* interface	 = nullptr;	// std::unique_ptr<Interface>  
 	SDL_Window* window		 = nullptr; // could use a unique ptr but would require a refactor, 

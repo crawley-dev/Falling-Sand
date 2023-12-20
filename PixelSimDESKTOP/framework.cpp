@@ -84,10 +84,10 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
 
     // Creating Textures.
     data = interfaceData();
-    data.textures.push_back(TextureData(GAME_TEXTURE_ID      , 0, 0, {}));
-    data.textures.push_back(TextureData(BACKGROUND_TEXTURE_ID, 0, 0, {}));
+    data.textures.push_back(TextureData(TexID::GAME      , 0, 0, {}));
+    data.textures.push_back(TextureData(TexID::BACKGROUND, 0, 0, {}));
     //data.textures.push_back(TextureData(PRESENT_TEXTURE_ID   , 0, 0, {}));
-    
+
     applicationRunning = true;
     return true;
 }
@@ -111,8 +111,9 @@ void Framework::update()
     interface->debugMenu(data);
 
     if (ImGui::GetFrameCount() < 2) return;
+
     ImGuiIO& io = ImGui::GetIO();
-    TextureData& texture = data.textures[GAME_TEXTURE_IDX];
+    TextureData& texture = data.textures[TexIndex::GAME];
 
     data.drawSize           += (int)io.MouseWheel;
     data.drawSize           = std::clamp(data.drawSize          , 1,1000);
@@ -124,8 +125,8 @@ void Framework::update()
     if (io.MouseDown[0]) mouseDraw();
     if (data.resetSim) game->reset(data.resetSim);
     if (data.loadImage) {
-        loadImageRGB(data.imagePath, BACKGROUND_TEXTURE_IDX);
-        TextureData& img = data.textures[BACKGROUND_TEXTURE_IDX];
+        loadImageRGB(data.imagePath, TexIndex::BACKGROUND);
+        TextureData& img = data.textures[TexIndex::BACKGROUND];
         game->loadImage(img.data, img.width, img.height);
         data.loadImage = false;
     }
@@ -138,8 +139,9 @@ void Framework::update()
     game->update(data);
 
     texture.data = game->getTextureData();
-    for (int i = 0; i < data.textures.size() - 1; i++)
-        updateTexture(i);
+
+    for (TextureData& texture : data.textures)
+        updateTexture(texture.id - 2); // id - 2 == idx.
 
     interface->gameWindow(data);
 }
@@ -156,8 +158,8 @@ void Framework::render()
     // Placed After ImGui::Render() to prevent ImGui HUD overwriting my textures.
     if (ImGui::GetFrameCount() == 2) {
         for (auto texture : data.textures)
-            createTexture(texture.id - 2); // (id - 2) == texture index.
-        TextureData& texture = data.textures[GAME_TEXTURE_IDX];
+            createTexture(texture.id - 2); // (id - 2) == index in texture array.
+        TextureData& texture = data.textures[TexIndex::GAME];
         game->init(texture.data, texture.width, texture.height, data.scaleFactor);
     }
 
@@ -198,8 +200,8 @@ void Framework::clean()
 // TODO: Investigate SDL_ConvertSurfaceFormat
 void Framework::loadImageRGB(std::string path, int textureIndex)
 {
-    TextureData& texture = data.textures[BACKGROUND_TEXTURE_IDX];
-    TextureData& gameTexture = data.textures[GAME_TEXTURE_IDX];
+    TextureData& texture = data.textures[textureIndex];
+    TextureData& gameTexture = data.textures[TexIndex::GAME];
 
     SDL_Surface* image = IMG_Load(path.c_str());
     if (image == NULL) {
@@ -211,7 +213,7 @@ void Framework::loadImageRGB(std::string path, int textureIndex)
     if (image->format->format != formatRGB24) {
         image = SDL_ConvertSurfaceFormat(image, SDL_PIXELFORMAT_RGB24, 0);
         if (image->format->format != formatRGB24) { // last chance Surface Convert.
-            printf("Unable to load image Pixel Format: ");
+            std::cout << "Unable to load image Pixel Format: " << '\n';
             std::cout << SDL_GetPixelFormatName(image->format->format) << '\n';
             return;
         }
@@ -219,7 +221,7 @@ void Framework::loadImageRGB(std::string path, int textureIndex)
 
     // if texture is larger than the game area:
     // scale it down, either x2 or --> game area bounds..
-    /*if (image->w * image->h * 4 > gameTexture.data.size()) {
+    /*if (image->w * image->h * 4 > gameTexture.data.size()) { // doesn't account for long ass images in either w or h..
         SDL_Surface* temp = NULL;
         SDL_Rect destinationRect;
         destinationRect.x = 0;
@@ -231,13 +233,19 @@ void Framework::loadImageRGB(std::string path, int textureIndex)
         SDL_FreeSurface(temp);
     }*/
 
+    /* stack overflow to the rescue!! https://stackoverflow.com/questions/40850196/sdl2-resize-a-surface
+    if (image->w > GET_GAME_WIDTH || image->h > GET_GAME_HEIGHT) {
+         !! big data manipulation wizard to the rescue !!
+    }*/
+
+
    // have to (un)lock surface to stop SDL2 breaking 
     SDL_LockSurface(image);
     Uint8* pixel = (Uint8*)image->pixels;
     SDL_UnlockSurface(image);
 
     // R | G | B | A 
-    // 1 * 4  = 4 bytes 
+    // 1 + 1 + 1 + 1 == 4 bytes
     constexpr int bytesPerPixel = 4;
     int size = image->w * image->h * bytesPerPixel;
 
@@ -252,7 +260,6 @@ void Framework::loadImageRGB(std::string path, int textureIndex)
         texture.data[i + 2] = *pixel; pixel++;
         texture.data[i + 3] = 255;
     }
-
 
     SDL_FreeSurface(image);
     updateTexture(textureIndex);
@@ -269,7 +276,7 @@ void Framework::loadImageRGB(std::string path, int textureIndex)
 
 void Framework::loadImageRGBA(std::string path, int textureIndex)
 {
-    TextureData& texture = data.textures[BACKGROUND_TEXTURE_IDX];
+    TextureData& texture = data.textures[TexIndex::BACKGROUND];
     SDL_Surface* image = IMG_Load(path.c_str());
     if (image == NULL) {
         printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
@@ -342,10 +349,9 @@ void Framework::createTexture(int textureIndex)
 
 void Framework::reloadTextures()
 {
-    // texture id 0 & 1 are taken. My textures start indexing at 2
     for (int i = 0; i < data.textures.size() - 1; i++) {
         glDeleteTextures(1, &data.textures[i].id); // delete old textures
-        createTexture(i); // create new texture.
+        createTexture(i);
     }
     data.texReloadCount++;
 }

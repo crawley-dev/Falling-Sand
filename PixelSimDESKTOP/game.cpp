@@ -1,5 +1,4 @@
 #pragma once
-
 #include "pch.h"
 #include "game.h"
 
@@ -7,7 +6,7 @@ Game::Game() {}
 Game::~Game() {}
 
 // annoying that texture --> tex for w,h but not data!!
-void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int scale)
+void Game::init(std::vector<GLubyte>& texData, int textureW, int textureH, int scale)
 {
 	cellScale   = scale;
 	textureData = texData;
@@ -17,11 +16,11 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int sc
 	cellH       = texH / cellScale;
 
 	Types.clear();
-	EMPTY    = CellType(0, 75, 75, 75, 255, 0, 0); Types.push_back(EMPTY);
+	EMPTY    = CellType(0,  50,  50,  50, 255,    0, 0); Types.push_back(EMPTY	 );
 	SAND     = CellType(1, 245, 215, 176, 255, 1600, 4); Types.push_back(SAND    );
 	WATER	 = CellType(2, 20 , 20 , 255, 125,  997, 4); Types.push_back(WATER   );
 	CONCRETE = CellType(3, 200, 200, 200, 255, 2000, 4); Types.push_back(CONCRETE);
-	ALIVE	 = CellType(4, 255,   0, 255, 255,    0, 0); Types.push_back(ALIVE   );
+	ALIVE	 = CellType(4,   0, 255,  30, 255,    0, 0); Types.push_back(ALIVE   );
 
 	cells.clear(); // once upon a time, it didn't reset cell arr on reload :/ oops
 	cells.reserve(cellW * cellH); // memory leak if the function below is aborted before completion !!	
@@ -35,7 +34,7 @@ void Game::init(std::vector<GLubyte> texData, int textureW, int textureH, int sc
 		}
 }
 
-void Game::reload(std::vector<GLubyte> newTexData, int newTexW, int newTexH, int newScaleFactor)
+void Game::reload(std::vector<GLubyte>& newTexData, int newTexW, int newTexH, int newScaleFactor)
 {
 	int newCellW = newTexW / newScaleFactor;
 	int newCellH = newTexH / newScaleFactor;
@@ -50,19 +49,17 @@ void Game::reload(std::vector<GLubyte> newTexData, int newTexW, int newTexH, int
 				newCells.push_back(cells[cellIdx(x,y)]);
 		}
 
-	cellScale = newScaleFactor;
+	cellScale	= newScaleFactor;
 	textureData = newTexData;
-	texW = newTexW;
-	texH = newTexH;
-	cellW = newCellW;
-	cellH = newCellH;
-	cells = newCells;
+	texW        = newTexW;
+	texH        = newTexH;
+	cellW		= newCellW;
+	cellH		= newCellH;
+	cells		= newCells;
 }
 
 void Game::loadImage(std::vector<GLubyte>& imageData, int imageW, int imageH)
 {
-	// some out of bounds stuff whoops.
-	//if (imageData.size() > textureData.size()) { printf("Image too large, unable to load!\n"); return; };
 	if (imageData.size() > textureData.size()) {
 		imageW = texW;
 		imageH = texH;
@@ -79,7 +76,7 @@ void Game::loadImage(std::vector<GLubyte>& imageData, int imageW, int imageH)
 			c.type.b = imageData[idx + 2];
 			c.type.a = imageData[idx + 3]; // equivalent to 255 for RGB textures.
 			idx     += 4; // don't actually know if this is faster than doing all the multiplication??
-			updatePixel(c); // why no wokr >:O .. freezes the grid ?
+			updatePixel(c); // why no wokr >:O .. freezes the grid ? fixed lol
 		}
 }
 
@@ -96,7 +93,6 @@ void Game::reset(bool& resetSim)
 	resetSim = false;
 }
 
-// checkout quadtree approach.
 void Game::update(interfaceData& data)
 {
 	if (texH == 0 || texW == 0) return;
@@ -105,11 +101,6 @@ void Game::update(interfaceData& data)
 		for (Cell& c : cells) 
 			updatePixel(c);
 		return;
-	}
-
-	if (data.frame % 2 == 0 && false) {
-		mouseDraw(texW / 2, texH / 2, (data.frame % texH) - 1, 100, 0, 1, 0);
-		mouseDraw(texW / 2, texH / 2, data.frame % texH,       100, 1, 1, 0);
 	}
 
 	if (data.playGameOfLife) 
@@ -134,21 +125,20 @@ void Game::update(interfaceData& data)
 	if (!data.scanTopDown && data.frame % 3 == 0 || data.scanTopDown) // WUNDERBAR
 		data.scanTopDown = altCheck = !data.scanTopDown;
 	data.frame++;
-
 }
 
 // POSSIBLE IMPROVEMENTS
-// Add 1 layer of padding, no need for out of bounds check 
-// store states of all neighbour cells, only need to check 10% as many states
+// - checkout quadtree approach.
+// - Add 1 layer of padding, no need for out of bounds check 
+// - store states of all neighbour cells, only need to check 10% as many states
+//	 then update a cell's neighbour state when its value is changed. ?? idk man
 void Game::gameOfLifeUpdate(interfaceData& data)
 {
-#if true // the boring option... 
 	std::vector<Cell> nextFrameCells = cells; // Copying all cells to new vec is current bottleneck
-	for (int y = 1; y < cellH - 2; y++)	  // doesn't check edge cells ,means we unroll adjAlive for loo
-		for (int x = 1; x < cellW - 2; x++) { // ++ gets rid of bounds checking if statement, 8 * cellW * cellH == lots of 'if'
+	for (int y = 1; y < cellH - 2; y++)		  // doesn't check edge cells, can remove if statement & unroll adjacentcy for loop
+		for (int x = 1; x < cellW - 2; x++) {
 			Cell& c = nextFrameCells[cellIdx(x, y)];
-			//if (c.type.id != EMPTY.id || c.type.id != ALIVE.id) c.type.id = EMPTY.id;
-			// CONSUME SAND, GROW
+			//if (c.type.id != EMPTY.id || c.type.id != ALIVE.id) c.type.id = EMPTY.id; // CONSUME SAND, GROW
 
 			//for (int i = -1; i <= 1; i++)
 			//	for (int j = -1; j <= 1; j++) {
@@ -177,8 +167,6 @@ void Game::gameOfLifeUpdate(interfaceData& data)
 			updatePixel(c);
 		}
 	cells = nextFrameCells; // Copying all cells is current bottleneck
-
-#endif
 }
 
 // for only 2 cases, switch is likely slower.
@@ -188,14 +176,15 @@ void Game::cellUpdate(Cell& c)
 	switch (c.type.id) {
 		case 1: updateSand(c); return;
 		case 2: updateWater(c); return;
-		default: return;
 	}
 }
 
-// dunno how to make this faster ... but its slow..
-void Game::updatePixel(Cell& c)
+/*--------------------------------------------------------------------------------------
+---- Cell / Pixel Updates --------------------------------------------------------------
+--------------------------------------------------------------------------------------*/
+
+void Game::updatePixel(Cell& c) // dunno how to make this faster ... but its slow..
 {
-	//if (outOfBounds(c.x, c.y)) return; 
 	for (int tY = 0; tY < cellScale; tY++)
 		for (int tX = 0; tX < cellScale; tX++) {
 			int idx = texIdx((c.x * cellScale) + tX, (c.y * cellScale) + tY);
@@ -206,10 +195,10 @@ void Game::updatePixel(Cell& c)
 		}
 }
 
-// this function is shit slow
+// this function is quite slow, meh
 CellType Game::varyPixelColour(int range, int cellTypeID)
 {
-	if (range <= 0) return Types[cellTypeID];
+	if (range <= 0 || cellTypeID == EMPTY.id) return Types[cellTypeID];
 	CellType material = Types[cellTypeID];
 	material.r = std::clamp(material.r - rand() % range, 0, 255);
 	material.g = std::clamp(material.g - rand() % range, 0, 255);
@@ -217,6 +206,84 @@ CellType Game::varyPixelColour(int range, int cellTypeID)
 	material.a = std::clamp(material.a - rand() % range, 0, 255);
 	return material;
 }
+
+void Game::changeCellType(int x, int y, int cellTypeID, int range)
+{
+	if (outOfBounds(x, y)) return;
+	Cell& c = cells[cellIdx(x, y)];
+	c.flag = true;
+	c.type = varyPixelColour(range, cellTypeID);
+}
+
+void Game::swapCells(Cell& c1, Cell& c2)
+{
+	CellType t = c1.type;
+	c1.type = c2.type;
+	c2.type = t;
+
+	c1.flag = true;
+	c2.flag = true;
+}
+
+bool Game::checkDensity(Cell& c1, int delX, int delY)
+{
+	if (outOfBounds(c1.x + delX, c1.y + delY)) return false;
+	Cell& c2 = cells[cellIdx(c1.x + delX, c1.y + delY)];
+	if (c1.type.d <= c2.type.d) return false; // density check
+
+	swapCells(c1, c2);
+	return true;
+}
+
+/*--------------------------------------------------------------------------------------
+---- Material Update -------------------------------------------------------------------
+--------------------------------------------------------------------------------------*/
+
+// TODO: update velocity increase to deltaTime based.
+//		i.e: velocity += accel * deltaTime <-- actually increasing acceleration with time
+// rand() function is slow, SplitMix64 is better, but about as optimal 
+void Game::updateSand(Cell& c)
+{
+	if (checkDensity(c, 0, 1)) return;
+	checkDensity(c, randOffset(), 1);
+}
+
+void Game::updateWater(Cell& c)
+{
+	if (checkDensity(c,  0, 1)) return;
+	if (altCheck) {
+		if (checkDensity(c, randOffset(), 0)) return;
+		checkDensity(c, randOffset(), 1);
+	}
+	else {
+		if (checkDensity(c, randOffset(), 1)) return;
+		checkDensity(c, randOffset(), 0);
+	}
+}
+
+/*--------------------------------------------------------------------------------------
+---- Primitive Algorithms -------------------------------------------------------------- 
+--------------------------------------------------------------------------------------*/
+
+void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int CellDrawShape, int range)
+{
+	const int x = mx / cellScale;
+	const int y = my / cellScale;
+
+	// edge cases.
+	if (outOfBounds(x, y))
+		return;
+	else if (radius == 1)
+		changeCellType(x, y, CellTypeID, range);
+
+	switch (CellDrawShape) { // clean, but lots of repeat parameters.
+	case 0: circleFillAlgorithm(x, y, radius, CellTypeID, range, chance); return;
+	case 1: circleOutlineAlgorithm(x, y, radius, CellTypeID, range); return;
+	case 2:	lineAlgorithm(x, y, radius, CellTypeID, range, chance); return;
+	case 3:	squareAlgorithm(x, y, radius, CellTypeID, range, chance); return;
+	}
+}
+
 
 void Game::circleFillAlgorithm(int x, int y, int radius, int CellTypeID, int range, int chance)
 {
@@ -252,9 +319,9 @@ void Game::drawCircle(int xc, int yc, int x, int y, int PixelTypeID, int range)
 {
 	changeCellType(xc + x, yc + y, PixelTypeID, range); // BL
 	changeCellType(xc - x, yc + y, PixelTypeID, range); // BR
-	changeCellType(xc + x, yc - y, PixelTypeID, range); 
-	changeCellType(xc - x, yc - y, PixelTypeID, range); 
-	changeCellType(xc + y, yc + x, PixelTypeID, range); 
+	changeCellType(xc + x, yc - y, PixelTypeID, range);
+	changeCellType(xc - x, yc - y, PixelTypeID, range);
+	changeCellType(xc + y, yc + x, PixelTypeID, range);
 	changeCellType(xc - y, yc + x, PixelTypeID, range);
 	changeCellType(xc + y, yc - x, PixelTypeID, range);
 	changeCellType(xc - y, yc - x, PixelTypeID, range);
@@ -271,78 +338,4 @@ void Game::squareAlgorithm(int x, int y, int radius, int CellTypeID, int range, 
 		for (auto tx = -radius / 2; tx < radius / 2; ++tx)
 			if (rand() % (101 - chance) == 0)
 				changeCellType(x + tx, y + ty, CellTypeID, range);
-}
-
-void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int CellDrawShape, int range)
-{
-	const int x = mx / cellScale;
-	const int y = my / cellScale;
-
-	// edge cases.
-	if (outOfBounds(x, y)) 
-		return;
-	else if (radius == 1)
-		changeCellType(x, y, CellTypeID, range);
-
-	switch (CellDrawShape) { // clean, but lots of repeat parameters.
-		case 0: circleFillAlgorithm(x, y, radius, CellTypeID, range, chance); return;
-		case 1: circleOutlineAlgorithm(x, y, radius, CellTypeID, range); return;
-		case 2:	lineAlgorithm(x, y, radius, CellTypeID, range, chance); return;
-		case 3:	squareAlgorithm(x, y, radius, CellTypeID, range, chance); return;
-	}
-}
-
-void Game::changeCellType(int x, int y, int cellTypeID, int range)
-{
-	if (outOfBounds(x, y)) return;
-	Cell& c = cells[cellIdx(x, y)];
-	c.flag = true;
-	c.type = varyPixelColour(range, cellTypeID);
-}
-
-void Game::swapCells(Cell& c1, Cell& c2)
-{
-	CellType t = c1.type;
-	c1.type = c2.type;
-	c2.type = t;
-
-	c1.flag = true;
-	c2.flag = true;
-}
-
-bool Game::checkDensity(Cell& c1, int delX, int delY)
-{
-	if (outOfBounds(c1.x + delX, c1.y + delY)) return false;
-	Cell& c2 = cells[cellIdx(c1.x + delX, c1.y + delY)];
-	if (c1.type.d <= c2.type.d) return false; // density check
-
-	swapCells(c1, c2);
-	return true;
-}
-
-// TODO: update velocity increase to deltaTime based.
-//		i.e: velocity += accel * deltaTime <-- actually increasing acceleration with time
-// 
-//c.v = 1; // didnt move so reset velocity. 
-//++c.v = std::clamp(c.v, 0, c.type.tV); // this looks proper autistic
-
-// Not too great, getRand() is slow, 
-// but about as optimal 
-void Game::updateSand(Cell& c)
-{
-	if (checkDensity(c, 0, 1)) return;
-	if (checkDensity(c, getRand({ -1, 0, 1 }), 1)) return;
-}
-
-void Game::updateWater(Cell& c)
-{
-	if (checkDensity(c,  0, 1)) return;
-	if (altCheck) {
-		if (checkDensity(c, getRand({-1, 0, 1}), 0)) return;
-		if (checkDensity(c, getRand({-1, 0, 1}), 1)) return;
-	}
-	else {
-		if (checkDensity(c, getRand({-1, 0, 1}), 1)) return;
-		if (checkDensity(c, getRand({-1, 0, 1}), 0)) return;
-	}
 }

@@ -1,5 +1,4 @@
 #pragma once
-
 #include "pch.h"
 #include "interface.h"
 
@@ -31,13 +30,10 @@ void Interface::debugMenu(interfaceData& data)
     if (ImGui::TreeNode("Simulation Settings")) 
     {
         ImGui::SeparatorText("Simulation Settings");
-        //ImGui::Checkbox("Toggle Demo Window"        , &showDemoWindow     );         
         ImGui::Checkbox("Run Simulation"            , &data.runSim        );
         ImGui::Checkbox("Play Conway's Game of Life", &data.playGameOfLife);
         
-        if (ImGui::Button("Reset Sim"     )) data.resetSim    =  true;
-        if (ImGui::Button("Scan Top->Bot" )) data.scanTopDown =  true; ImGui::SameLine();
-        if (ImGui::Button("Scan Bot->Top" )) data.scanTopDown = false;
+        if (ImGui::Button("Reset Sim")) data.resetSim = true;
 
         if (ImGui::Button("Decrease Cell Scale")) {
             data.scaleFactor--;
@@ -171,7 +167,6 @@ void Interface::gameWindow(interfaceData& data)
     ImGui::Begin("GameWindow");
     frameRate = io.Framerate;
 
-    //loadedTex = loadedTex % data.textures.size(); // should be fiine
     loadedTex = loadedTex % 2;
     TextureData& texture = data.textures[loadedTex];
     // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow",

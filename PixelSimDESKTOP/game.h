@@ -9,8 +9,8 @@ public:
 	Game();
 	~Game();
 
-	void init(std::vector<GLubyte> texData, int textureW, int textureH, int scale);
-	void reload(std::vector<GLubyte> texData, int textureW, int textureH, int newScaleFactor);
+	void init(std::vector<GLubyte>& texData, int textureW, int textureH, int scale);
+	void reload(std::vector<GLubyte>& texData, int textureW, int textureH, int newScaleFactor);
 	void loadImage(std::vector<GLubyte>& imageData, int imageW, int imageH);
 	void reset(bool& resetSim);
 	void update(interfaceData& data);
@@ -39,8 +39,9 @@ public:
 	inline int cellIdx(int x, int y) { return (y * cellW) + x; }
 	inline int texIdx(int x, int y) { return 4 * (y * texW + x); }
 	inline std::vector<GLubyte> getTextureData() { return textureData; }
+	//inline std::vector<GLubyte>* getTextureData_PTR() { return &textureData; }
 
-	inline constexpr uint64_t nextRand()
+	inline constexpr uint64_t splitMix64_NextRand()
 	{
 		uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
 		z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
@@ -48,25 +49,16 @@ public:
 		return z ^ (z >> 31);
 	}
 
-	inline constexpr int64_t getRand(std::vector<int64_t> range)
-	{ return range[nextRand() % range.size()]; }
+	inline constexpr int64_t boundedRand(std::vector<int64_t> range) // slow as shit
+	{ return range[splitMix64_NextRand() % range.size()]; }
 
-	/** Main problem THIS DOESNT FIX: escaping a function that wants to do stuff on an invalid cell.
-	  * .. Could instead use pointers, give out a ptr that can be == nullptr. hmm doesn't solve anything.
-	  * .. .. Best idea would be to just throw an exception, but i guess the compiler does that for me.
-	  * 
-	  * inline Cell& getCell(int x, int y) 
-	  *	if (outOfBounds(x,y) {
-	  * 		printf("out of bounds: (%d,%d)\n", x, y);
-	  * 		throw std::invalid_argument("out of vector range.");
-	  * 		//return cells[0];
-	  * 	}
-	  *	return cells[cellIdx(x, y)];
-	  * }
-	  **/
+	inline constexpr int randOffset()
+	{ return randRange[splitMix64_NextRand() % 3]; } // hard coded. 
 
 private:
+	int randRange[3] = {-1, 0, 1};
 	uint64_t x = 1234567890987654321; // Splitmix64 pseudo-rand algorithm.
+
 	bool altCheck = false;
 	const int g = 1;
 	int texW, texH, cellScale, cellW, cellH;	
@@ -75,4 +67,5 @@ private:
 	std::vector<GLubyte> textureData;
 	std::vector<CellType> Types;
 	CellType EMPTY, SAND, WATER, CONCRETE, ALIVE;
+	// change ^^ to enum ?? 
 };
