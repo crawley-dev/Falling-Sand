@@ -16,24 +16,30 @@ void Game::init(std::vector<GLubyte>& texData, int textureW, int textureH, int s
 	cellH       = texH / cellScale;
 
 	Types.clear();
-	EMPTY    = CellType(0,  50,  50,  50, 255,    0, 0); Types.push_back(EMPTY	 );
-	SAND     = CellType(1, 245, 215, 176, 255, 1600, 4); Types.push_back(SAND    );
-	WATER	 = CellType(2, 20 , 20 , 255, 125,  997, 4); Types.push_back(WATER   );
-	CONCRETE = CellType(3, 200, 200, 200, 255, 2000, 4); Types.push_back(CONCRETE);
-	ALIVE	 = CellType(4,   0, 255,  30, 255,    0, 0); Types.push_back(ALIVE   );
+	//EMPTY    = CellType(0, 50 , 50 , 50 , 255, 0   , 0); Types.push_back(EMPTY	 );
+	//SAND     = CellType(1, 245, 215, 176, 255, 1600, 4); Types.push_back(SAND    );
+	//WATER	 = CellType(2, 20 , 20 , 255, 125, 997 , 4); Types.push_back(WATER   );
+	//CONCRETE = CellType(3, 200, 200, 200, 255, 2000, 4); Types.push_back(CONCRETE);
+	//ALIVE	 = CellType(4, 0  , 255, 30 , 255, 0   , 0); Types.push_back(ALIVE   );
+
+	EMPTY	 = CellType(0, 50 , 50 , 50 , 255, 0   ); Types.push_back(EMPTY   );
+	SAND     = CellType(1, 245, 215, 176, 255, 1600); Types.push_back(SAND    );
+	WATER	 = CellType(2, 20 , 20 , 255, 125, 997 ); Types.push_back(WATER   );
+	CONCRETE = CellType(3, 200, 200, 200, 255, 2000); Types.push_back(CONCRETE);
+	ALIVE	 = CellType(4, 0  , 255, 30 , 255, 0   ); Types.push_back(ALIVE	  );
 
 	cells.clear(); // once upon a time, it didn't reset cell arr on reload :/ oops
-	cells.reserve(cellW * cellH); // memory leak if the function below is aborted before completion !!	
+	cells.reserve(cellW * cellH); // optimises out vector re-location as it grows.
 
-	// TODO: further testing, .reserve + [idx] vs push_back.
-	// Could reserve ++ push_back_unchecked <-- doesn't do capcity checking, can break but also faster with proper reserve.
 	for (int y = 0; y < cellH; ++y)
 		for (int x = 0; x < cellW; ++x) { 
-			cells.emplace_back(cellIdx(x, y), x, y, 5, EMPTY, false); //emplace_back doesn't create then copy an instance of the obj
+			//cells.emplace_back(cellIdx(x, y), x, y, 5, EMPTY, false); //emplace_back doesn't create then copy an instance of the obj
+			cells.emplace_back(x, y, EMPTY, false);
 			updatePixel(cells[cellIdx(x,y)]);
 		}
 }
 
+// this can be more efficient, currently creates and copies over a vector, could inline it.
 void Game::reload(std::vector<GLubyte>& newTexData, int newTexW, int newTexH, int newScaleFactor)
 {
 	int newCellW = newTexW / newScaleFactor;
@@ -44,7 +50,7 @@ void Game::reload(std::vector<GLubyte>& newTexData, int newTexW, int newTexH, in
 	for (int y = 0; y < newCellH; ++y)
 		for (int x = 0; x < newCellW; ++x) {
 			if (outOfBounds(x, y))
-				newCells.emplace_back(cellIdx(x, y), x, y, 1, EMPTY, false);
+				newCells.emplace_back(x, y, EMPTY, false);
 			else
 				newCells.push_back(cells[cellIdx(x,y)]);
 		}
@@ -87,7 +93,7 @@ void Game::reset(bool& resetSim)
 
 	for (int y = 0; y < cellH; ++y)
 		for (int x = 0; x < cellW; ++x) {
-			cells.emplace_back(cellIdx(x, y), x, y, 5, EMPTY, false);
+			cells.emplace_back(x, y, EMPTY, false);
 			updatePixel(cells[cellIdx(x,y)]);
 		}
 	resetSim = false;
