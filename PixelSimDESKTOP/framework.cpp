@@ -1,9 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "framework.h"
-#include "interface.h"
-#include "game.h"
-    
+
 // >> TODO << \\
 // Abstract out functions:
 // init, update, render
@@ -11,7 +9,7 @@
 Framework::Framework() {}
 Framework::~Framework() {}
 
-// Full path is : C:\Users\Tom\source\repos\TheCookiess\PixelPhysV2\PixelSimDESKTOP\ //
+/* Full path is : C:\Users\Tom\source\repos\TheCookiess\PixelPhysV2\PixelSimDESKTOP\ */
 bool Framework::init(const char* title, int xpos, int ypos, int width, int height)
 {
     // Setup SDL

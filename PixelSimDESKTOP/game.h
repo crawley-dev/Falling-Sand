@@ -39,7 +39,6 @@ public:
 	inline int cellIdx(int x, int y) { return (y * cellW) + x; }
 	inline int texIdx(int x, int y) { return 4 * (y * texW + x); }
 	inline std::vector<GLubyte> getTextureData() { return textureData; }
-	//inline std::vector<GLubyte>* getTextureData_PTR() { return &textureData; }
 
 	inline constexpr uint64_t splitMix64_NextRand()
 	{

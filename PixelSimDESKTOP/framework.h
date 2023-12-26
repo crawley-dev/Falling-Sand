@@ -1,10 +1,7 @@
 #pragma once
 #include "pch.h"
-#include "interfaceData.h"
-
-// make compiler happy
-class Interface; 
-class Game;
+#include "interface.h"
+#include "game.h"
 
 class Framework
 {
