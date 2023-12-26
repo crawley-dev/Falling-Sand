@@ -16,12 +16,6 @@ void Game::init(std::vector<GLubyte>& texData, int textureW, int textureH, int s
 	cellH       = texH / cellScale;
 
 	Types.clear();
-	//EMPTY    = CellType(0, 50 , 50 , 50 , 255, 0   , 0); Types.push_back(EMPTY	 );
-	//SAND     = CellType(1, 245, 215, 176, 255, 1600, 4); Types.push_back(SAND    );
-	//WATER	 = CellType(2, 20 , 20 , 255, 125, 997 , 4); Types.push_back(WATER   );
-	//CONCRETE = CellType(3, 200, 200, 200, 255, 2000, 4); Types.push_back(CONCRETE);
-	//ALIVE	 = CellType(4, 0  , 255, 30 , 255, 0   , 0); Types.push_back(ALIVE   );
-
 	EMPTY	 = CellType(0, 50 , 50 , 50 , 255, 0   ); Types.push_back(EMPTY   );
 	SAND     = CellType(1, 245, 215, 176, 255, 1600); Types.push_back(SAND    );
 	WATER	 = CellType(2, 20 , 20 , 255, 125, 997 ); Types.push_back(WATER   );
@@ -33,8 +27,7 @@ void Game::init(std::vector<GLubyte>& texData, int textureW, int textureH, int s
 
 	for (int y = 0; y < cellH; ++y)
 		for (int x = 0; x < cellW; ++x) { 
-			//cells.emplace_back(cellIdx(x, y), x, y, 5, EMPTY, false); //emplace_back doesn't create then copy an instance of the obj
-			cells.emplace_back(x, y, EMPTY, false);
+			cells.emplace_back(x, y, EMPTY, false); // doesn't create a new object, then copy it to vec
 			updatePixel(cells[cellIdx(x,y)]);
 		}
 }
@@ -48,12 +41,11 @@ void Game::reload(std::vector<GLubyte>& newTexData, int newTexW, int newTexH, in
 	newCells.reserve(newCellW * newCellH);
 
 	for (int y = 0; y < newCellH; ++y)
-		for (int x = 0; x < newCellW; ++x) {
+		for (int x = 0; x < newCellW; ++x)
 			if (outOfBounds(x, y))
 				newCells.emplace_back(x, y, EMPTY, false);
 			else
 				newCells.push_back(cells[cellIdx(x,y)]);
-		}
 
 	cellScale	= newScaleFactor;
 	textureData = newTexData;
@@ -74,7 +66,7 @@ void Game::loadImage(std::vector<GLubyte>& imageData, int imageW, int imageH)
 	int idx = 0;
 	for (int y = 0; y < imageH / cellScale; y++) 
 		for (int x = 0; x < imageW / cellScale; x++) { // how many cells to traverse across. 
- 			Cell& c = cells[cellIdx(x, y)]; // 
+ 			Cell& c = cells[cellIdx(x, y)]; 
 			c.flag   = true;
 			c.type   = WATER;
 			c.type.r = imageData[idx + 0];
@@ -175,7 +167,6 @@ void Game::gameOfLifeUpdate(interfaceData& data)
 	cells = nextFrameCells; // Copying all cells is current bottleneck
 }
 
-// for only 2 cases, switch is likely slower.
 void Game::cellUpdate(Cell& c)
 {
 	if (c.flag) return;
@@ -189,6 +180,13 @@ void Game::cellUpdate(Cell& c)
 ---- Cell / Pixel Updates --------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
+#if false
+void Game::updatePixel(Cell& c)
+{
+	const int idx 
+	textureData[]
+}
+#else
 void Game::updatePixel(Cell& c) // dunno how to make this faster ... but its slow..
 {
 	for (int tY = 0; tY < cellScale; tY++)
@@ -200,8 +198,9 @@ void Game::updatePixel(Cell& c) // dunno how to make this faster ... but its slo
 			textureData[idx + 3] = c.type.a;
 		}
 }
+#endif
 
-// this function is quite slow, meh
+// this function is quite slow...
 CellType Game::varyPixelColour(int range, int cellTypeID)
 {
 	if (range <= 0 || cellTypeID == EMPTY.id) return Types[cellTypeID];
