@@ -121,7 +121,10 @@ void Framework::update()
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
     if (io.MouseDown[0]) mouseDraw();
-    if (data.resetSim) game->reset(data.resetSim);
+    if (data.resetSim) {
+        game->reset();
+        data.resetSim = false;
+    }
     if (data.loadImage) {
         loadImageRGB(data.imagePath, TexIndex::BACKGROUND);
         TextureData& img = data.textures[TexIndex::BACKGROUND];

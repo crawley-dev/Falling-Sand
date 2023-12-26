@@ -1,4 +1,5 @@
 #pragma once
+// so much for pre-compiled headers being "only essential" includes..
 
 #include <iomanip>
 #include <iostream>
@@ -33,4 +34,13 @@
 #include <unordered_set>
 #include <unordered_map>
 
-
+// Type Definitions
+using u8  = uint8_t;	// unsigned char
+using u16 = uint16_t;	// unsigned short
+using u32 = uint32_t;	// unsigned long int (equal to int on 64 bit systems)
+using u64 = uint64_t;	// unsigned long long
+			
+using s8  = int8_t;		// char
+using s16 = int16_t;	// short
+using s32 = int32_t;	// long int (equal to int on 64 bit systems)
+using s64 = int64_t;	// long long

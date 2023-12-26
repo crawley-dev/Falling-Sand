@@ -8,27 +8,27 @@ Game::~Game() {}
 // annoying that texture --> tex for w,h but not data!!
 void Game::init(std::vector<GLubyte>& texData, int textureW, int textureH, int scale)
 {
-	cellScale = scale;
+	cellScale   = scale;
 	textureData = texData;
-	texW = textureW;
-	texH = textureH;
-	cellW = texW / cellScale;
-	cellH = texH / cellScale;
+	texW        = textureW;
+	texH        = textureH;
+	cellW       = texW / cellScale;
+	cellH       = texH / cellScale;
 
 	Types.clear();
-	EMPTY = CellType(0, 50, 50, 50, 255, 0); Types.push_back(EMPTY);
-	SAND = CellType(1, 245, 215, 176, 255, 1600); Types.push_back(SAND);
-	WATER = CellType(2, 20, 20, 255, 125, 997); Types.push_back(WATER);
+	EMPTY	 = CellType(0, 50 , 50 , 50 , 255, 0   ); Types.push_back(EMPTY   );
+	SAND     = CellType(1, 245, 215, 176, 255, 1600); Types.push_back(SAND    );
+	WATER	 = CellType(2, 20 , 20 , 255, 125, 997 ); Types.push_back(WATER   );
 	CONCRETE = CellType(3, 200, 200, 200, 255, 2000); Types.push_back(CONCRETE);
-	ALIVE = CellType(4, 0, 255, 30, 255, 0); Types.push_back(ALIVE);
+	ALIVE	 = CellType(4, 0  , 255, 30 , 255, 0   ); Types.push_back(ALIVE	  );
 
 	cells.clear(); // once upon a time, it didn't reset cell arr on reload :/ oops
 	cells.reserve(cellW * cellH); // optimises out vector re-location as it grows.
 
 	for (int y = 0; y < cellH; ++y)
-		for (int x = 0; x < cellW; ++x) {
+		for (int x = 0; x < cellW; ++x) { 
 			cells.emplace_back(x, y, EMPTY, false); // doesn't create a new object, then copy it to vec
-			updatePixel(cells[cellIdx(x, y)]);
+			updatePixel(cells[cellIdx(x,y)]);
 		}
 }
 
@@ -45,15 +45,15 @@ void Game::reload(std::vector<GLubyte>& newTexData, int newTexW, int newTexH, in
 			if (outOfBounds(x, y))
 				newCells.emplace_back(x, y, EMPTY, false);
 			else
-				newCells.push_back(cells[cellIdx(x, y)]);
+				newCells.push_back(cells[cellIdx(x,y)]);
 
-	cellScale = newScaleFactor;
+	cellScale	= newScaleFactor;
 	textureData = newTexData;
-	texW = newTexW;
-	texH = newTexH;
-	cellW = newCellW;
-	cellH = newCellH;
-	cells = newCells;
+	texW        = newTexW;
+	texH        = newTexH;
+	cellW		= newCellW;
+	cellH		= newCellH;
+	cells		= newCells;
 }
 
 void Game::loadImage(std::vector<GLubyte>& imageData, int imageW, int imageH)
@@ -64,16 +64,16 @@ void Game::loadImage(std::vector<GLubyte>& imageData, int imageW, int imageH)
 	}
 
 	int idx = 0;
-	for (int y = 0; y < imageH / cellScale; y++)
+	for (int y = 0; y < imageH / cellScale; y++) 
 		for (int x = 0; x < imageW / cellScale; x++) { // how many cells to traverse across. 
-			Cell& c = cells[cellIdx(x, y)];
-			c.flag = true;
-			c.type = WATER;
+ 			Cell& c = cells[cellIdx(x, y)]; 
+			c.flag   = true;
+			c.type   = WATER;
 			c.type.r = imageData[idx + 0];
 			c.type.g = imageData[idx + 1];
 			c.type.b = imageData[idx + 2];
 			c.type.a = imageData[idx + 3]; // equivalent to 255 for RGB textures.
-			idx += 4; // don't actually know if this is faster than doing all the multiplication??
+			idx     += 4; // don't actually know if this is faster than doing all the multiplication??
 			updatePixel(c); // why no wokr >:O .. freezes the grid ? fixed lol
 		}
 }
@@ -86,7 +86,7 @@ void Game::reset(bool& resetSim)
 	for (int y = 0; y < cellH; ++y)
 		for (int x = 0; x < cellW; ++x) {
 			cells.emplace_back(x, y, EMPTY, false);
-			updatePixel(cells[cellIdx(x, y)]);
+			updatePixel(cells[cellIdx(x,y)]);
 		}
 	resetSim = false;
 }
@@ -96,12 +96,12 @@ void Game::update(interfaceData& data)
 	if (texH == 0 || texW == 0) return;
 
 	if (!data.runSim) {
-		for (Cell& c : cells)
+		for (Cell& c : cells) 
 			updatePixel(c);
 		return;
 	}
 
-	if (data.playGameOfLife)
+	if (data.playGameOfLife) 
 		gameOfLifeUpdate(data);
 	else if (data.scanTopDown) {
 		for (Cell& c : cells) {
@@ -171,8 +171,8 @@ void Game::cellUpdate(Cell& c)
 {
 	if (c.flag) return;
 	switch (c.type.id) {
-	case 1: updateSand(c); return;
-	case 2: updateWater(c); return;
+		case 1: updateSand(c); return;
+		case 2: updateWater(c); return;
 	}
 }
 
@@ -183,8 +183,8 @@ void Game::cellUpdate(Cell& c)
 #if false
 void Game::updatePixel(Cell& c)
 {
-	const int idx
-		textureData[]
+	const int idx 
+	textureData[]
 }
 #else
 void Game::updatePixel(Cell& c) // dunno how to make this faster ... but its slow..
@@ -255,7 +255,7 @@ void Game::updateSand(Cell& c)
 
 void Game::updateWater(Cell& c)
 {
-	if (checkDensity(c, 0, 1)) return;
+	if (checkDensity(c,  0, 1)) return;
 	if (altCheck) {
 		if (checkDensity(c, randOffset(), 0)) return;
 		checkDensity(c, randOffset(), 1);
@@ -267,7 +267,7 @@ void Game::updateWater(Cell& c)
 }
 
 /*--------------------------------------------------------------------------------------
----- Primitive Algorithms --------------------------------------------------------------
+---- Primitive Algorithms -------------------------------------------------------------- 
 --------------------------------------------------------------------------------------*/
 
 void Game::mouseDraw(int mx, int my, int radius, int chance, int CellTypeID, int CellDrawShape, int range)
