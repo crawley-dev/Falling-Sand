@@ -5,11 +5,13 @@
 Game::Game() {}
 Game::~Game() {}
 
-void Game::init(u16 textureWidth, u16 textureHeight, u8 newScaleFactor)
+void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 {
 	scaleFactor = newScaleFactor;
-	cellWidth = textureWidth / scaleFactor;
-	cellHeight = textureHeight / scaleFactor;
+	textureWidth = newTextureWidth;
+	textureHeight = newTextureHeight;
+	cellWidth = newTextureWidth / scaleFactor;
+	cellHeight = newTextureHeight / scaleFactor;
 
 	materials.clear();
 	materials.resize(MaterialID::COUNT); // just so i can [] access, clear code.
@@ -32,17 +34,19 @@ void Game::init(u16 textureWidth, u16 textureHeight, u8 newScaleFactor)
 
 	cells.clear();
 	cells.reserve(cellWidth * cellHeight);
-	for (u32 i = 0; i < cellWidth * cellHeight; ++i)
-		cells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants), 0);
+	for (s32 i = 0; i < cellWidth * cellHeight; i++) // init cell.updated = true so updateTextureData runs on first time.
+		cells.emplace_back(MaterialID::EMPTY, true, getRand<u8>(0, nVariants), 0);
 }
 
-void Game::reload(u16 textureWidth, u16 textureHeight, u8 newScaleFactor)
+void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 {
-	u16 newCellWidth = textureWidth / newScaleFactor;
-	u16 newCellHeight = textureHeight / newScaleFactor;
+	const u32 newCellWidth = newTextureWidth / newScaleFactor;
+	const u32 newCellHeight = newTextureHeight / newScaleFactor;
+
 	std::vector<Cell> newCells;
-	for (u16 y = 0; y < newCellHeight; ++y)
-		for (u16 x = 0; x < newCellWidth; ++x)
+	newCells.reserve(newCellWidth * newCellHeight);
+	for (s32 y = 0; y < newCellHeight; y++)
+		for (s32 x = 0; x < newCellWidth; x++)
 			if (outOfBounds(x, y))
 				newCells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants), 0);
 			else
@@ -51,6 +55,8 @@ void Game::reload(u16 textureWidth, u16 textureHeight, u8 newScaleFactor)
 	cells = newCells;
 	cellWidth = newCellWidth;
 	cellHeight = newCellHeight;
+	textureWidth = newTextureWidth;
+	textureHeight = newTextureHeight;
 	scaleFactor = newScaleFactor;
 }
 
@@ -58,7 +64,7 @@ void Game::reset()
 {
 	cells.clear();
 	cells.reserve(cellWidth * cellHeight);
-	for (u32 i = 0; i < cellWidth * cellHeight; ++i)
+	for (s32 i = 0; i < cellWidth * cellHeight; i++)
 		cells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants), 0);
 }
 
@@ -67,35 +73,44 @@ void Game::reset()
 --------------------------------------------------------------------------------------*/
 
 void Game::updateSim(interfaceData& iData)
-{
+{	// keep some form of global index that is incremented with each cell
+	// thereby eliminating the need to pass x,y to cellUpdate etc. instead just cell.
+
 	if (!iData.runSim) return;
 	
 	switch (iData.updateMode) {
-	case Update::TOP_DOWN:		topDown_Update();	break;
-	case Update::BOTTOM_UP:		bottomUp_Update();	break;
-	case Update::SNAKE:			snake_Update();		break;
-	case Update::GAME_OF_LIFE:	gol_Update();		break;
+	case Update::TOP_DOWN:		topDown_Update();  break;
+	case Update::BOTTOM_UP:		bottomUp_Update(); break;
+	case Update::SNAKE:			snake_Update();	   break;
+	case Update::GAME_OF_LIFE:	gol_Update();	   break;
 	}
 
-	if (iData.updateMode == Update::TOP_DOWN)
-		iData.updateMode = Update::BOTTOM_UP;
-	else if (iData.updateMode == Update::BOTTOM_UP && iData.frame % 3 == 0)
-		iData.updateMode = Update::TOP_DOWN;
-	iData.frame++;
+	//if (iData.updateMode == Update::TOP_DOWN)
+	//	iData.updateMode = Update::BOTTOM_UP;
+	//else if (iData.updateMode == Update::BOTTOM_UP && iData.frame % 3 == 0)
+	//	iData.updateMode = Update::TOP_DOWN;
+	//iData.frame++;
 }
 
 void Game::topDown_Update()
 {
-	for (u16 y = 0; y < cellHeight; ++y)
-		for (u16 x = 0; x < cellWidth; ++x)
-			updateCell(x, y);
+	for (s32 y = 0; y < cellHeight; y++)
+		for (s32 x = 0; x < cellWidth; x++) {
+			Cell& c = cells[cellIdx(x, y)];
+			updateCell(c, x, y);
+			c.updated = false;
+		}
+
 }
 
 void Game::bottomUp_Update()
 {
-	for (u16 y = cellHeight - 1; y >= 0; --y)
-		for (u16 x = cellWidth - 1; x >= 0; --x)
-			updateCell(x, y);
+	for (s32 y = cellHeight - 1; y >= 0; y--)
+		for (s32 x = cellWidth - 1; x >= 0; x--) {
+			Cell& c = cells[cellIdx(x, y)];
+			updateCell(c, x, y);
+			c.updated = false;
+		}
 }
 
 // >>>>>>>>>>^
@@ -103,20 +118,26 @@ void Game::bottomUp_Update()
 // >>>>>>>>>>^
 void Game::snake_Update()
 {
-	for (u16 y = cellHeight - 1; y >= 0; --y)
+	for (s32 y = cellHeight - 1; y >= 0; y--)
 		if ((cellHeight - y) % 2 == 0) // --> 
-			for (u16 x = 0; x < cellWidth; ++x)
-				updateCell(x, y);
+			for (s32 x = 0; x < cellWidth; x++) {
+				Cell& c = cells[cellIdx(x, y)];
+				updateCell(c, x, y);
+				c.updated = false;
+			}
 		else					 // <--
-			for (u16 x = cellWidth - 1; x >= 0; --x)
-				updateCell(x, y);
+			for (s32 x = cellWidth - 1; x >= 0; x--) {
+				Cell& c = cells[cellIdx(x, y)];
+				updateCell(c, x, y);
+				c.updated = false;
+			}
 }
 
 void Game::gol_Update()
 {
 	std::vector<Cell> nextFrameCells = cells; // Copying all cells to new vec is current bottleneck
-	for (u16 y = 1; y < cellHeight - 2; y++)  // doesn't check edge cells, can remove if statement & unroll adjacentcy for loop
-		for (u16 x = 1; x < cellWidth - 2; x++) {
+	for (s32 y = 1; y < cellHeight - 2; y++)  // doesn't check edge cells, can remove if statement & unroll adjacentcy for loop
+		for (s32 x = 1; x < cellWidth - 2; x++) {
 			Cell& c = nextFrameCells[cellIdx(x, y)];
 			if (c.matID != MaterialID::GOL_ALIVE || c.matID != MaterialID::EMPTY) continue;
 
@@ -144,9 +165,8 @@ void Game::gol_Update()
 ---- Updating Cells --------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-void Game::updateCell(u16 x, u16 y)
+void Game::updateCell(Cell& c, u16 x, u16 y)
 {
-	Cell& c = cells[cellIdx(x, y)];
 	if (c.updated) return;
 
 	switch (c.matID) {
@@ -158,14 +178,14 @@ void Game::updateCell(u16 x, u16 y)
 void Game::updateSand(Cell& c, u16 x, u16 y)
 {
 	if (trySwap(c, x, y + 1)) return;
-	else trySwap(c, x + getRand<u8>(), y + 1);
+	else trySwap(c, x + getRand<s8>(), y + 1);
 }
 
 void Game::updateWater(Cell& c, u16 x, u16 y)
 {
 	if (trySwap(c, x, y + 1)) return;
-	else if (trySwap(c, x + getRand<u8>(), y + 1)) return;
-	else (trySwap(c, x + getRand<u8>(), y));
+	else if (trySwap(c, x + getRand<s8>(), y + 1)) return;
+	else (trySwap(c, x + getRand<s8>(), y));
 }
 
 bool Game::trySwap(Cell& c1, u16 x2, u16 y2) 
@@ -179,8 +199,9 @@ bool Game::trySwap(Cell& c1, u16 x2, u16 y2)
 	return true;
 }
 
-inline void Game::changeMaterial(u16 x, u16 y, u8 newMaterial)
+void Game::changeMaterial(u16 x, u16 y, u8 newMaterial)
 {
+	if (outOfBounds(x, y)) return;
 	Cell& c = cells[cellIdx(x, y)];
 	c.matID = newMaterial;
 	c.updated = true;
@@ -210,7 +231,7 @@ void Game::mouseDraw(u16 mx, u16 my, u16 size, u8 drawChance, u8 material, u8 sh
 	else if (size == 1)
 		changeMaterial(x, y, material);
 
-	switch (shape) { // clean, but lots of repeat parameters.
+	switch (shape) {
 	case Shape::CIRCLE:			draw_Circle(x, y, size, material, drawChance);	break;
 	case Shape::CIRCLE_OUTLINE: draw_CircleOutline(x, y, size, material, drawChance);  break;
 	case Shape::LINE:			draw_Line(x, y, size, material, drawChance);	break;
@@ -220,17 +241,17 @@ void Game::mouseDraw(u16 mx, u16 my, u16 size, u8 drawChance, u8 material, u8 sh
 
 void Game::draw_Circle(u16 x, u16 y, u16 size, u8 material, u8 drawChance)
 {
-	u32 r2 = size * size;
-	u32 area = r2 << 2;
-	u32 rr = size << 1;
+	int r2 = size * size;
+	int area = r2 << 2;
+	int rr = size << 1;
 
-	for (u32 i = 0; i < area; i++) {
-		u32 tx = (i % rr) - size;
-		u32 ty = (i / rr) - size;
+	for (s32 i = 0; i < area; i++) {
+		int tX = (i % rr) - size;
+		int tY = (i / rr) - size;
 
-		if (tx * tx + ty * ty <= r2)
-			if (rand() % (101 - drawChance) == 0)
-				changeMaterial(x + tx, y + ty, material);
+		if (tX * tX + tY * tY <= r2)
+			if (getRand<u64>(drawChance, 100) == drawChance)
+				changeMaterial(x + tX, y + tY, material);
 	}
 }
 
@@ -248,12 +269,12 @@ void Game::draw_CircleSegments(u16 xc, u16 yc, u16 x, u16 y, u8 material)
 
 void Game::draw_CircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance)
 {
-	u32 tX = 0;
-	u32 tY = size;
-	u32 d = 3 - 2 * size;
+	s32 tX = 0;
+	s32 tY = size;
+	s32 d = 3 - 2 * size;
 	draw_CircleSegments(x, y, tX, tY, material);
 	while (tY >= tX) {
-		++tX;
+		tX++;
 		if (d > 0) {
 			tY--;
 			d = d + 4 * (tX - tY) + 10;
@@ -266,33 +287,34 @@ void Game::draw_CircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance
 
 void Game::draw_Line(u16 x, u16 y, u16 size, u8 material, u8 drawChance)
 {
-	for (s32 tx = -size; tx < size; ++tx)
-		if (rand() % (101 - drawChance) == 0)
-			changeMaterial(x + tx, y, material);
+	for (s32 tX = -size; tX < size; tX++)
+		if (getRand<u64>(drawChance, 100) == drawChance)
+			changeMaterial(x + tX, y, material);
 }
 
 void Game::draw_Square(u16 x, u16 y, u16 size, u8 material, u8 drawChance)
 {
-	for (s32 ty = -size / 2; ty < size / 2; ++ty)
-		for (s32 tx = -size / 2; tx < size / 2; ++tx)
-			if (rand() % (101 - drawChance) == 0)
-				changeMaterial(x + tx, y + ty, material);
+	for (s32 tY = -size / 2; tY < size / 2; tY++)
+		for (s32 tX = -size / 2; tX < size / 2; tX++)
+			if (getRand<u64>(drawChance, 100) == drawChance)
+				changeMaterial(x + tX, y + tY, material);
 }
 
 /*--------------------------------------------------------------------------------------
 ---- Updating Texture -------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-std::vector<GLubyte> Game::updateTextureData()
+void Game::updateTextureData(std::vector<GLubyte>& textureData, u32 width)
 {
-	//if (textureData.size() != cells.size() * scaleFactor * scaleFactor * 4) {
-	//	printf("Textures of different size!, Difference: %d\n", textureData.size() - (cells.size() * scaleFactor * scaleFactor * 4));
-	//	return;
-	//}
+	if (textureData.size() != cells.size() * scaleFactor * scaleFactor * 4) {
+		printf("Textures of different size!, Difference: %d\n", textureData.size() - (cells.size() * scaleFactor * scaleFactor * 4));
+		return;
+	}
 
-	std::vector<GLubyte> textureData(cells.size() * scaleFactor * scaleFactor * 4, 255);
-	for (int y = 0; y < cellHeight; ++y) {
-		for (int x = 0; x < cellWidth; ++x) { 
+	textureWidth = width;
+
+	for (s32 y = 0; y < cellHeight; y++) {
+		for (s32 x = 0; x < cellWidth; x++) { 
 			Cell& c = cells[cellIdx(x, y)];
 			//if (!c.updated) continue;
 
@@ -302,9 +324,10 @@ std::vector<GLubyte> Game::updateTextureData()
 			const GLubyte blue  = material.b;
 			const GLubyte alpha = material.a;
 
-			for (int tY = 0; tY < scaleFactor; ++tY)
-				for (int tX = 0; tX < scaleFactor; ++tX) {
-					u32 idx = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
+			for (s32 tY = 0; tY < scaleFactor; tY++)
+				for (s32 tX = 0; tX < scaleFactor; tX++) {
+					//s32 idx = 4 * ((((y * scaleFactor) + tY) * width) + (x * scaleFactor) + tX);
+					s32 idx = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
 					textureData[idx + 0] = red;
 					textureData[idx + 1] = green;
 					textureData[idx + 2] = blue;
@@ -312,39 +335,4 @@ std::vector<GLubyte> Game::updateTextureData()
 				}
 		}
 	}
-	return textureData;
 }
-
-/*
-void Game::updateTextureData(std::vector<GLubyte>& textureData)
-{
-	// current code doesn't account for scale factor..
-	//   either:
-	//	- row by row and store data, cache is happy?? << WANT
-	//	- grid loop (legacy) for each cell.
-	
-	if (textureData.size() == cells.size() * scaleFactor * scaleFactor * 4) {
-		u64 texIdx = 0;
-		for (u64 cellIdx = 0; cellIdx < cells.size(); ++cellIdx) {
-			Cell& c = cells[cellIdx];
-			if (!c.updated) continue; // hasn't moved, so don't change it?
-			textureData[texIdx + 0] = materials[c.matID].r; // no variants for now.
-			textureData[texIdx + 0] = materials[c.matID].g; // no variants for now.
-			textureData[texIdx + 0] = materials[c.matID].b; // no variants for now.
-			textureData[texIdx + 0] = materials[c.matID].a; // no variants for now.
-			texIdx += 4;
-		}
-	}
-	else { // texture has changed size.
-		textureData.clear();
-		textureData.reserve(cells.size() * scaleFactor * scaleFactor * 4);
-		for (Cell& c : cells) {
-			textureData.push_back(materials[c.matID].r);
-			textureData.push_back(materials[c.matID].g);
-			textureData.push_back(materials[c.matID].b);
-			textureData.push_back(materials[c.matID].a);
-		}
-	}
-}
-*/
-

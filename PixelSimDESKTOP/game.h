@@ -26,11 +26,11 @@ public:
 	void swapCells(Cell& c1, Cell& c2);
 	bool trySwap(Cell& c1, u16 x2, u16 y2);
 
-	void updateCell(u16 x, u16 y);
+	void updateCell(Cell& c, u16 x, u16 y);
 	void updateSand(Cell& c, u16 x, u16 y);
 	void updateWater(Cell& c, u16 x, u16 y);
-	//void updateTextureData(std::vector<GLubyte>& textureData);
-	std::vector<GLubyte> updateTextureData();
+	void updateTextureData(std::vector<GLubyte>& textureData, u32 width);
+	//std::vector<GLubyte> updateTextureData();
 
 	void mouseDraw(u16 x, u16 y, u16 size, u8 drawChance, u8 material, u8 shape);
 	void draw_Circle(u16 x, u16 y, u16 size, u8 material, u8 drawChance);
@@ -40,7 +40,7 @@ public:
 	void draw_Square(u16 x, u16 y, u16 size, u8 material, u8 drawChance);
 
 	inline u32 cellIdx(u16 x, u16 y) { return (y * cellWidth) + x; }	
-	inline u32 textureIdx(u16 x, u16 y) { return 4 * (y * textureWidth + x); }
+	inline u32 textureIdx(u16 x, u16 y) { return 4 * ((y * textureWidth) + x); }
 	inline bool outOfBounds(u16 x, u16 y) 									 
 	{ return x >= cellWidth || y >= cellHeight || x < 0 || y < 0; }
 

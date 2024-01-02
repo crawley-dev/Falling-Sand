@@ -137,14 +137,14 @@ void Framework::update()
         data.reloadGame = false;
     }
 
-    //game->updateSim(data);
-   // game->updateTextureData(texture.data);
-    texture.data = game->updateTextureData();
+    game->updateSim(data);
+    game->updateTextureData(texture.data, texture.width);
 
-    for (TextureData& texture : data.textures)
-        updateTexture(texture); // id - 2 == idx.
+    for (TextureData& tex : data.textures)
+        updateTexture(tex);
 
     interface->gameWindow(data);
+
 }
 
 void Framework::render()
@@ -159,7 +159,7 @@ void Framework::render()
     // Placed After ImGui::Render() to prevent ImGui HUD overwriting my textures.
     if (ImGui::GetFrameCount() == 2) {
         for (TextureData texture : data.textures)
-            createTexture(texture.id - 2); // (id - 2) == index in texture array.
+            createTexture(texture);
 
         TextureData& texture = data.textures[TexIndex::GAME];
         game->init(texture.width, texture.height, data.scaleFactor);
@@ -334,9 +334,8 @@ void Framework::loadImageRGBA(std::string path, int textureIndex)
     updateTexture(texture);
 }
 
-void Framework::createTexture(int textureIndex)
+void Framework::createTexture(TextureData& texture)
 {
-    TextureData& texture = data.textures[textureIndex];
     texture.data = std::vector<GLubyte>(texture.width * texture.height * 4, 255);
 
     glGenTextures(1, &texture.id);
@@ -351,9 +350,9 @@ void Framework::createTexture(int textureIndex)
 
 void Framework::reloadTextures()
 {
-    for (int i = 0; i < data.textures.size() - 1; i++) {
-        glDeleteTextures(1, &data.textures[i].id); // delete old textures
-        createTexture(i);
+    for (TextureData& texture : data.textures) {
+        glDeleteTextures(1, &texture.id);
+        createTexture(texture);
     }
     data.texReloadCount++;
 }

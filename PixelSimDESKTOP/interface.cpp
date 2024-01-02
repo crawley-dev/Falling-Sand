@@ -146,6 +146,7 @@ void Interface::debugMenu(interfaceData& data)
         const int COLOUR_VARIANCE_RANGE = 20;
         data.mouseX = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
         data.mouseY = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
+
         std::string scanMode = "";
         switch (data.updateMode) {
         case Update::TOP_DOWN:		scanMode = "Top Down";	    break;
@@ -203,7 +204,7 @@ void Interface::gameWindow(interfaceData& data)
 
     {
         ImGui::BeginChild("GameRender");
-        ImVec2 textureRenderSize = ImVec2(texture.width, texture.height); // STRETCHING: bg --> texture 
+        ImVec2 textureRenderSize = ImVec2(texture.width, texture.height);
         ImGui::Image((ImTextureID)texture.id, textureRenderSize, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
         ImGui::EndChild();
     }

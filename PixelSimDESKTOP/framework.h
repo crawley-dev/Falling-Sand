@@ -19,7 +19,7 @@ public:
 	// Texture Handling
 	void loadImageRGB(std::string path, int textureIndex);
 	void loadImageRGBA(std::string path, int textureIndex); // png is somehow rgb not rgba..
-	void createTexture(int textureIndex);
+	void createTexture(TextureData& texture);
 	void reloadTextures();
 	void updateTexture(TextureData& texture);
 

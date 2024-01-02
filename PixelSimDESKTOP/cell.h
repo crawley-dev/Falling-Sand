@@ -46,7 +46,7 @@ struct Cell
 	Cell(u8 MATERIAL, u8 UPDATED, u8 COLOUR_VARIANT, u8 EXTRA_DATA)
 	{
 		matID = MATERIAL;
-		updated = updated;
+		updated = UPDATED;
 		variant = COLOUR_VARIANT;
 		data = EXTRA_DATA;
 	}
