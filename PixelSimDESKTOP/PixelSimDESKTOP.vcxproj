@@ -170,7 +170,6 @@
     </ClCompile>
     <ClCompile Include="framework.cpp" />
     <ClCompile Include="game.cpp" />
-    <ClCompile Include="game_old.cpp" />
     <ClCompile Include="interface.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="pch.cpp">
@@ -190,7 +189,6 @@
     <ClInclude Include="..\Libraries\imgui\imstb_truetype.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="game.h" />
-    <ClInclude Include="game_old.h" />
     <ClInclude Include="interface.h" />
     <ClInclude Include="cell.h" />
     <ClInclude Include="interfaceData.h" />

@@ -7,7 +7,7 @@
 
 class TexIndex { // Scope Blocked Enum.
 public:
-	enum {
+	enum : u8 {
 		GAME,
 		BACKGROUND,
 		PRESENTED
@@ -16,10 +16,30 @@ public:
 
 class TexID { // Scope Blocked Enum.
 public:
-	enum {
+	enum : u8 {
 		GAME = 2,
 		BACKGROUND,
 		PRESENTED
+	};
+};
+
+class Update {
+public:
+	enum : u8 {
+		TOP_DOWN,
+		BOTTOM_UP,
+		SNAKE,
+		GAME_OF_LIFE,
+	};
+};
+
+class Shape {
+public:
+	enum : u8 {
+		CIRCLE,
+		CIRCLE_OUTLINE,
+		LINE,
+		SQUARE,
 	};
 };
 
@@ -44,23 +64,22 @@ struct interfaceData
 {
 	std::vector<TextureData> textures;
 	std::string imagePath;
+	
+	bool runSim	    = false;
+	bool resetSim   = false;
+	bool reloadGame = false;
+	bool loadImage  = false;
 
-	int texReloadCount     =  0;
-	int mouseX		       =  0;
-	int mouseY		       =  0;
-	int frame		       =  0;
-	int scaleFactor	       =  2;
+	u8 updateMode		   = Update::TOP_DOWN;
+	u8 drawShape		   = Shape::CIRCLE;
+	int drawChance		   = 99; 
+	u8 drawMaterial		   =  1; // sand we aren't including Material class.
+	u8 scaleFactor	       =  2;
 
-	int drawShape	       =  0;
-	int drawType		   =  1;
+	u16 mouseX		       =  0;
+	u16 mouseY		       =  0;
 	int drawSize		   = 10;
-	int drawChance		   = 99;
-	int drawColourVariance = 10;
 
-	bool runSim			   = false;
-	bool resetSim		   = false;
-	bool reloadGame		   = false;
-	bool playGameOfLife	   = false;
-	bool loadImage		   = false;
-	bool scanTopDown	   = true;
+	u32 frame		       =  0;
+	u32 texReloadCount     =  0;
 };

@@ -114,10 +114,10 @@ void Framework::update()
     TextureData& texture = data.textures[TexIndex::GAME];
 
     data.drawSize           += (int)io.MouseWheel;
-    data.drawSize           = std::clamp(data.drawSize          , 1,1000);
-    data.drawChance         = std::clamp(data.drawChance        , 1, 100);
-    data.drawColourVariance = std::clamp(data.drawColourVariance, 1, 255);
-    data.scaleFactor        = std::clamp(data.scaleFactor       , 1,  10);
+    data.drawSize           = std::clamp(data.drawSize          , 1,1000);//(u16) 1, (u16) 1000);
+    data.drawChance         = std::clamp(data.drawChance        , 1,100) ;//(u8)  1, (u8)   100);
+    data.scaleFactor        = std::clamp(data.scaleFactor       , (u8)  1, (u8)    10);
+    //data.drawColourVariance = std::clamp(data.drawColourVariance, 1, 255);
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
     if (io.MouseDown[0]) mouseDraw();
@@ -125,24 +125,24 @@ void Framework::update()
         game->reset();
         data.resetSim = false;
     }
-    if (data.loadImage) {
-        loadImageRGB(data.imagePath, TexIndex::BACKGROUND);
-        TextureData& img = data.textures[TexIndex::BACKGROUND];
-        game->loadImage(img.data, img.width, img.height);
-        data.loadImage = false;
-    }
+    //if (data.loadImage) {
+    //    loadImageRGB(data.imagePath, TexIndex::BACKGROUND);
+    //    TextureData& img = data.textures[TexIndex::BACKGROUND];
+    //    game->loadImage(img.data, img.width, img.height);
+    //    data.loadImage = false;
+    //}
     if (data.reloadGame) {
         reloadTextures();
-        game->reload(texture.data, texture.width, texture.height, data.scaleFactor);
+        game->reload(texture.width, texture.height, data.scaleFactor);
         data.reloadGame = false;
     }
 
-    game->update(data);
-
-    texture.data = game->getTextureData();
+    //game->updateSim(data);
+   // game->updateTextureData(texture.data);
+    texture.data = game->updateTextureData();
 
     for (TextureData& texture : data.textures)
-        updateTexture(texture.id - 2); // id - 2 == idx.
+        updateTexture(texture); // id - 2 == idx.
 
     interface->gameWindow(data);
 }
@@ -158,10 +158,11 @@ void Framework::render()
 
     // Placed After ImGui::Render() to prevent ImGui HUD overwriting my textures.
     if (ImGui::GetFrameCount() == 2) {
-        for (auto texture : data.textures)
+        for (TextureData texture : data.textures)
             createTexture(texture.id - 2); // (id - 2) == index in texture array.
+
         TextureData& texture = data.textures[TexIndex::GAME];
-        game->init(texture.data, texture.width, texture.height, data.scaleFactor);
+        game->init(texture.width, texture.height, data.scaleFactor);
     }
 
     // Handles Multiple Viewports && Swaps between 2 texture buffers for smoother rendering
@@ -263,7 +264,7 @@ void Framework::loadImageRGB(std::string path, int textureIndex)
     }
 
     SDL_FreeSurface(image);
-    updateTexture(textureIndex);
+    updateTexture(texture);
     
     // downscaling texture if necessary
     //TextureData& gameTexture = data.textures[GAME_TEXTURE_ID];
@@ -301,8 +302,8 @@ void Framework::loadImageRGBA(std::string path, int textureIndex)
         for (int x = 0; x < texture.width; x++) { 
             // A Uint32 is 4 bytes, so each time you step your byte offset forward by 1 pixel by incrementing x by 1, 
             // your index into the pixel data leaps forward 4 * 4 = 16 bytes:
-            Uint32 i = (y * texture.width) + x;
-            auto pixel = pixels[i];
+            u32 i = (y * texture.width) + x;
+            u32 pixel = pixels[i];
     
             /* Get Red component */
             temp = pixel & fmt->Rmask;  /* Isolate red component */
@@ -330,7 +331,7 @@ void Framework::loadImageRGBA(std::string path, int textureIndex)
         }
 
     SDL_FreeSurface(image);
-    updateTexture(textureIndex);
+    updateTexture(texture);
 }
 
 void Framework::createTexture(int textureIndex)
@@ -357,9 +358,9 @@ void Framework::reloadTextures()
     data.texReloadCount++;
 }
 
-void Framework::updateTexture(int textureIndex)
+void Framework::updateTexture(TextureData& texture)
 { 
-    TextureData& texture = data.textures[textureIndex];
+    glBindTexture(GL_TEXTURE_2D, texture.id);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texture.width, texture.height, GL_RGBA, GL_UNSIGNED_BYTE, texture.data.data()); // data.data, weird..
 }
 
@@ -375,5 +376,6 @@ void Framework::mouseDraw()
     } 
     
     // Mouse pos updated in interface->debugMenu() each frame. called before mouseDraw event so correct.
-    game->mouseDraw(data.mouseX, data.mouseY, data.drawSize, data.drawChance, data.drawType, data.drawShape, data.drawColourVariance);
+   // game->mouseDraw(data.mouseX, data.mouseY, data.drawSize, data.drawChance, data.drawType, data.drawShape, data.drawColourVariance);
+    game->mouseDraw(data.mouseX, data.mouseY, data.drawSize, data.drawChance, data.drawMaterial, data.drawShape);
 }

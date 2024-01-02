@@ -21,7 +21,7 @@ public:
 	void loadImageRGBA(std::string path, int textureIndex); // png is somehow rgb not rgba..
 	void createTexture(int textureIndex);
 	void reloadTextures();
-	void updateTexture(int textureIndex);
+	void updateTexture(TextureData& texture);
 
 	// Internal Functions	
 	void mouseDraw();

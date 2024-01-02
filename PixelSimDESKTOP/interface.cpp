@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "interface.h"
+#include "cell.h"
 
 Interface::Interface() {}
 Interface::~Interface() {}
@@ -29,10 +30,14 @@ void Interface::debugMenu(interfaceData& data)
     ImGui::SetNextItemOpen(true);
     if (ImGui::TreeNode("Simulation Settings")) 
     {
+        static bool do_gameOfLife = false;
+
         ImGui::SeparatorText("Simulation Settings");
-        ImGui::Checkbox("Run Simulation"            , &data.runSim        );
-        ImGui::Checkbox("Play Conway's Game of Life", &data.playGameOfLife);
+        ImGui::Checkbox("Run Simulation"            , &data.runSim);
+        ImGui::Checkbox("Play Conway's Game of Life", &do_gameOfLife);
         
+        if (do_gameOfLife) data.updateMode = Update::GAME_OF_LIFE;
+
         if (ImGui::Button("Reset Sim")) data.resetSim = true;
 
         if (ImGui::Button("Decrease Cell Scale")) {
@@ -104,14 +109,14 @@ void Interface::debugMenu(interfaceData& data)
         // doesn't currently highlight which type is selected.
         // dig into deeper logic of ImGui.. 
         
-        if (data.playGameOfLife) {
-            data.drawType = 4; // ALIVE cell
+        if (data.updateMode == Update::GAME_OF_LIFE) {
+            data.drawMaterial = MaterialID::GOL_ALIVE; // ALIVE cell
         } else {
             ImGui::Text("Draw Type: "    ); // could probably do some loop when i have like 50 materials
-            if (ImGui::Button("Eraser"   )) data.drawType  = 0;   ImGui::SameLine();
-            if (ImGui::Button("Sand"     )) data.drawType  = 1;   ImGui::SameLine();
-            if (ImGui::Button("Water"    )) data.drawType  = 2;   ImGui::SameLine();
-            if (ImGui::Button("Concrete" )) data.drawType  = 3;   //ImGui::SameLine();
+            if (ImGui::Button("Eraser"   )) data.drawMaterial = MaterialID::EMPTY; ImGui::SameLine();
+            if (ImGui::Button("Sand"     )) data.drawMaterial = MaterialID::SAND;  ImGui::SameLine();
+            if (ImGui::Button("Water"    )) data.drawMaterial = MaterialID::WATER; ImGui::SameLine();
+            if (ImGui::Button("Concrete" )) data.drawMaterial = MaterialID::CONCRETE;   //ImGui::SameLine();
         }
 
         ImGui::Text("Draw Shape:    ");
@@ -120,9 +125,9 @@ void Interface::debugMenu(interfaceData& data)
         if (ImGui::Button("Line"             )) data.drawShape = 2; ImGui::SameLine();
         if (ImGui::Button("Square"           )) data.drawShape = 3;
 
-        ImGui::InputInt("Cell Draw Size (px)" , &data.drawSize,       1, 10);
-        ImGui::InputInt("Cell Draw Chance (%)", &data.drawChance,     1, 10);
-        ImGui::InputInt("Cell Colour Variance", &data.drawColourVariance, 1, 10);
+        ImGui::InputInt("Cell Draw Size (px)",  &data.drawSize,   1, 10);
+        ImGui::InputInt("Cell Draw Chance (%)", &data.drawChance, 1, 10);
+        // ImGui::InputInt("Cell Colour Variance", (int)data.drawColourVariance, 1, 10);
         
         ImGui::TreePop(); // might get a bit angry :0 if no tree to close 
     }
@@ -141,19 +146,26 @@ void Interface::debugMenu(interfaceData& data)
         const int COLOUR_VARIANCE_RANGE = 20;
         data.mouseX = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
         data.mouseY = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
+        std::string scanMode = "";
+        switch (data.updateMode) {
+        case Update::TOP_DOWN:		scanMode = "Top Down";	    break;
+        case Update::BOTTOM_UP:		scanMode = "Bottom Up";	    break;
+        case Update::SNAKE:			scanMode = "Snake";	        break;
+        case Update::GAME_OF_LIFE:	scanMode = "Game Of Life";	break;
+        }
 
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
-        ImGui::Text("Application Framecount: %d\n" , ImGui::GetFrameCount());
-        ImGui::Text("Game Framecount: %d\n"        , data.frame          );
-        ImGui::Text("Scale Factor: %d\n"           , data.scaleFactor    );
-        ImGui::Text("Reloaded Texture: %d Times\n" , data.texReloadCount );
-        ImGui::Text("Displayed Texture: %d\n"      , loadedTex           );
-        ImGui::Text("Texture Width: %d\n"          , texture.width       );
-        ImGui::Text("Texture Height: %d\n"         , texture.height      );
-        ImGui::Text("Mouse X: %d\n"                , data.mouseX         );
-        ImGui::Text("Mouse Y: %d\n"                , data.mouseY         );
-        ImGui::Text("Mouse Out of Bounds? %d\n"    , OutofBounds         );
-        ImGui::Text("Scanning Top Down? %d\n"      , data.scanTopDown    );
+        ImGui::Text("Application Framecount: %d\n", ImGui::GetFrameCount());
+        ImGui::Text("Game Framecount: %d\n"       , data.frame            );
+        ImGui::Text("Scale Factor: %d\n"          , data.scaleFactor      );
+        ImGui::Text("Reloaded Texture: %d Times\n", data.texReloadCount   );
+        ImGui::Text("Displayed Texture: %d\n"     , loadedTex             );
+        ImGui::Text("Texture Width: %d\n"         , texture.width         );
+        ImGui::Text("Texture Height: %d\n"        , texture.height        );
+        ImGui::Text("Mouse X: %d\n"               , data.mouseX           );
+        ImGui::Text("Mouse Y: %d\n"               , data.mouseY           );
+        ImGui::Text("Mouse Out of Bounds? %d\n"   , OutofBounds           );
+        ImGui::Text("Scan Mode: %s\n"             , scanMode.c_str()      );
 
         ImGui::TreePop();
     }
@@ -172,14 +184,20 @@ void Interface::gameWindow(interfaceData& data)
     // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow",
     //       Not the SDL2 generated win32 window
 
-    const int xOffset = 10;
-    const int yOffset = 40;
-    const int windowX = (int)ImGui::GetWindowSize().x;
-    const int windowY = (int)ImGui::GetWindowSize().y;
+    constexpr int xOffset = 10;
+    constexpr int yOffset = 40;
+    int windowX = (int)ImGui::GetWindowSize().x; 
+    int windowY = (int)ImGui::GetWindowSize().y; 
+    if (windowX % 2 != 0) ++windowX;
+    if (windowY % 2 != 0) ++windowY;
+
     if (texture.width + xOffset != windowX || texture.height + yOffset != windowY) {
         data.reloadGame = true;
         texture.width   = (int)ImGui::GetWindowSize().x - xOffset;
         texture.height  = (int)ImGui::GetWindowSize().y - yOffset;
+        if (texture.width  % 2 != 0) ++texture.width;
+        if (texture.height % 2 != 0) ++texture.height;
+        ImGui::SetWindowSize(ImVec2(texture.width, texture.height));
     }
     else data.reloadGame = false;
 
