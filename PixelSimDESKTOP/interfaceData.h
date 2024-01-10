@@ -5,12 +5,12 @@
 //	even when explicitly stating their equivalent type???
 // So I created scope blocked enums instead via nesting the enums
 
-class TexIndex { // Scope Blocked Enum.
+class TexIndex { // Scope Blocked Enum
 public:
 	enum : u8 {
 		GAME,
 		BACKGROUND,
-		PRESENTED
+		PRESENTED,
 	};
 };
 
@@ -19,7 +19,7 @@ public:
 	enum : u8 {
 		GAME = 2,
 		BACKGROUND,
-		PRESENTED
+		PRESENTED,
 	};
 };
 

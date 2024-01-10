@@ -114,9 +114,9 @@ void Framework::update()
     TextureData& texture = data.textures[TexIndex::GAME];
 
     data.drawSize           += (int)io.MouseWheel;
-    data.drawSize           = std::clamp(data.drawSize          , 1,1000);//(u16) 1, (u16) 1000);
-    data.drawChance         = std::clamp(data.drawChance        , 1,100) ;//(u8)  1, (u8)   100);
-    data.scaleFactor        = std::clamp(data.scaleFactor       , (u8)  1, (u8)    10);
+    data.drawSize           = std::clamp(data.drawSize, 1, 1000);
+    data.drawChance         = std::clamp(data.drawChance, 1, 100);
+    data.scaleFactor        = std::clamp(data.scaleFactor, (u8) 1, (u8) 10);
     //data.drawColourVariance = std::clamp(data.drawColourVariance, 1, 255);
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
@@ -125,12 +125,14 @@ void Framework::update()
         game->reset();
         data.resetSim = false;
     }
-    //if (data.loadImage) {
-    //    loadImageRGB(data.imagePath, TexIndex::BACKGROUND);
-    //    TextureData& img = data.textures[TexIndex::BACKGROUND];
-    //    game->loadImage(img.data, img.width, img.height);
-    //    data.loadImage = false;
-    //}
+
+    // shouldn't this be handled inside Game::update()??
+    if (data.loadImage) {
+        TextureData& img = data.textures[TexIndex::BACKGROUND];
+        loadImageRGB(img, data.imagePath);
+        game->loadImage(img.data, img.width, img.height);
+        data.loadImage = false;
+    }
     if (data.reloadGame) {
         reloadTextures();
         game->reload(texture.width, texture.height, data.scaleFactor);
@@ -138,7 +140,9 @@ void Framework::update()
     }
 
     game->updateSim(data);
-    game->updateTextureData(texture.data, texture.width);
+    game->updateTextureData(texture.data);
+
+    printf("updateMode: %d\n", data.updateMode);
 
     for (TextureData& tex : data.textures)
         updateTexture(tex);
@@ -200,9 +204,8 @@ void Framework::clean()
 
 //.bmp loading slanted? weird.. 
 // TODO: Investigate SDL_ConvertSurfaceFormat
-void Framework::loadImageRGB(std::string path, int textureIndex)
+void Framework::loadImageRGB(TextureData& texture, std::string path)
 {
-    TextureData& texture = data.textures[textureIndex];
     TextureData& gameTexture = data.textures[TexIndex::GAME];
 
     SDL_Surface* image = IMG_Load(path.c_str());
@@ -243,13 +246,13 @@ void Framework::loadImageRGB(std::string path, int textureIndex)
 
    // have to (un)lock surface to stop SDL2 breaking 
     SDL_LockSurface(image);
-    Uint8* pixel = (Uint8*)image->pixels;
+    u8* pixel = (u8*)image->pixels;
     SDL_UnlockSurface(image);
 
     // R | G | B | A 
     // 1 + 1 + 1 + 1 == 4 bytes
     constexpr int bytesPerPixel = 4;
-    int size = image->w * image->h * bytesPerPixel;
+    const int size = image->w * image->h * bytesPerPixel;
 
     texture.data   = std::vector<GLubyte>(size);
     texture.width  = image->w;
@@ -276,9 +279,9 @@ void Framework::loadImageRGB(std::string path, int textureIndex)
     //}
 }
 
-void Framework::loadImageRGBA(std::string path, int textureIndex)
+void Framework::loadImageRGBA(TextureData& texture, std::string path)
 {
-    TextureData& texture = data.textures[TexIndex::BACKGROUND];
+    //TextureData& texture = data.textures[TexIndex::BACKGROUND];
     SDL_Surface* image = IMG_Load(path.c_str());
     if (image == NULL) {
         printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
@@ -332,6 +335,18 @@ void Framework::loadImageRGBA(std::string path, int textureIndex)
 
     SDL_FreeSurface(image);
     updateTexture(texture);
+}
+
+
+// C:/Users/Tom/source/repos/TheCookiess/PixelPhysV2/Resources/Saves
+void Framework::saveToFile(TextureData& texture)
+{
+    
+}
+
+void Framework::loadFromFile(TextureData& texture, std::string path)
+{
+
 }
 
 void Framework::createTexture(TextureData& texture)

@@ -19,5 +19,4 @@ private:
     float frameRate = 0;
     int loadedTex = 0;
     ImGuiIO& io = ImGui::GetIO();
-    //TextureData texture;
 };

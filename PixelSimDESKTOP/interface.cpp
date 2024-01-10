@@ -37,6 +37,7 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::Checkbox("Play Conway's Game of Life", &do_gameOfLife);
         
         if (do_gameOfLife) data.updateMode = Update::GAME_OF_LIFE;
+        else if (!do_gameOfLife && Update::GAME_OF_LIFE) data.updateMode = Update::TOP_DOWN;
 
         if (ImGui::Button("Reset Sim")) data.resetSim = true;
 
@@ -57,12 +58,12 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::SeparatorText("Manipulating Textures");
 
         static char str[128] = ""; // could overflow the buffer. yay.. this will probably not work at some point..
-        ImGui::InputTextWithHint("Enter File Location", "../Resources/", str, IM_ARRAYSIZE(str));
+        ImGui::InputTextWithHint("Enter File Location", "../Resources/Pictures/", str, IM_ARRAYSIZE(str));
         
         if (ImGui::Button("Change Texture")) loadedTex++; ImGui::SameLine();
         if (ImGui::Button("Load Image")) {
             data.loadImage = true;
-            data.imagePath = "../Resources/" + std::string(str);
+            data.imagePath = "../Resources/Pictures/" + std::string(str);
         }
         else data.loadImage = false;
 
@@ -75,7 +76,7 @@ void Interface::debugMenu(interfaceData& data)
         
         static int framesToStep = 0;
         static int pseudoFrames = 1;
-        static bool doFrameStepping     = false;
+        static bool doFrameStepping = false;
 
         if (framesToStep > 0 && doFrameStepping) {
             data.runSim = true;
@@ -107,16 +108,19 @@ void Interface::debugMenu(interfaceData& data)
     {
         ImGui::SeparatorText("Cell Drawing");
         // doesn't currently highlight which type is selected.
-        // dig into deeper logic of ImGui.. 
+        // dig into deeper logic of ImGui.. bit painful..
         
-        if (data.updateMode == Update::GAME_OF_LIFE) {
-            data.drawMaterial = MaterialID::GOL_ALIVE; // ALIVE cell
-        } else {
+        if (data.updateMode == Update::GAME_OF_LIFE)
+            data.drawMaterial = MaterialID::GOL_ALIVE;
+        else {
+            if (data.drawMaterial == MaterialID::GOL_ALIVE)
+                data.drawMaterial = MaterialID::SAND; // TODO: store state of previous drawMaterial, don't default to sand
+
             ImGui::Text("Draw Type: "    ); // could probably do some loop when i have like 50 materials
             if (ImGui::Button("Eraser"   )) data.drawMaterial = MaterialID::EMPTY; ImGui::SameLine();
             if (ImGui::Button("Sand"     )) data.drawMaterial = MaterialID::SAND;  ImGui::SameLine();
             if (ImGui::Button("Water"    )) data.drawMaterial = MaterialID::WATER; ImGui::SameLine();
-            if (ImGui::Button("Concrete" )) data.drawMaterial = MaterialID::CONCRETE;   //ImGui::SameLine();
+            if (ImGui::Button("Concrete" )) data.drawMaterial = MaterialID::CONCRETE; //ImGui::SameLine();
         }
 
         ImGui::Text("Draw Shape:    ");
@@ -128,8 +132,9 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::InputInt("Cell Draw Size (px)",  &data.drawSize,   1, 10);
         ImGui::InputInt("Cell Draw Chance (%)", &data.drawChance, 1, 10);
         // ImGui::InputInt("Cell Colour Variance", (int)data.drawColourVariance, 1, 10);
+        // ^^ might revive this, re-generate random variant for a cell?
         
-        ImGui::TreePop(); // might get a bit angry :0 if no tree to close 
+        ImGui::TreePop(); 
     }
 
     ImGui::SetNextItemOpen(true);
@@ -155,6 +160,8 @@ void Interface::debugMenu(interfaceData& data)
         case Update::GAME_OF_LIFE:	scanMode = "Game Of Life";	break;
         }
 
+        printf("updateMode: %d, scanMode: %s\n", data.updateMode, scanMode.c_str());
+
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
         ImGui::Text("Application Framecount: %d\n", ImGui::GetFrameCount());
         ImGui::Text("Game Framecount: %d\n"       , data.frame            );
@@ -174,7 +181,6 @@ void Interface::debugMenu(interfaceData& data)
     ImGui::End();
 }
 
-// GLuint textureID, int& textureWidth, int& textureHeight, bool& hasSizeChanged
 void Interface::gameWindow(interfaceData& data)
 {
     ImGui::Begin("GameWindow");

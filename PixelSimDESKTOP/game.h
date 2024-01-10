@@ -12,7 +12,7 @@ public:
 
 	void init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
 	void reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
-	//void loadImage();
+	void loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 imageHeight);
 	void reset();
 
 	void updateSim(interfaceData& iData);
@@ -29,8 +29,8 @@ public:
 	void updateCell(Cell& c, u16 x, u16 y);
 	void updateSand(Cell& c, u16 x, u16 y);
 	void updateWater(Cell& c, u16 x, u16 y);
-	void updateTextureData(std::vector<GLubyte>& textureData, u32 width);
-	//std::vector<GLubyte> updateTextureData();
+	void updateTextureData(std::vector<GLubyte>& textureData);
+	void updateEntireTextureData(std::vector<GLubyte>& textureData);
 
 	void mouseDraw(u16 x, u16 y, u16 size, u8 drawChance, u8 material, u8 shape);
 	void draw_Circle(u16 x, u16 y, u16 size, u8 material, u8 drawChance);
@@ -41,10 +41,10 @@ public:
 
 	inline u32 cellIdx(u16 x, u16 y) { return (y * cellWidth) + x; }	
 	inline u32 textureIdx(u16 x, u16 y) { return 4 * ((y * textureWidth) + x); }
-	inline bool outOfBounds(u16 x, u16 y) 									 
+	inline bool outOfBounds(u16 x, u16 y) 
 	{ return x >= cellWidth || y >= cellHeight || x < 0 || y < 0; }
 
-	inline u64 splitMix64_NextRand()
+	inline u64 splitMix64_NextRand() 
 	{
 		u64 z = (x += UINT64_C(0x9E3779B97F4A7C15));
 		z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
@@ -59,10 +59,14 @@ public:
 private:
 	u64 x = 1234567890987654321; // Splitmix64 seed.
 	
+	bool sizeChanged = false;
+
 	u8 nVariants;
 	u8 scaleFactor;
 	u16 textureWidth, textureHeight;
     u16 cellWidth, cellHeight;
+	
 	std::vector<Cell> cells;
+	std::vector<std::pair<u16, u16>> toUpdate;
 	std::vector<Material> materials;
 };
