@@ -160,8 +160,6 @@ void Interface::debugMenu(interfaceData& data)
         case Update::GAME_OF_LIFE:	scanMode = "Game Of Life";	break;
         }
 
-        printf("updateMode: %d, scanMode: %s\n", data.updateMode, scanMode.c_str());
-
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
         ImGui::Text("Application Framecount: %d\n", ImGui::GetFrameCount());
         ImGui::Text("Game Framecount: %d\n"       , data.frame            );
@@ -173,7 +171,8 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::Text("Mouse X: %d\n"               , data.mouseX           );
         ImGui::Text("Mouse Y: %d\n"               , data.mouseY           );
         ImGui::Text("Mouse Out of Bounds? %d\n"   , OutofBounds           );
-        ImGui::Text("Scan Mode: %s\n"             , scanMode.c_str()      );
+        //ImGui::Text("Scan Mode: %s\n"             , scanMode.c_str()      );
+        ImGui::Text("Scan Mode: %d\n", data.updateMode);
 
         ImGui::TreePop();
     }
