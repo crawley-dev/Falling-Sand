@@ -9,7 +9,6 @@
 Framework::Framework() {}
 Framework::~Framework() {}
 
-/* Full path is : C:\Users\Tom\source\repos\TheCookiess\PixelPhysV2\PixelSimDESKTOP\ */
 bool Framework::init(const char* title, int xpos, int ypos, int width, int height)
 {
     // Setup SDL
