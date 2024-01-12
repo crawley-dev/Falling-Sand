@@ -2,8 +2,7 @@
 // so much for pre-compiled headers being "only essential" includes..
 
 #include <iomanip>
-#include <iostream>
-#include <algorithm>
+#include <iostream> 
 #include <functional>
 #include <memory>
 #include <thread>
@@ -12,6 +11,8 @@
 #include <ranges>
 #include <stdexcept>
 #include <random>
+#include <algorithm>
+#include <unordered_map>
 
 // External Libraries 
 #include "imgui.h"

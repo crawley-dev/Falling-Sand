@@ -30,13 +30,16 @@ void Interface::debugMenu(interfaceData& data)
     ImGui::SetNextItemOpen(true);
     if (ImGui::TreeNode("Simulation Settings")) 
     {
-        static bool do_gameOfLife = false;
+        //static bool do_gameOfLife = false;
 
         ImGui::SeparatorText("Simulation Settings");
         ImGui::Checkbox("Run Simulation"            , &data.runSim);
-        ImGui::Checkbox("Play Conway's Game of Life", &do_gameOfLife);
+        //ImGui::Checkbox("Play Conway's Game of Life", &do_gameOfLife);
         
-        if (do_gameOfLife) data.updateMode = Update::GAME_OF_LIFE;
+        //if (do_gameOfLife) 
+        //    data.scanMode = Scan::GAME_OF_LIFE;
+        //else if (!do_gameOfLife && data.scanMode == Scan::GAME_OF_LIFE)
+        //    data.scanMode = Scan::TOP_DOWN;
 
         if (ImGui::Button("Reset Sim")) data.resetSim = true;
 
@@ -49,6 +52,32 @@ void Interface::debugMenu(interfaceData& data)
             data.reloadGame = true;
         }
 
+        ImGui::Text("Update Modes: "); ImGui::SameLine();
+        if (ImGui::BeginCombo(".", Update::names[data.updateMode].c_str())) {
+            for (u8 n = 0; n < Update::names.size(); n++) {
+                const bool is_selected = (data.updateMode == n);
+                if (ImGui::Selectable(Update::names[n].c_str(), is_selected))
+                    data.updateMode = n;
+
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::Text("Scan Types: "); ImGui::SameLine();
+        if (ImGui::BeginCombo("..", Scan::names[data.scanMode].c_str())) {
+            for (u8 n = 0; n < Scan::names.size(); n++) {
+                const bool is_selected = (data.scanMode == n);
+                if (ImGui::Selectable(Scan::names[n].c_str(), is_selected))
+                    data.scanMode = n;
+
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
         ImGui::TreePop();
     }
 
@@ -57,12 +86,12 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::SeparatorText("Manipulating Textures");
 
         static char str[128] = ""; // could overflow the buffer. yay.. this will probably not work at some point..
-        ImGui::InputTextWithHint("Enter File Location", "../Resources/", str, IM_ARRAYSIZE(str));
+        ImGui::InputTextWithHint("Enter File Location", "../Resources/Pictures/", str, IM_ARRAYSIZE(str));
         
         if (ImGui::Button("Change Texture")) loadedTex++; ImGui::SameLine();
         if (ImGui::Button("Load Image")) {
             data.loadImage = true;
-            data.imagePath = "../Resources/" + std::string(str);
+            data.imagePath = "../Resources/Pictures/" + std::string(str);
         }
         else data.loadImage = false;
 
@@ -75,7 +104,7 @@ void Interface::debugMenu(interfaceData& data)
         
         static int framesToStep = 0;
         static int pseudoFrames = 1;
-        static bool doFrameStepping     = false;
+        static bool doFrameStepping = false;
 
         if (framesToStep > 0 && doFrameStepping) {
             data.runSim = true;
@@ -107,29 +136,50 @@ void Interface::debugMenu(interfaceData& data)
     {
         ImGui::SeparatorText("Cell Drawing");
         // doesn't currently highlight which type is selected.
-        // dig into deeper logic of ImGui.. 
+        // dig into deeper logic of ImGui.. bit painful..
         
-        if (data.updateMode == Update::GAME_OF_LIFE) {
-            data.drawMaterial = MaterialID::GOL_ALIVE; // ALIVE cell
-        } else {
-            ImGui::Text("Draw Type: "    ); // could probably do some loop when i have like 50 materials
-            if (ImGui::Button("Eraser"   )) data.drawMaterial = MaterialID::EMPTY; ImGui::SameLine();
-            if (ImGui::Button("Sand"     )) data.drawMaterial = MaterialID::SAND;  ImGui::SameLine();
-            if (ImGui::Button("Water"    )) data.drawMaterial = MaterialID::WATER; ImGui::SameLine();
-            if (ImGui::Button("Concrete" )) data.drawMaterial = MaterialID::CONCRETE;   //ImGui::SameLine();
+        if (data.scanMode == Scan::GAME_OF_LIFE)
+            data.drawMaterial = MaterialID::GOL_ALIVE;
+        else {
+            if (data.drawMaterial == MaterialID::GOL_ALIVE)
+                data.drawMaterial = MaterialID::SAND; // TODO: store state of previous drawMaterial, don't default to sand
+
+            ImGui::Text("Draw Type: "); ImGui::SameLine();
+            if (ImGui::BeginCombo("...", MaterialID::names[data.drawMaterial].c_str())) {
+                for (u8 n = 0; n < MaterialID::names.size(); n++) {
+                    const bool is_selected = (data.drawMaterial == n);
+                    if (ImGui::Selectable(MaterialID::names[n].c_str(), is_selected))
+                        data.drawMaterial = n;
+
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
         }
 
-        ImGui::Text("Draw Shape:    ");
-        if (ImGui::Button("Circlular"        )) data.drawShape = 0; ImGui::SameLine();
-        if (ImGui::Button("Circlular Outline")) data.drawShape = 1; ImGui::SameLine();
-        if (ImGui::Button("Line"             )) data.drawShape = 2; ImGui::SameLine();
-        if (ImGui::Button("Square"           )) data.drawShape = 3;
-
-        ImGui::InputInt("Cell Draw Size (px)",  &data.drawSize,   1, 10);
-        ImGui::InputInt("Cell Draw Chance (%)", &data.drawChance, 1, 10);
-        // ImGui::InputInt("Cell Colour Variance", (int)data.drawColourVariance, 1, 10);
+        ImGui::Text("Draw Shape:"); ImGui::SameLine();
+        if (ImGui::BeginCombo("....", Shape::names[0].c_str())) {
+            for (u8 n = 0; n < Shape::names.size(); n++) {
+                const bool is_selected = (data.drawShape == n);
+                if (ImGui::Selectable(Shape::names[n].c_str(), is_selected))
+                    data.drawShape = n;
         
-        ImGui::TreePop(); // might get a bit angry :0 if no tree to close 
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::Text("Draw Size  "); ImGui::SameLine();
+        ImGui::InputInt("",  &data.drawSize,   1, 10);
+        
+        ImGui::Text("Draw Chance"); ImGui::SameLine();
+        ImGui::InputInt("", &data.drawChance, 1, 10);
+        // ImGui::InputInt("Cell Colour Variance", (int)data.drawColourVariance, 1, 10);
+        // ^^ might revive this, re-generate random variant for a cell?
+        
+        ImGui::TreePop(); 
     }
 
     ImGui::SetNextItemOpen(true);
@@ -144,16 +194,10 @@ void Interface::debugMenu(interfaceData& data)
         const int TITLE_BAR_OFFSET_X = 8;
         const int TITLE_BAR_OFFSET_Y = 28;
         const int COLOUR_VARIANCE_RANGE = 20;
+        const char* scanMode = Scan::names[data.scanMode].c_str();
         data.mouseX = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
         data.mouseY = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
 
-        std::string scanMode = "";
-        switch (data.updateMode) {
-        case Update::TOP_DOWN:		scanMode = "Top Down";	    break;
-        case Update::BOTTOM_UP:		scanMode = "Bottom Up";	    break;
-        case Update::SNAKE:			scanMode = "Snake";	        break;
-        case Update::GAME_OF_LIFE:	scanMode = "Game Of Life";	break;
-        }
 
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
         ImGui::Text("Application Framecount: %d\n", ImGui::GetFrameCount());
@@ -166,7 +210,6 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::Text("Mouse X: %d\n"               , data.mouseX           );
         ImGui::Text("Mouse Y: %d\n"               , data.mouseY           );
         ImGui::Text("Mouse Out of Bounds? %d\n"   , OutofBounds           );
-        ImGui::Text("Scan Mode: %s\n"             , scanMode.c_str()      );
 
         ImGui::TreePop();
     }
@@ -174,7 +217,6 @@ void Interface::debugMenu(interfaceData& data)
     ImGui::End();
 }
 
-// GLuint textureID, int& textureWidth, int& textureHeight, bool& hasSizeChanged
 void Interface::gameWindow(interfaceData& data)
 {
     ImGui::Begin("GameWindow");

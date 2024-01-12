@@ -17,13 +17,17 @@ public:
 	void clean();
 
 	// Texture Handling
-	void loadImageRGB(std::string path, int textureIndex);
-	void loadImageRGBA(std::string path, int textureIndex); // png is somehow rgb not rgba..
+	void loadImageRGB(TextureData& texture, std::string path);
+	void loadImageRGBA(TextureData& texture, std::string path); // png is somehow rgb not rgba..
+
+	void saveToFile(TextureData& texture);
+	void loadFromFile(TextureData& texture, std::string path);
+
 	void createTexture(TextureData& texture);
 	void reloadTextures();
 	void updateTexture(TextureData& texture);
 
-	// Internal Functions	
+	// Internal Functions
 	void mouseDraw();
 	inline bool running() { return applicationRunning; }
 
