@@ -79,26 +79,27 @@ void Game::reset()
 ---- Simulation Update Routines --------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-void Game::updateSim(interfaceData& iData)
+void Game::updateSim(interfaceData& data)
 {	// keep some form of global index that is incremented with each cell
 	// thereby eliminating the need to pass x,y to cellUpdate etc. instead just cell.
 
-	if (!iData.runSim) return;
+	if (!data.runSim) return;
 	
-	switch (iData.updateMode) {
-	case Update::TOP_DOWN:		topDown_Update();  break;
-	case Update::BOTTOM_UP:		bottomUp_Update(); break;
-	case Update::SNAKE:			snake_Update();	   break;
-	case Update::GAME_OF_LIFE:	gol_Update();	   break;
+	switch (data.scanMode) {
+	case Scan::TOP_DOWN:		topDown_Update();  break;
+	case Scan::BOTTOM_UP:		bottomUp_Update(); break;
+	case Scan::SNAKE:			snake_Update();	   break;
+	case Scan::GAME_OF_LIFE:	gol_Update();	   break;
 	}
 
-	if (iData.updateMode == Update::TOP_DOWN) {
-		iData.updateMode = Update::BOTTOM_UP;
+	if (data.updateMode == Update::FLICKER) {
+		if (data.scanMode == Scan::TOP_DOWN)
+			data.scanMode = Scan::BOTTOM_UP;
+		else if (data.scanMode == Scan::BOTTOM_UP && data.frame % 3 == 0)
+			data.scanMode = Scan::TOP_DOWN;
 	}
-	else if (iData.updateMode == Update::BOTTOM_UP && iData.frame % 3 == 0) {
-		iData.updateMode = Update::TOP_DOWN;
-	}
-	iData.frame++;
+
+	data.frame++;
 }
 
 void Game::topDown_Update()
@@ -110,7 +111,6 @@ void Game::topDown_Update()
 			if (c.updated) toUpdate.push_back(std::pair<u16, u16>(x, y)); // get rid of if statement.
 			c.updated = false;
 		}
-
 }
 
 void Game::bottomUp_Update()
@@ -134,12 +134,14 @@ void Game::snake_Update()
 			for (s32 x = 0; x < cellWidth; x++) {
 				Cell& c = cells[cellIdx(x, y)];
 				updateCell(c, x, y);
+				if (c.updated) toUpdate.push_back(std::pair<u16, u16>(x, y)); // get rid of if statement.
 				c.updated = false;
 			}
 		else					 // <--
 			for (s32 x = cellWidth - 1; x >= 0; x--) {
 				Cell& c = cells[cellIdx(x, y)];
 				updateCell(c, x, y);
+				if (c.updated) toUpdate.push_back(std::pair<u16, u16>(x, y)); // get rid of if statement.
 				c.updated = false;
 			}
 }
@@ -378,11 +380,15 @@ void Game::updateEntireTextureData(std::vector<GLubyte>& textureData)
 	}
 }
 
+void Game::loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 imageHeight)
+{
 
+}
 
 // Instead of Variant schenanigans, do the 'next' step for image loading, 
 // find the material it is closest to, and set it to that!
 // So I should probably add more materials.
+/*
 void Game::loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 imageHeight)
 {
 	Material sand = materials[MaterialID::SAND]; // used as baseline.
@@ -418,6 +424,7 @@ void Game::loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 
 			cellIdx++;
 		}
 }
+*/
 
 /*
 // slightly more challenging, can't set exact RGBA values, unless I create a new variant ? 

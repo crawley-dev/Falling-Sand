@@ -23,23 +23,48 @@ public:
 	};
 };
 
-class Update {
-public:
+namespace Update {
+	enum : u8 {
+		STATIC,
+		FLICKER,
+	};
+
+	static const std::vector<std::string> names = {
+		"Static",
+		"Flicker",
+	};
+};
+
+namespace Scan {
 	enum : u8 {
 		TOP_DOWN,
 		BOTTOM_UP,
 		SNAKE,
 		GAME_OF_LIFE,
 	};
+
+	static const std::vector<std::string> names = {
+		"Top Down",
+		"Bottom Up",
+		"Snake",
+		"Game of Life",
+	};
 };
 
-class Shape {
-public:
+
+namespace Shape {
 	enum : u8 {
 		CIRCLE,
 		CIRCLE_OUTLINE,
 		LINE,
 		SQUARE,
+	};
+
+	static const std::vector<std::string> names = {
+		"Circle",
+		"Circle Outline",
+		"Line",
+		"Square",
 	};
 };
 
@@ -70,15 +95,17 @@ struct interfaceData
 	bool reloadGame = false;
 	bool loadImage  = false;
 
-	u8 updateMode		   = Update::TOP_DOWN;
-	u8 drawShape		   = Shape::CIRCLE;
 	int drawChance		   = 99; 
-	u8 drawMaterial		   =  1; // sand we aren't including Material class.
+	int drawSize		   = 10;
+
+	u8 scanMode			   = Scan::TOP_DOWN;
+	u8 updateMode		   = Update::FLICKER;
+	u8 drawShape		   = Shape::CIRCLE;
+	u8 drawMaterial		   =  1;
 	u8 scaleFactor	       =  2;
 
 	u16 mouseX		       =  0;
 	u16 mouseY		       =  0;
-	int drawSize		   = 10;
 
 	u32 frame		       =  0;
 	u32 texReloadCount     =  0;

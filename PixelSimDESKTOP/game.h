@@ -9,7 +9,6 @@ public:
 	Game();
 	~Game();
 
-
 	void init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
 	void reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
 	void loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 imageHeight);

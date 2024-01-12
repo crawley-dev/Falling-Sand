@@ -142,8 +142,6 @@ void Framework::update()
     game->updateSim(data);
     game->updateTextureData(texture.data);
 
-    printf("updateMode: %d\n", data.updateMode);
-
     for (TextureData& tex : data.textures)
         updateTexture(tex);
 
