@@ -1,12 +1,7 @@
 #pragma once
 #include "pch.h"
 
-#if true
-// https://cdn.discordapp.com/attachments/479398848129663005/1189276048974688266/IMG_1829.jpg?ex=659d92a1&is=658b1da1&hm=a45dd7c17859f34d19c9ca718693f681424732acbef6bff46417ebf58575244e
-// do that.. 
-
-class MaterialID { // Scope blocked Enum for safety.
-public:
+namespace MaterialID { // Scope blocked Enum for safety.
 	enum : u8 {
 		EMPTY,
 		SAND,
