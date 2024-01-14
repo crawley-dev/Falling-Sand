@@ -191,6 +191,9 @@ void Game::updateCell(Cell& c, u16 x, u16 y)
 	}
 }
 
+#define CELL_DISPERSION 1
+#if RAND_CELL_UPDATE
+
 void Game::updateSand(Cell& c, u16 x, u16 y)
 {
 	if (trySwap(c, x, y + 1)) return;
@@ -203,6 +206,38 @@ void Game::updateWater(Cell& c, u16 x, u16 y)
 	else if (trySwap(c, x + getRand<s8>(), y + 1)) return;
 	else (trySwap(c, x + getRand<s8>(), y));
 }
+#else 
+
+void Game::updateSand(Cell& c, u16 x, u16 y)
+{
+	if (trySwap(c, x, y + 1)) return;
+	else if (trySwap(c, x - 1, y + 1)) return;
+	else trySwap(c, x + 1, y + 1); 
+}
+
+constexpr u8 liquidDispersionRate = 8;
+void Game::updateWater(Cell& c, u16 x, u16 y)
+{
+
+	if (trySwap(c, x, y + 1)) return;
+	else if (trySwap(c, x - 1, y + 1)) return;
+	else if (trySwap(c, x + 1, y + 1)) return;
+
+	s8 dispersion = 0;
+	for (u8 dX = 0; dX < liquidDispersionRate; dX++) {
+
+			if (outOfBounds(x + dX, y)) break;
+			else dispersion = dX;
+
+			if (outOfBounds(x - dX, y)) break;
+			else dispersion = -dX;
+			if (getRand<u8>() % 2 == 0) dispersion *= -1;
+	}
+
+	trySwap(c, x + dispersion, y);
+}
+
+#endif
 
 bool Game::trySwap(Cell& c1, u16 x2, u16 y2) 
 {

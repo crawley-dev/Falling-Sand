@@ -39,7 +39,7 @@ struct Material
 };
 
 struct Cell
-{	// 32 bits of data, fast!!
+{	// 32 bits of data, for more cache hits === speed.
 	u8 matID;
 	bool updated;	// uses 1 byte??? should just be a bit 
 	u8 variant;		// index to array of randomly generated RGBA values from material's RGBA.
