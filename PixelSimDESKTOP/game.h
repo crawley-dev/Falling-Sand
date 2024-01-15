@@ -60,6 +60,7 @@ private:
 	
 	bool sizeChanged = false;
 
+	u8 dispersionFactor;
 	u8 nVariants;
 	u8 scaleFactor;
 	u16 textureWidth, textureHeight;

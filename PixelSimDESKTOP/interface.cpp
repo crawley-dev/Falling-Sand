@@ -30,17 +30,9 @@ void Interface::debugMenu(interfaceData& data)
     ImGui::SetNextItemOpen(true);
     if (ImGui::TreeNode("Simulation Settings")) 
     {
-        //static bool do_gameOfLife = false;
-
         ImGui::SeparatorText("Simulation Settings");
         ImGui::Checkbox("Run Simulation"            , &data.runSim);
-        //ImGui::Checkbox("Play Conway's Game of Life", &do_gameOfLife);
         
-        //if (do_gameOfLife) 
-        //    data.scanMode = Scan::GAME_OF_LIFE;
-        //else if (!do_gameOfLife && data.scanMode == Scan::GAME_OF_LIFE)
-        //    data.scanMode = Scan::TOP_DOWN;
-
         if (ImGui::Button("Reset Sim")) data.resetSim = true;
 
         if (ImGui::Button("Decrease Cell Scale")) {
@@ -77,6 +69,11 @@ void Interface::debugMenu(interfaceData& data)
             }
             ImGui::EndCombo();
         }
+
+        int dispersionFactor = data.dispersionFactor;
+        ImGui::Text("Fluid Dispersion Rate"); ImGui::SameLine();
+        ImGui::InputInt("", &dispersionFactor, 1, 10);
+        data.dispersionFactor = dispersionFactor;
 
         ImGui::TreePop();
     }
@@ -171,11 +168,16 @@ void Interface::debugMenu(interfaceData& data)
             ImGui::EndCombo();
         }
 
+
+        int drawSize = data.drawSize;
         ImGui::Text("Draw Size  "); ImGui::SameLine();
-        ImGui::InputInt("",  &data.drawSize,   1, 10);
-        
+        ImGui::InputInt("",  &drawSize,   1, 10);
+        data.drawSize = drawSize;
+
+		int drawChance = data.drawChance;
         ImGui::Text("Draw Chance"); ImGui::SameLine();
-        ImGui::InputInt("", &data.drawChance, 1, 10);
+        ImGui::InputInt("", &drawChance, 1, 10);
+        data.drawChance = drawChance;
         // ImGui::InputInt("Cell Colour Variance", (int)data.drawColourVariance, 1, 10);
         // ^^ might revive this, re-generate random variant for a cell?
         

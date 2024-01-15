@@ -95,17 +95,19 @@ struct interfaceData
 	bool reloadGame = false;
 	bool loadImage  = false;
 
-	int drawChance		   = 99; 
-	int drawSize		   = 10;
-
-	u8 scanMode			   = Scan::TOP_DOWN;
-	u8 updateMode		   = Update::FLICKER;
+	u8 scanMode			   = Scan::BOTTOM_UP;
+	u8 updateMode		   = Update::STATIC;
 	u8 drawShape		   = Shape::CIRCLE;
 	u8 drawMaterial		   =  1;
+	//u8 drawChance		   = 99; 
+	int drawChance = 99;
 	u8 scaleFactor	       =  2;
+	u8 dispersionFactor    =  8;
 
 	u16 mouseX		       =  0;
 	u16 mouseY		       =  0;
+	//u16 drawSize		   = 10;
+	int drawSize = 10;
 
 	u32 frame		       =  0;
 	u32 texReloadCount     =  0;

@@ -85,6 +85,8 @@ void Game::updateSim(interfaceData& data)
 
 	if (!data.runSim) return;
 	
+	dispersionFactor = data.dispersionFactor;
+
 	switch (data.scanMode) {
 	case Scan::TOP_DOWN:		topDown_Update();  break;
 	case Scan::BOTTOM_UP:		bottomUp_Update(); break;
@@ -215,7 +217,7 @@ void Game::updateSand(Cell& c, u16 x, u16 y)
 	else trySwap(c, x + 1, y + 1); 
 }
 
-constexpr u8 liquidDispersionRate = 8;
+//constexpr u8 liquidDispersionRate = 8;
 void Game::updateWater(Cell& c, u16 x, u16 y)
 {
 
@@ -224,7 +226,7 @@ void Game::updateWater(Cell& c, u16 x, u16 y)
 	else if (trySwap(c, x + 1, y + 1)) return;
 
 	s8 dispersion = 0;
-	for (u8 dX = 0; dX < liquidDispersionRate; dX++) {
+	for (u8 dX = 0; dX < dispersionFactor; dX++) {
 
 			if (outOfBounds(x + dX, y)) break;
 			else dispersion = dX;
@@ -417,7 +419,10 @@ void Game::updateEntireTextureData(std::vector<GLubyte>& textureData)
 
 void Game::loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 imageHeight)
 {
-
+	// ?? scale imageWidth and imageHeight to cellWidth and cellHeight 
+	//		^^ only really necessary for low res // really high res
+	// .. interpolate image RGBA --> closest material RGBA
+	// .. .. avoids 100k variant vector stuff.
 }
 
 // Instead of Variant schenanigans, do the 'next' step for image loading, 
