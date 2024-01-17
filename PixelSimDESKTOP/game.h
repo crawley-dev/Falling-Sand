@@ -12,11 +12,15 @@ public:
 	void init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
 	void reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
 	void loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 imageHeight);
+	void updateSim(interfaceData& iData);
+	void mouseDraw(u16 x, u16 y, u16 size, u8 drawChance, u8 material, u8 shape);
+	void updateTextureData(std::vector<GLubyte>& textureData);
 	void reset();
 
-	void updateSim(interfaceData& iData);
+private:
 	void topDown_Update();
-	void bottomUp_Update();
+	void l_bottomUp_Update();
+	void r_bottomUp_Update();
 	void snake_Update();
 	void gol_Update();
 
@@ -25,13 +29,16 @@ public:
 	void swapCells(Cell& c1, Cell& c2);
 	bool trySwap(Cell& c1, u16 x2, u16 y2);
 
+
+	void swapCells(u16 x1, u16 y1, u16 x2, u16 y2);
+	bool trySwap(u16 x1, u16 y1, u16 x2, u16 y2);
+
+
 	void updateCell(Cell& c, u16 x, u16 y);
 	void updateSand(Cell& c, u16 x, u16 y);
 	void updateWater(Cell& c, u16 x, u16 y);
-	void updateTextureData(std::vector<GLubyte>& textureData);
 	void updateEntireTextureData(std::vector<GLubyte>& textureData);
 
-	void mouseDraw(u16 x, u16 y, u16 size, u8 drawChance, u8 material, u8 shape);
 	void draw_Circle(u16 x, u16 y, u16 size, u8 material, u8 drawChance);
 	void draw_CircleSegments(u16 xc, u16 yc, u16 x, u16 y, u8 material);
 	void draw_CircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance);
@@ -45,7 +52,7 @@ public:
 
 	inline u64 splitMix64_NextRand() 
 	{
-		u64 z = (x += UINT64_C(0x9E3779B97F4A7C15));
+		u64 z = (seed += UINT64_C(0x9E3779B97F4A7C15));
 		z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
 		z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
 		return z ^ (z >> 31);
@@ -55,18 +62,21 @@ public:
 	inline T getRand(T min = -1, T max = 1) 
 	{ return splitMix64_NextRand() % (max - min + 1) + min; }
 
-private:
-	u64 x = 1234567890987654321; // Splitmix64 seed.
+	/*----------------------------------------------------------------
+	---- Variables ---------------------------------------------------
+	----------------------------------------------------------------*/
 	
 	bool sizeChanged = false;
 
-	u8 dispersionFactor;
+	u8 fluidDispersionFactor;
+	u8 solidDispersionFactor;
 	u8 nVariants;
 	u8 scaleFactor;
 	u16 textureWidth, textureHeight;
     u16 cellWidth, cellHeight;
+	u64 seed = 1234567890987654321;
 	
 	std::vector<Cell> cells;
-	std::vector<std::pair<u16, u16>> toUpdate;
+	std::vector<std::pair<u16, u16>> textureChanges;
 	std::vector<Material> materials;
 };

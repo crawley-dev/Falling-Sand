@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 
-namespace MaterialID { // Scope blocked Enum for safety.
+namespace MaterialID { // how do store material state (gas, liquid, solid)
 	enum : u8 {
 		EMPTY,
 		SAND,

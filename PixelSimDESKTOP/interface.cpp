@@ -70,10 +70,15 @@ void Interface::debugMenu(interfaceData& data)
             ImGui::EndCombo();
         }
 
-        int dispersionFactor = data.dispersionFactor;
-        ImGui::Text("Fluid Dispersion Rate"); ImGui::SameLine();
-        ImGui::InputInt("", &dispersionFactor, 1, 10);
-        data.dispersionFactor = dispersionFactor;
+        int fluidDispersionFactor = data.fluidDispersionFactor;
+        ImGui::Text("Fluid Dispersion"); ImGui::SameLine();
+        ImGui::InputInt(". . .", &fluidDispersionFactor, 1, 10);
+        data.fluidDispersionFactor = fluidDispersionFactor;
+
+        int solidDispersionFactor = data.solidDispersionFactor;
+        ImGui::Text("Solid Dispersion"); ImGui::SameLine();
+        ImGui::InputInt(". . . .", &solidDispersionFactor, 1, 10);
+        data.solidDispersionFactor = solidDispersionFactor;
 
         ImGui::TreePop();
     }
@@ -209,6 +214,7 @@ void Interface::debugMenu(interfaceData& data)
         ImGui::Text("Displayed Texture: %d\n"     , loadedTex             );
         ImGui::Text("Texture Width: %d\n"         , texture.width         );
         ImGui::Text("Texture Height: %d\n"        , texture.height        );
+        ImGui::Text("Texture Updates: %d\n"       , data.textureChanges   );
         ImGui::Text("Mouse X: %d\n"               , data.mouseX           );
         ImGui::Text("Mouse Y: %d\n"               , data.mouseY           );
         ImGui::Text("Mouse Out of Bounds? %d\n"   , OutofBounds           );

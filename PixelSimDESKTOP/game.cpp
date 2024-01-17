@@ -23,22 +23,42 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 
 	// generate 'nVariant' number of colour variations per material. for spice..
 	nVariants = 20;
-	constexpr u8 variation = 15;
+	u8 variation = 8; // don't raise this too high, will over/underflow u8..
 	for (Material& mat : materials) {
 		mat.variants.clear();
 		mat.variants.reserve(nVariants);
-		for (u8 i = 0; i < nVariants; ++i)
-			mat.variants.push_back({
-				getRand<u8>(0, variation),	 // RED
-				getRand<u8>(0, variation),	 // GREEN
-				getRand<u8>(0, variation),	 // BLUE
-				getRand<u8>(0, variation)}); // ALPHA
+		for (u8 i = 0; i < nVariants; i++) {
+			std::vector<u8> variant;
+
+			if (mat.d == 1600 || mat.d == 997) {
+				//if (mat.r < 128) variant.push_back(mat.r - getRand<u8>(0, variation));
+				//else variant.push_back(mat.r + getRand<u8>(0, variation));
+				//
+				//if (mat.r < 128) variant.push_back(mat.g - getRand<u8>(0, variation));
+				//else variant.push_back(mat.g + getRand<u8>(0, variation));
+				//
+				//if (mat.r < 128) variant.push_back(mat.b - getRand<u8>(0, variation));
+				//else variant.push_back(mat.b + getRand<u8>(0, variation));
+				variant.push_back(mat.r - getRand<u8>(0, variation));
+				variant.push_back(mat.g - getRand<u8>(0, variation));
+				variant.push_back(mat.b - getRand<u8>(0, variation));
+				variant.push_back(mat.a); // dont mess with opacity..
+			}
+			else {
+				variant.push_back(mat.r);
+				variant.push_back(mat.g);
+				variant.push_back(mat.b);
+				variant.push_back(mat.a);
+			}
+
+			mat.variants.push_back(variant);
+		}
 	}
 
 	cells.clear();
 	cells.reserve(cellWidth * cellHeight);
 	for (s32 i = 0; i < cellWidth * cellHeight; i++) // init cell.updated = true so updateTextureData runs on first time.
-		cells.emplace_back(MaterialID::EMPTY, true, getRand<u8>(0, nVariants), 0);
+		cells.emplace_back(MaterialID::EMPTY, true, getRand<u8>(0, nVariants - 1), 0);
 	sizeChanged = true;
 }
 
@@ -52,7 +72,7 @@ void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 	for (s32 y = 0; y < newCellHeight; y++)
 		for (s32 x = 0; x < newCellWidth; x++)
 			if (outOfBounds(x, y))
-				newCells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants), 0);
+				newCells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants - 1), 0);
 			else
 				newCells.push_back(cells[cellIdx(x,y)]);
 
@@ -71,7 +91,7 @@ void Game::reset()
 	cells.clear();
 	cells.reserve(cellWidth * cellHeight);
 	for (s32 i = 0; i < cellWidth * cellHeight; i++)
-		cells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants), 0);
+		cells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants - 1), 0);
 	sizeChanged = true;
 }
 
@@ -85,22 +105,32 @@ void Game::updateSim(interfaceData& data)
 
 	if (!data.runSim) return;
 	
-	dispersionFactor = data.dispersionFactor;
+	fluidDispersionFactor = data.fluidDispersionFactor;
+	solidDispersionFactor = data.solidDispersionFactor;
 
 	switch (data.scanMode) {
-	case Scan::TOP_DOWN:		topDown_Update();  break;
-	case Scan::BOTTOM_UP:		bottomUp_Update(); break;
-	case Scan::SNAKE:			snake_Update();	   break;
-	case Scan::GAME_OF_LIFE:	gol_Update();	   break;
+	case Scan::TOP_DOWN:		topDown_Update();	 break;
+	case Scan::BOTTOM_UP_LEFT:	l_bottomUp_Update(); break;
+	case Scan::BOTTOM_UP_RIGHT:	r_bottomUp_Update(); break;
+	case Scan::SNAKE:			snake_Update();		 break;
+	case Scan::GAME_OF_LIFE:	gol_Update();		 break;
 	}
+
+	//if (data.updateMode == Update::FLICKER) {
+	//	if (data.scanMode == Scan::TOP_DOWN)
+	//		data.scanMode = Scan::BOTTOM_UP_LEFT;
+	//	else if (data.scanMode == Scan::BOTTOM_UP_LEFT && data.frame % 3 == 0)
+	//		data.scanMode = Scan::TOP_DOWN;
+	//}
 
 	if (data.updateMode == Update::FLICKER) {
-		if (data.scanMode == Scan::TOP_DOWN)
-			data.scanMode = Scan::BOTTOM_UP;
-		else if (data.scanMode == Scan::BOTTOM_UP && data.frame % 3 == 0)
-			data.scanMode = Scan::TOP_DOWN;
+		if (data.scanMode == Scan::BOTTOM_UP_LEFT)
+			data.scanMode = Scan::BOTTOM_UP_RIGHT;
+		else
+			data.scanMode = Scan::BOTTOM_UP_LEFT;
 	}
 
+	data.textureChanges = textureChanges.size();
 	data.frame++;
 }
 
@@ -110,19 +140,23 @@ void Game::topDown_Update()
 		for (s32 x = 0; x < cellWidth; x++) {
 			Cell& c = cells[cellIdx(x, y)];
 			updateCell(c, x, y);
-			if (c.updated) toUpdate.push_back(std::pair<u16, u16>(x, y)); // get rid of if statement.
-			c.updated = false;
 		}
 }
 
-void Game::bottomUp_Update()
+void Game::l_bottomUp_Update()
 {
+	for (s32 y = cellHeight - 1; y >= 0; y--)
+		for (s32 x = 0; x < cellWidth; x++) {
+			Cell& c = cells[cellIdx(x, y)];
+			updateCell(c, x, y);
+		}
+}
+
+void Game::r_bottomUp_Update() {
 	for (s32 y = cellHeight - 1; y >= 0; y--)
 		for (s32 x = cellWidth - 1; x >= 0; x--) {
 			Cell& c = cells[cellIdx(x, y)];
 			updateCell(c, x, y);
-			if (c.updated) toUpdate.push_back(std::pair<u16, u16>(x, y));
-			c.updated = false;
 		}
 }
 
@@ -136,15 +170,11 @@ void Game::snake_Update()
 			for (s32 x = 0; x < cellWidth; x++) {
 				Cell& c = cells[cellIdx(x, y)];
 				updateCell(c, x, y);
-				if (c.updated) toUpdate.push_back(std::pair<u16, u16>(x, y)); // get rid of if statement.
-				c.updated = false;
 			}
 		else					 // <--
 			for (s32 x = cellWidth - 1; x >= 0; x--) {
 				Cell& c = cells[cellIdx(x, y)];
 				updateCell(c, x, y);
-				if (c.updated) toUpdate.push_back(std::pair<u16, u16>(x, y)); // get rid of if statement.
-				c.updated = false;
 			}
 }
 
@@ -193,84 +223,114 @@ void Game::updateCell(Cell& c, u16 x, u16 y)
 	}
 }
 
-#define CELL_DISPERSION 1
-#if RAND_CELL_UPDATE
+#define EUCLIDEAN 0
+#define NEWNEW 0
+#if EUCLIDEAN
+
 
 void Game::updateSand(Cell& c, u16 x, u16 y)
 {
-	if (trySwap(c, x, y + 1)) return;
-	else trySwap(c, x + getRand<s8>(), y + 1);
-}
+	//if (trySwap(c, x, y + 1)) return;
+	//if (trySwap(c, x + getRand<s8>(), y + 1)) return;
 
-void Game::updateWater(Cell& c, u16 x, u16 y)
-{
-	if (trySwap(c, x, y + 1)) return;
-	else if (trySwap(c, x + getRand<s8>(), y + 1)) return;
-	else (trySwap(c, x + getRand<s8>(), y));
-}
+	s8 yDispersion = 0;
+	s8 xDispersion = 0;
+	//for (u8 dY = 1; dY < solidDispersionFactor; dY++) {
+	//	if (outOfBounds(x, y + dY)) goto SAND_DISPERSE_GOTO;
+	//	yDispersion = dY;
+	//}
+
+#if 1 
+	for (u8 dY = 1; dY <= solidDispersionFactor; dY++) { 
+		for (s8 dX = -solidDispersionFactor; dX <= solidDispersionFactor; dX++) {
+			//changeMaterial(x + dX, y + dY, MaterialID::CONCRETE);
+			
+			if (outOfBounds(x + dX, y + dY)) goto SAND_DISPERSE_GOTO;
+			else xDispersion = dX;
+			
+			if (outOfBounds(x - dX, y + dY)) goto SAND_DISPERSE_GOTO;
+			else xDispersion = -dX;
+		}
+		yDispersion++;
+	}
 #else 
 
-void Game::updateSand(Cell& c, u16 x, u16 y)
-{
-	if (trySwap(c, x, y + 1)) return;
-	else if (trySwap(c, x - 1, y + 1)) return;
-	else trySwap(c, x + 1, y + 1); 
-}
+	// ideally want to use bottom half of a semi-circle, velocity == radius.. GOOD!
+	// at init() could hard code offset values in a vector for circumference of the circle.
+	// ^^ wouldn't really work for a 2d vector velocity system..
+	// what do I even use to calculate x velocity of a cell? weird..
 
-//constexpr u8 liquidDispersionRate = 8;
-void Game::updateWater(Cell& c, u16 x, u16 y)
-{
 
-	if (trySwap(c, x, y + 1)) return;
-	else if (trySwap(c, x - 1, y + 1)) return;
-	else if (trySwap(c, x + 1, y + 1)) return;
-
-	s8 dispersion = 0;
-	for (u8 dX = 0; dX < dispersionFactor; dX++) {
-
-			if (outOfBounds(x + dX, y)) break;
-			else dispersion = dX;
-
-			if (outOfBounds(x - dX, y)) break;
-			else dispersion = -dX;
-			if (getRand<u8>() % 2 == 0) dispersion *= -1;
-	}
-
-	trySwap(c, x + dispersion, y);
+#endif
+SAND_DISPERSE_GOTO:
+	//printf("Dispersed: %d, %d\n", (int)xDispersion, (int)yDispersion);
+	trySwap(c, x + xDispersion, y + yDispersion);
 }
 
 #endif
 
-bool Game::trySwap(Cell& c1, u16 x2, u16 y2) 
+void Game::updateSand(Cell& c, u16 x, u16 y)
 {
-	if (outOfBounds(x2, y2)) return false;
+	if (trySwap(x, y, x, y + 1)) return;
+	else trySwap(x, y, x + getRand<s8>(), y + 1);
+}
 
-	Cell& neighbour = cells[cellIdx(x2, y2)]; // density check
-	if (materials[c1.matID].d <= materials[neighbour.matID].d) return false;
-	
-	swapCells(c1, neighbour);
+void Game::updateWater(Cell& c, u16 x, u16 y) {
+	if (trySwap(x, y, x, y + 1)) return;
+	else if (trySwap(x, y, x - 1, y + 1)) return;
+	else if (trySwap(x, y, x + 1, y + 1)) return;
+
+	s8 dispersion = 0;
+	for (u8 dX = 0; dX <= fluidDispersionFactor; dX++) {
+		if (outOfBounds(x + dX, y)) break;
+		else dispersion = dX;
+
+		if (outOfBounds(x - dX, y)) break;
+		else dispersion = -dX;
+		if (getRand<u8>() % 2 == 0) dispersion *= -1; // might switch to a cell thats blocked..
+	}
+
+	trySwap(x, y, x + dispersion, y);
+}
+
+bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2)
+{
+	if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
+
+	Cell& c1 = cells[cellIdx(x1, y1)];
+	Cell& c2 = cells[cellIdx(x2, y2)];
+	if (materials[c1.matID].d <= materials[c2.matID].d) return false;
+
+	swapCells(x1,y1,x2,y2);
 	return true;
 }
 
 void Game::changeMaterial(u16 x, u16 y, u8 newMaterial)
 {
-	if (outOfBounds(x, y)) return;
+	if (outOfBounds(x, y)) return; // not consistent control flow, but it works.
 	Cell& c = cells[cellIdx(x, y)];
 	c.matID = newMaterial;
 	c.updated = true;
 
-	toUpdate.push_back(std::pair<u16,u16>(x,y));
+	textureChanges.push_back(std::pair<u16,u16>(x,y));
 }
 
-void Game::swapCells(Cell& c1, Cell& c2)
+void Game::swapCells(u16 x1, u16 y1, u16 x2, u16 y2)
 {
+	Cell& c1 = cells[cellIdx(x1, y1)];
+	Cell& c2 = cells[cellIdx(x2, y2)];
+
 	u8 temp_MaterialID = c1.matID;
 	c1.matID = c2.matID;
 	c2.matID = temp_MaterialID;
-	
+
 	c1.updated = true;
 	c2.updated = true;
+
+	textureChanges.push_back(std::pair<u16, u16>(x1, y1));
+	textureChanges.push_back(std::pair<u16, u16>(x2, y2));
 }
+
 
 /*--------------------------------------------------------------------------------------
 ---- Mouse Functions -------------------------------------------------------------------
@@ -359,27 +419,25 @@ void Game::draw_Square(u16 x, u16 y, u16 size, u8 material, u8 drawChance)
 ---- Updating Texture ------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
+// this causes flickering.. switching back to entire texture update.
+// might not be calling all cells that need updating, check cellswap etc.
 void Game::updateTextureData(std::vector<GLubyte>& textureData)
 {
-	// all this would do is prevent // allow >> if (!c.updated) continue <<
-	// re-writing code would be more efficient as it would not include an if statement.
-	// can't use a compile-time expression to determine, i.e #ifdef TEST_123, no overhead.
-
 	if (sizeChanged) {
 		updateEntireTextureData(textureData);
 		sizeChanged = false;
 		return;
 	}
 
-	for (auto [x,y] : toUpdate) { // cheeky structured binding.
-		const Cell& c = cells[cellIdx(x,y)];
-		const Material& material = materials[c.matID];
-
-		const GLubyte red = material.r;
-		const GLubyte green = material.g;
-		const GLubyte blue = material.b;
-		const GLubyte alpha = material.a;
-
+	for (const auto& [x,y] : textureChanges) { // cheeky structured binding.
+		Cell& c = cells[cellIdx(x,y)];
+		const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
+ 		
+		const GLubyte red = variant[0];
+		const GLubyte green = variant[1];
+		const GLubyte blue = variant[2];
+		const GLubyte alpha = variant[3];
+		
 		for (s32 tY = 0; tY < scaleFactor; tY++)
 			for (s32 tX = 0; tX < scaleFactor; tX++) {
 				s32 texIdx = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
@@ -388,22 +446,23 @@ void Game::updateTextureData(std::vector<GLubyte>& textureData)
 				textureData[texIdx + 2] = blue;
 				textureData[texIdx + 3] = alpha;
 			}
+		c.updated = false;
 	}
-
-	toUpdate.clear();
+	
+	textureChanges.clear();
 }
 
 void Game::updateEntireTextureData(std::vector<GLubyte>& textureData)
 {
 	for (s32 y = 0; y < cellHeight; y++) {
 		for (s32 x = 0; x < cellWidth; x++) {
-			const Cell& c = cells[cellIdx(x, y)];
-			const Material& material = materials[c.matID];
-
-			const GLubyte red = material.r;
-			const GLubyte green = material.g;
-			const GLubyte blue = material.b;
-			const GLubyte alpha = material.a;
+			Cell& c = cells[cellIdx(x, y)];
+			const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
+			
+			const GLubyte red = variant[0];
+			const GLubyte green = variant[1];
+			const GLubyte blue = variant[2];
+			const GLubyte alpha = variant[3];
 
 			for (s32 tY = 0; tY < scaleFactor; tY++)
 				for (s32 tX = 0; tX < scaleFactor; tX++) {
@@ -413,6 +472,7 @@ void Game::updateEntireTextureData(std::vector<GLubyte>& textureData)
 					textureData[idx + 2] = blue;
 					textureData[idx + 3] = alpha;
 				}
+			c.updated = false;
 		}
 	}
 }

@@ -38,14 +38,16 @@ namespace Update {
 namespace Scan {
 	enum : u8 {
 		TOP_DOWN,
-		BOTTOM_UP,
+		BOTTOM_UP_LEFT,
+		BOTTOM_UP_RIGHT,
 		SNAKE,
 		GAME_OF_LIFE,
 	};
 
 	static const std::vector<std::string> names = {
 		"Top Down",
-		"Bottom Up",
+		"Bottom Up L->R",
+		"Bottom Up R->L",
 		"Snake",
 		"Game of Life",
 	};
@@ -95,20 +97,22 @@ struct interfaceData
 	bool reloadGame = false;
 	bool loadImage  = false;
 
-	u8 scanMode			   = Scan::BOTTOM_UP;
-	u8 updateMode		   = Update::STATIC;
-	u8 drawShape		   = Shape::CIRCLE;
-	u8 drawMaterial		   =  1;
-	//u8 drawChance		   = 99; 
-	int drawChance = 99;
-	u8 scaleFactor	       =  2;
-	u8 dispersionFactor    =  8;
+	u8 scanMode			     = Scan::BOTTOM_UP_LEFT;
+	u8 updateMode		     = Update::FLICKER;
+	u8 drawShape		     = Shape::CIRCLE;
+	u8 drawMaterial		     =  1;
+	//u8 drawChance		     = 99; 
+	int drawChance = 99;     
+	u8 scaleFactor		     =  2;
+	u8 fluidDispersionFactor =  8;
+	u8 solidDispersionFactor =  2;
 
-	u16 mouseX		       =  0;
-	u16 mouseY		       =  0;
-	//u16 drawSize		   = 10;
-	int drawSize = 10;
-
-	u32 frame		       =  0;
-	u32 texReloadCount     =  0;
+	u16 mouseX		         =  0;
+	u16 mouseY		         =  0;
+	//u16 drawSize		     = 10;
+	int drawSize = 10;	     
+						     
+	u32 frame		         =  0;
+	u32 texReloadCount       =  0;
+	u32 textureChanges		 =  0;
 };
