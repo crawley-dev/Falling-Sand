@@ -223,10 +223,6 @@ void Game::updateCell(Cell& c, u16 x, u16 y)
 	}
 }
 
-#define EUCLIDEAN 1
-#define EUCLIDEAN_Y 1
-#if EUCLIDEAN
-
 void Game::updateSand(u16 x, u16 y)
 {
 	// Priority:
@@ -268,7 +264,6 @@ void Game::updateSand(u16 x, u16 y)
 	trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
-// doesn't actually check if the cell is occupied.
 void Game::updateWater(u16 x, u16 y) {
 	s8 yDispersion = 0;
 	s8 xDispersion = 0;
@@ -288,12 +283,12 @@ void Game::updateWater(u16 x, u16 y) {
 	// calculate horizontal movement
 	for (u8 dX = 1; dX <= fluidDispersionFactor - yDispersion; dX++) {
 		if (getRand<s8>(1, 100) > 50) { // "more random" than 0 || 1
-			if (querySwap(x, y, x + dX, y)) xDispersion = dX;
+			if      (querySwap(x, y, x + dX, y)) xDispersion = dX;
 			else if (querySwap(x, y, x - dX, y)) xDispersion = -dX;
 			else break;
 		}
 		else {
-			if (querySwap(x, y, x - dX, y)) xDispersion = -dX;
+			if      (querySwap(x, y, x - dX, y)) xDispersion = -dX;
 			else if (querySwap(x, y, x + dX, y)) xDispersion = dX;
 			else break;
 		}
@@ -503,6 +498,8 @@ void Game::loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 
 	//		^^ only really necessary for low res // really high res
 	// .. interpolate image RGBA --> closest material RGBA
 	// .. .. avoids 100k variant vector stuff.
+
+
 }
 
 // Instead of Variant schenanigans, do the 'next' step for image loading, 

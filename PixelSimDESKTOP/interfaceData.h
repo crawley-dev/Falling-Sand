@@ -14,6 +14,16 @@ public:
 	};
 };
 
+class IFlags {
+public:
+	enum : u64 {
+		RUN_SIM = 1 << 0,
+		RESET_SIM = 1 << 1,
+		RELOAD_GAME = 1 << 2,
+		LOAD_IMAGE = 1 << 3,
+	};
+};
+
 class TexID { // Scope Blocked Enum.
 public:
 	enum : u8 {
@@ -92,6 +102,7 @@ struct interfaceData
 	std::vector<TextureData> textures;
 	std::string imagePath;
 	
+	// Efficient Flag: u64 flags = 0;
 	bool runSim	    = false;
 	bool resetSim   = false;
 	bool reloadGame = false;
