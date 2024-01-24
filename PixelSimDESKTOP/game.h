@@ -26,17 +26,13 @@ private:
 
 	// passing around more data than last time lol, u32 ptr && more.
 	void changeMaterial(u16 x, u16 y, u8 newMaterial);
-	void swapCells(Cell& c1, Cell& c2);
-	bool trySwap(Cell& c1, u16 x2, u16 y2);
-
-
 	void swapCells(u16 x1, u16 y1, u16 x2, u16 y2);
 	bool trySwap(u16 x1, u16 y1, u16 x2, u16 y2);
-
+	bool querySwap(u16 x1, u16 y1, u16 x2, u16 y2);
 
 	void updateCell(Cell& c, u16 x, u16 y);
-	void updateSand(Cell& c, u16 x, u16 y);
-	void updateWater(Cell& c, u16 x, u16 y);
+	void updateSand(u16 x, u16 y);
+	void updateWater(u16 x, u16 y);
 	void updateEntireTextureData(std::vector<GLubyte>& textureData);
 
 	void draw_Circle(u16 x, u16 y, u16 size, u8 material, u8 drawChance);

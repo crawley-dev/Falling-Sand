@@ -218,79 +218,88 @@ void Game::updateCell(Cell& c, u16 x, u16 y)
 	case MaterialID::EMPTY:		return;
 	case MaterialID::CONCRETE:  return;
 	case MaterialID::GOL_ALIVE: return;
-	case MaterialID::SAND:	updateSand(c, x, y);  break;
-	case MaterialID::WATER: updateWater(c, x, y); break;
+	case MaterialID::SAND:	updateSand(x, y);  break;
+	case MaterialID::WATER: updateWater(x, y); break;
 	}
 }
 
-#define EUCLIDEAN 0
-#define NEWNEW 0
+#define EUCLIDEAN 1
+#define EUCLIDEAN_Y 1
 #if EUCLIDEAN
 
-
-void Game::updateSand(Cell& c, u16 x, u16 y)
+void Game::updateSand(u16 x, u16 y)
 {
-	//if (trySwap(c, x, y + 1)) return;
-	//if (trySwap(c, x + getRand<s8>(), y + 1)) return;
+	// Priority:
+	// 1. Down
+	// 2. Diagonals (random which one is higher priority)
+	Cell& c = cells[cellIdx(x, y)];
 
-	s8 yDispersion = 0;
+	s8 yDispersion = 1; // don't check for yDispersion = 0, only check vertical neighbours
 	s8 xDispersion = 0;
-	//for (u8 dY = 1; dY < solidDispersionFactor; dY++) {
-	//	if (outOfBounds(x, y + dY)) goto SAND_DISPERSE_GOTO;
-	//	yDispersion = dY;
-	//}
 
-#if 1 
-	for (u8 dY = 1; dY <= solidDispersionFactor; dY++) { 
-		for (s8 dX = -solidDispersionFactor; dX <= solidDispersionFactor; dX++) {
-			//changeMaterial(x + dX, y + dY, MaterialID::CONCRETE);
-			
-			if (outOfBounds(x + dX, y + dY)) goto SAND_DISPERSE_GOTO;
-			else xDispersion = dX;
-			
-			if (outOfBounds(x - dX, y + dY)) goto SAND_DISPERSE_GOTO;
-			else xDispersion = -dX;
-		}
+	// calc yDispersion
+	for (u8 dY = 1; dY <= solidDispersionFactor; dY++) {
+		if (!querySwap(x, y, x, y + dY)) break;
+		yDispersion = dY;
+	}
+
+	// check if all 'moves' have been used.
+	if (yDispersion >= solidDispersionFactor) {
+		trySwap(x, y, x, y + yDispersion);
+		return;
+	}
+
+	// whilst (mag(dX) + mag(dY) <= solidDispersionFactor)
+	// 1.  check for a side to side movement. << rand
+	// 2.	if possible: set side to side movement to new xDispersion
+	//		else: break;
+	// 3.	check vertical movement  (x+xDispersion, y+yDispersion)
+	// 4.	if possible: next iteration
+	//		else: break;
+
+	while (abs(xDispersion) + abs(yDispersion) <= solidDispersionFactor) {
+		s8 dX = getRand<s8>();
+		if (!querySwap(x, y, x + dX, y + yDispersion)) break; // check if side to side movement is possible
+		xDispersion = dX;
+		if (!querySwap(x, y, x + xDispersion, y + yDispersion + 1)) break; // check if vertical movement is possible
 		yDispersion++;
 	}
-#else 
 
-	// ideally want to use bottom half of a semi-circle, velocity == radius.. GOOD!
-	// at init() could hard code offset values in a vector for circumference of the circle.
-	// ^^ wouldn't really work for a 2d vector velocity system..
-	// what do I even use to calculate x velocity of a cell? weird..
-
-
-#endif
-SAND_DISPERSE_GOTO:
-	//printf("Dispersed: %d, %d\n", (int)xDispersion, (int)yDispersion);
-	trySwap(c, x + xDispersion, y + yDispersion);
+	trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
-#endif
+// doesn't actually check if the cell is occupied.
+void Game::updateWater(u16 x, u16 y) {
+	s8 yDispersion = 0;
+	s8 xDispersion = 0;
 
-void Game::updateSand(Cell& c, u16 x, u16 y)
-{
-	if (trySwap(x, y, x, y + 1)) return;
-	else trySwap(x, y, x + getRand<s8>(), y + 1);
-}
-
-void Game::updateWater(Cell& c, u16 x, u16 y) {
-	if (trySwap(x, y, x, y + 1)) return;
-	else if (trySwap(x, y, x - 1, y + 1)) return;
-	else if (trySwap(x, y, x + 1, y + 1)) return;
-
-	s8 dispersion = 0;
-	for (u8 dX = 0; dX <= fluidDispersionFactor; dX++) {
-		if (outOfBounds(x + dX, y)) break;
-		else dispersion = dX;
-
-		if (outOfBounds(x - dX, y)) break;
-		else dispersion = -dX;
-		if (getRand<u8>() % 2 == 0) dispersion *= -1; // might switch to a cell thats blocked..
+	// First calculate vertical movement
+	for (u8 dY = 1; dY <= fluidDispersionFactor; dY++) {
+		if (!querySwap(x, y, x, y + dY)) break;
+		yDispersion = dY;
 	}
 
-	trySwap(x, y, x + dispersion, y);
+	// check if all 'moves' have been used.
+	if (yDispersion >= fluidDispersionFactor) {
+		trySwap(x, y, x, y + yDispersion);
+		return;
+	}
+
+	// calculate horizontal movement
+	for (u8 dX = 1; dX <= fluidDispersionFactor - yDispersion; dX++) {
+		if (getRand<s8>(1, 100) > 50) { // "more random" than 0 || 1
+			if (querySwap(x, y, x + dX, y)) xDispersion = dX;
+			else if (querySwap(x, y, x - dX, y)) xDispersion = -dX;
+			else break;
+		}
+		else {
+			if (querySwap(x, y, x - dX, y)) xDispersion = -dX;
+			else if (querySwap(x, y, x + dX, y)) xDispersion = dX;
+			else break;
+		}
+	}
+
+	trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
 bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2)
@@ -302,6 +311,17 @@ bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2)
 	if (materials[c1.matID].d <= materials[c2.matID].d) return false;
 
 	swapCells(x1,y1,x2,y2);
+	return true;
+}
+
+bool Game::querySwap(u16 x1, u16 y1, u16 x2, u16 y2)
+{
+	if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
+
+	Cell& c1 = cells[cellIdx(x1, y1)];
+	Cell& c2 = cells[cellIdx(x2, y2)];
+	if (materials[c1.matID].d <= materials[c2.matID].d) return false;
+	
 	return true;
 }
 
@@ -581,4 +601,42 @@ void Game::loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 
 
 	printf("Initialised Image, Variant size of: %d \n", imgMat.variants.size());
 }
+
+
+void Game::updateSand(Cell& c, u16 x, u16 y)
+{
+	//if (trySwap(c, x, y + 1)) return;
+	//if (trySwap(c, x + getRand<s8>(), y + 1)) return;
+
+	s8 yDispersion = 0;
+	s8 xDispersion = 0;
+	//for (u8 dY = 1; dY < solidDispersionFactor; dY++) {
+	//	if (outOfBounds(x, y + dY)) goto SAND_DISPERSE_GOTO;
+	//	yDispersion = dY;
+	//}
+
+	for (u8 dY = 1; dY <= solidDispersionFactor; dY++) {
+		for (s8 dX = -solidDispersionFactor; dX <= solidDispersionFactor; dX++) {
+			//changeMaterial(x + dX, y + dY, MaterialID::CONCRETE);
+
+			if (outOfBounds(x + dX, y + dY)) goto SAND_DISPERSE_GOTO;
+			else xDispersion = dX;
+
+			if (outOfBounds(x - dX, y + dY)) goto SAND_DISPERSE_GOTO;
+			else xDispersion = -dX;
+		}
+		yDispersion++;
+	}
+
+	// ideally want to use bottom half of a semi-circle, velocity == radius.. GOOD!
+	// at init() could hard code offset values in a vector for circumference of the circle.
+	// ^^ wouldn't really work for a 2d vector velocity system..
+	// what do I even use to calculate x velocity of a cell? weird..
+
+
+SAND_DISPERSE_GOTO:
+	//printf("Dispersed: %d, %d\n", (int)xDispersion, (int)yDispersion);
+	trySwap(c, x + xDispersion, y + yDispersion);
+}
+
 */

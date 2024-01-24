@@ -10,9 +10,9 @@ int main(int, char**)
     const int width = 1280;
     const int height = 720;
 
-    //const int FPS = 144;
-    //const int frameDelay = 1000 / FPS;
-    //int frameStart, frameTime;
+    const int FPS = 144;
+    const int frameDelay = 1000 / FPS;
+    int frameStart, frameTime;
 
 
     app = new Framework();
@@ -20,14 +20,14 @@ int main(int, char**)
 
     while (app->running())
     {
-        //frameStart = SDL_GetTicks();
+        frameStart = SDL_GetTicks();
 
         app->handleEvents();
         app->update();
         app->render();
 
-        //frameTime = SDL_GetTicks() - frameStart;
-        //if (frameDelay > frameTime) { SDL_Delay(frameDelay - frameTime); }
+        frameTime = SDL_GetTicks() - frameStart;
+        if (frameDelay > frameTime) { SDL_Delay(frameDelay - frameTime); }
     }
 
     app->clean();

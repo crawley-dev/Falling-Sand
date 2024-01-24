@@ -176,12 +176,12 @@ void Interface::debugMenu(interfaceData& data)
 
         int drawSize = data.drawSize;
         ImGui::Text("Draw Size  "); ImGui::SameLine();
-        ImGui::InputInt("",  &drawSize,   1, 10);
+        ImGui::InputInt(". . . . . . . . . . .",  &drawSize,   1, 10);
         data.drawSize = drawSize;
 
 		int drawChance = data.drawChance;
         ImGui::Text("Draw Chance"); ImGui::SameLine();
-        ImGui::InputInt("", &drawChance, 1, 10);
+        ImGui::InputInt(". . . . . . .", &drawChance, 1, 10);
         data.drawChance = drawChance;
         // ImGui::InputInt("Cell Colour Variance", (int)data.drawColourVariance, 1, 10);
         // ^^ might revive this, re-generate random variant for a cell?

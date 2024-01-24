@@ -104,7 +104,7 @@ struct interfaceData
 	//u8 drawChance		     = 99; 
 	int drawChance = 99;     
 	u8 scaleFactor		     =  2;
-	u8 fluidDispersionFactor =  8;
+	u8 fluidDispersionFactor =  4;
 	u8 solidDispersionFactor =  2;
 
 	u16 mouseX		         =  0;
