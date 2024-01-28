@@ -12,6 +12,7 @@ public:
 	void reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
 	void update(interfaceData& data, std::vector<u8>& textureData);
 	void reset();
+
 	void loadImage(std::vector<u8> imageTextureData, u16 imageWidth, u16 imageHeight);
 	void mouseDraw(u16 x, u16 y, u16 size, u8 drawChance, u8 material, u8 shape);
 
@@ -32,6 +33,7 @@ private:
 	void updateCell(Cell& c, u16 x, u16 y);
 	void updateSand(u16 x, u16 y);
 	void updateWater(u16 x, u16 y);
+	void updateGOL(u16 x, u16 y);
 	void updateTextureData(std::vector<u8>& textureData);
 	void updateEntireTextureData(std::vector<u8>& textureData);
 

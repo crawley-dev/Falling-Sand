@@ -185,7 +185,7 @@ void Game::snakeUpdate()
 				updateCell(c, x, y);
 			}
 }
-
+/*
 void Game::golUpdate()
 {
 	std::vector<Cell> nextFrameCells = cells; // Copying all cells to new vec is current bottleneck
@@ -205,14 +205,17 @@ void Game::golUpdate()
 			adjAlive += (cells[cellIdx(x + 1, y + 1)].matID == MaterialID::GOL_ALIVE); // BR
 
 			if (c.matID == MaterialID::GOL_ALIVE)
-				if (adjAlive != 2 && adjAlive != 3) c.matID = MaterialID::EMPTY; // seems to work fine 
-				else c.matID = MaterialID::GOL_ALIVE;
+				if (adjAlive != 2 && adjAlive != 3) changeMaterial(x, y, MaterialID::EMPTY); // seems to work fine 
+				else changeMaterial(x, y, MaterialID::GOL_ALIVE);
 			else if (c.matID == MaterialID::EMPTY)
 				if (adjAlive == 3)
-					c.matID = MaterialID::GOL_ALIVE;
+					changeMaterial(x, y, MaterialID::GOL_ALIVE);
+					//c.matID = MaterialID::GOL_ALIVE;
+			
 		}
 	cells = nextFrameCells; // Copying all cells is current bottleneck
 }
+*/
 
 /*--------------------------------------------------------------------------------------
 ---- Updating Cells --------------------------------------------------------------------
@@ -224,147 +227,95 @@ void Game::updateCell(Cell& c, u16 x, u16 y)
 
 	switch (c.matID) {
 	//case MaterialID::EMPTY:		return;
+	case MaterialID::SAND:	updateSand(x, y);  return;
+	case MaterialID::WATER: updateWater(x, y); return;
 	//case MaterialID::CONCRETE:	return;
-	//case MaterialID::GOL_ALIVE:	return;
-	case MaterialID::SAND:	updateSand(x, y);  break;
-	case MaterialID::WATER: updateWater(x, y); break;
+	case MaterialID::GOL_ALIVE:	updateGOL(x, y); return;
 	}
 }
 
 void Game::updateSand(u16 x, u16 y)
 {
-	// Priority:
-	// 1. Down
-	// 2. Diagonals (random which one is higher priority)
-	Cell& c = cells[cellIdx(x, y)];
-
-	s8 yDispersion = 1; // don't check for yDispersion = 0, only check vertical neighbours
+	s8 yDispersion = 0;
 	s8 xDispersion = 0;
+	s8 movesLeft = solidDispersionFactor;
 
-	// calc yDispersion
-	for (u8 dY = 1; dY <= solidDispersionFactor; dY++) {
-		if (!querySwap(x, y, x, y + dY)) break;
-		yDispersion = dY;
-	}
+	while (movesLeft > 0) {
+		if (querySwap(x, y, x + xDispersion, y + yDispersion + 1)) { // check cell below
+			yDispersion++;
+			movesLeft--;
+			continue;
+		}
 
-	// check if all 'moves' have been used.
-	if (yDispersion >= solidDispersionFactor) {
-		trySwap(x, y, x, y + yDispersion);
-		return;
-	}
-
-	// whilst (mag(dX) + mag(dY) <= solidDispersionFactor)
-	// 1.  check for a side to side movement. << rand
-	// 2.	if possible: set side to side movement to new xDispersion
-	//		else: break;
-	// 3.	check vertical movement  (x+xDispersion, y+yDispersion)
-	// 4.	if possible: next iteration
-	//		else: break;
-
-	while (abs(xDispersion) + abs(yDispersion) <= solidDispersionFactor) {
-		s8 dX = getRand<s8>();
-		if (!querySwap(x, y, x + dX, y + yDispersion)) break; // check if side to side movement is possible
-		xDispersion = dX;
-		if (!querySwap(x, y, x + xDispersion, y + yDispersion + 1)) break; // check if vertical movement is possible
-		yDispersion++;
+		s8 rand = getRand<s8>();
+		if (querySwap(x, y, x + rand, y + yDispersion + 1)) {
+			xDispersion = rand;
+			movesLeft--;
+		}
+		else break;
 	}
 
 	trySwap(x, y, x + xDispersion, y + yDispersion);
 }
-#define WATER_REDO 0
-#if WATER_REDO
 
-void Game::updateWater(u16 x, u16 y) {
-	s8 yDispersion = 1;
-	s8 xDispersion = 1;
-
-	// whilst (mag(dX) + mag(dY) <= solidDispersionFactor)
-	// 1.  check for a side to side movement. << rand
-	// 2.	if possible: set side to side movement to new xDispersion
-	//		else: break;
-	// 3.	check vertical movement  (x+xDispersion, y+yDispersion)
-	// 4.	if possible: next iteration
-	//		else: break;
-
-	//while (abs(xDispersion) + abs(yDispersion) <= solidDispersionFactor) {
-	//	s8 dX = getRand<s8>();
-	//	if (!querySwap(x, y, x + dX, y + yDispersion)) break; // check if side to side movement is possible
-	//	xDispersion = dX;
-	//	if (!querySwap(x, y, x + xDispersion, y + yDispersion + 1)) break; // check if vertical movement is possible
-	//	yDispersion++;
-	//}
-
-	while (abs(xDispersion) + abs(yDispersion) <= solidDispersionFactor) {
-
-		// sand algo: why seperate vertical and horizontal movement?
-
-		// 1.0:	vertical movement:
-		// 1.1: >> do all possible vertical movement
-		// 2.0: horizontal movement: << water "tension"
-		// 2.1: >> check new pos' vertical movement
-		// 2.2	>> >> do movement
-
-		// 1.0: vertical movement:
-		for (s8 dY = yDispersion; dY <= fluidDispersionFactor; dY++) {
-			if (!querySwap(x, y, x + xDispersion, y + dY)) break;
-			yDispersion = dY;
-		}
-
-		// 2.0: horizontal movement:
-		for (u8 dX = abs(xDispersion); dX <= fluidDispersionFactor - yDispersion; dX++) {
-			// 2.1: check new pos' vertical movement
-			//if (querySwap(x, y, x + xDispersion, y + yDispersion + 1)) break;
-
-			if (getRand<s8>(1, 100) > 50) { // "more random" than 0 || 1
-
-				if (querySwap(x, y, x + dX, y + yDispersion)) xDispersion = dX;
-				else if (querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
-				else break;
-			}
-			else {
-				if (querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
-				else if (querySwap(x, y, x + dX, y + yDispersion)) xDispersion = dX;
-				else break;
-			}
-		}
-	}
-
-	trySwap(x, y, x + xDispersion, y + yDispersion);
-}
-#else
 void Game::updateWater(u16 x, u16 y) {
 	s8 yDispersion = 0;
 	s8 xDispersion = 0;
+	s8 movesLeft = fluidDispersionFactor;
 
-	// First calculate vertical movement
-	for (s8 dY = 1; dY <= fluidDispersionFactor; dY++) {
-		if (!querySwap(x, y, x + xDispersion, y + dY)) break;
-		yDispersion = dY;
-	}
+	while (movesLeft > 0) {
+		// check for empty space below.. 
+		// check horizontal options
+		// >> if (can move) && (can move down) >> move
+		// >> else check until ^^ or no more horizontal options
 
-	// check if all 'moves' have been used.
-	if (yDispersion >= fluidDispersionFactor) {
-		trySwap(x, y, x, y + yDispersion);
-		return;
-	}
+		if (querySwap(x, y, x + xDispersion, y + yDispersion + 1)) { // check cell below
+			yDispersion++;
+			movesLeft--;
+			continue;
+		}
 
-	// calculate horizontal movement
-	for (u8 dX = 1; dX <= fluidDispersionFactor - yDispersion; dX++) {
-		if (getRand<s8>(1, 100) > 50) { // "more random" than 0 || 1
-			if      (querySwap(x, y, x + dX, y)) xDispersion = dX;
-			else if (querySwap(x, y, x - dX, y)) xDispersion = -dX;
-			else break;
+		u8 dX = abs(xDispersion) + 1;
+		if (getRand<u8>(1, 100) > 50) {
+			if		(querySwap(x, y, x + dX, y + yDispersion)) xDispersion = dX;
+			else if (querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
+			else goto ESCAPE_WHILE_WATER;
+			movesLeft--;
 		}
 		else {
-			if      (querySwap(x, y, x - dX, y)) xDispersion = -dX;
-			else if (querySwap(x, y, x + dX, y)) xDispersion = dX;
-			else break;
+			if		(querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
+			else if (querySwap(x, y, x + dX, y + yDispersion)) xDispersion =  dX;
+			else goto ESCAPE_WHILE_WATER;
+			movesLeft--;
 		}
 	}
-	
+
+ESCAPE_WHILE_WATER:
 	trySwap(x, y, x + xDispersion, y + yDispersion);
 }
-#endif
+
+// cells don't come alive..
+void Game::updateGOL(u16 x, u16 y) 
+{
+	u8 adjAlive = 0;
+	adjAlive += (cells[cellIdx(x - 1, y - 1)].matID == MaterialID::GOL_ALIVE); // TL
+	adjAlive += (cells[cellIdx(x + 0, y - 1)].matID == MaterialID::GOL_ALIVE); // TM
+	adjAlive += (cells[cellIdx(x + 1, y - 1)].matID == MaterialID::GOL_ALIVE); // TR
+	adjAlive += (cells[cellIdx(x - 1, y + 0)].matID == MaterialID::GOL_ALIVE); // ML
+	adjAlive += (cells[cellIdx(x + 1, y + 0)].matID == MaterialID::GOL_ALIVE); // MR
+	adjAlive += (cells[cellIdx(x - 1, y + 1)].matID == MaterialID::GOL_ALIVE); // BL
+	adjAlive += (cells[cellIdx(x + 0, y + 1)].matID == MaterialID::GOL_ALIVE); // BM
+	adjAlive += (cells[cellIdx(x + 1, y + 1)].matID == MaterialID::GOL_ALIVE); // BR
+
+	if (cells[cellIdx(x, y)].matID == MaterialID::GOL_ALIVE)
+		if (adjAlive != 2 && adjAlive != 3) 
+			changeMaterial(x, y, MaterialID::EMPTY); // seems to work fine 
+		else 
+			changeMaterial(x, y, MaterialID::GOL_ALIVE);
+	else if (cells[cellIdx(x, y)].matID == MaterialID::EMPTY)
+		if (adjAlive == 3)
+			changeMaterial(x, y, MaterialID::GOL_ALIVE);
+}
 
 bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2)
 {
@@ -528,16 +479,17 @@ void Game::drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::f
 void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) 
 {
 	// seems like this could be shorter ?
-	for (s32 tX = -size / 2; tX < size / 2; tX++)
+	// thank thee lord gpt
+	for (s32 tX = -size / 2; tX <= size / 2; tX++)
 		if (getRand<s64>(1, 100) <= drawChance)
 			foo(x + tX, y - size / 2, material);
-	for (s32 tX = -size / 2; tX < size / 2; tX++)
+	for (s32 tX = -size / 2; tX <= size / 2; tX++)
 		if (getRand<s64>(1, 100) <= drawChance)
 			foo(x + tX, y + size / 2, material);
-	for (s32 tY = -size / 2; tY < size / 2; tY++)
+	for (s32 tY = -size / 2; tY <= size / 2; tY++)
 		if (getRand<s64>(1, 100) <= drawChance)
 			foo(x - size / 2, y + tY, material);
-	for (s32 tY = -size / 2; tY < size / 2; tY++)
+	for (s32 tY = -size / 2; tY <= size / 2; tY++)
 		if (getRand<s64>(1, 100) <= drawChance)
 			foo(x + size / 2, y + tY, material);
 }
@@ -718,42 +670,4 @@ void Game::loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 
 
 	printf("Initialised Image, Variant size of: %d \n", imgMat.variants.size());
 }
-
-
-void Game::updateSand(Cell& c, u16 x, u16 y)
-{
-	//if (trySwap(c, x, y + 1)) return;
-	//if (trySwap(c, x + getRand<s8>(), y + 1)) return;
-
-	s8 yDispersion = 0;
-	s8 xDispersion = 0;
-	//for (u8 dY = 1; dY < solidDispersionFactor; dY++) {
-	//	if (outOfBounds(x, y + dY)) goto SAND_DISPERSE_GOTO;
-	//	yDispersion = dY;
-	//}
-
-	for (u8 dY = 1; dY <= solidDispersionFactor; dY++) {
-		for (s8 dX = -solidDispersionFactor; dX <= solidDispersionFactor; dX++) {
-			//changeMaterial(x + dX, y + dY, MaterialID::CONCRETE);
-
-			if (outOfBounds(x + dX, y + dY)) goto SAND_DISPERSE_GOTO;
-			else xDispersion = dX;
-
-			if (outOfBounds(x - dX, y + dY)) goto SAND_DISPERSE_GOTO;
-			else xDispersion = -dX;
-		}
-		yDispersion++;
-	}
-
-	// ideally want to use bottom half of a semi-circle, velocity == radius.. GOOD!
-	// at init() could hard code offset values in a vector for circumference of the circle.
-	// ^^ wouldn't really work for a 2d vector velocity system..
-	// what do I even use to calculate x velocity of a cell? weird..
-
-
-SAND_DISPERSE_GOTO:
-	//printf("Dispersed: %d, %d\n", (int)xDispersion, (int)yDispersion);
-	trySwap(c, x + xDispersion, y + yDispersion);
-}
-
 */
