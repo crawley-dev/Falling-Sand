@@ -1,9 +1,15 @@
 #pragma once
 #include "pch.h"
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_opengl3.h"
+#include <SDL.h>
+#include <SDL_opengl.h>
+#include <SDL_image.h>
+
 #include "interfaceData.h"
 
-class Interface
-{
+class Interface {
 public:
     Interface();
     ~Interface();

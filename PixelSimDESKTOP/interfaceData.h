@@ -70,6 +70,7 @@ namespace Shape {
 		CIRCLE_OUTLINE,
 		LINE,
 		SQUARE,
+		SQUARE_OUTLINE,
 	};
 
 	static const std::vector<std::string> names = {
@@ -77,17 +78,18 @@ namespace Shape {
 		"Circle Outline",
 		"Line",
 		"Square",
+		"Square Outline",
 	};
 };
 
 struct TextureData
 {
-	GLuint id  = 0;
-	int width  = 0; 
-	int height = 0;
-	std::vector<GLubyte> data;
+	GLuint id  = 0; // can't be u8 because ptrs.
+	u16 width  = 0; 
+	u16 height = 0;
+	std::vector<u8> data;
 
-	TextureData(GLuint ID, int WIDTH, int HEIGHT, std::vector<GLubyte> DATA)
+	TextureData(u32 ID, int WIDTH, int HEIGHT, std::vector<u8> DATA)
 	{
 		id	   = ID;
 		width  = WIDTH;
@@ -112,16 +114,14 @@ struct interfaceData
 	u8 updateMode		     = Update::FLICKER;
 	u8 drawShape		     = Shape::CIRCLE;
 	u8 drawMaterial		     =  1;
-	//u8 drawChance		     = 99; 
-	int drawChance = 99;     
+	u8 drawChance		     = 99; 
 	u8 scaleFactor		     =  2;
 	u8 fluidDispersionFactor =  4;
 	u8 solidDispersionFactor =  2;
 
 	u16 mouseX		         =  0;
 	u16 mouseY		         =  0;
-	//u16 drawSize		     = 10;
-	int drawSize = 10;	     
+	u16 drawSize		     = 10;
 						     
 	u32 frame		         =  0;
 	u32 texReloadCount       =  0;

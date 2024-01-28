@@ -1,10 +1,15 @@
 #pragma once
 #include "pch.h"
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_opengl3.h"
+#include <SDL.h>
+#include <SDL_opengl.h>
+#include <SDL_image.h>
 #include "interface.h"
 #include "game.h"
 
-class Framework
-{
+class Framework {
 public:
 	Framework();	// Constructor
 	~Framework();	// Deconstructor

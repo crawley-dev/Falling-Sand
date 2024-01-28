@@ -31,7 +31,7 @@ void Interface::debugMenu(interfaceData& data)
     if (ImGui::TreeNode("Simulation Settings")) 
     {
         ImGui::SeparatorText("Simulation Settings");
-        ImGui::Checkbox("Run Simulation"            , &data.runSim);
+        ImGui::Checkbox("Run Simulation", &data.runSim);
         
         if (ImGui::Button("Reset Sim")) data.resetSim = true;
 
@@ -45,7 +45,7 @@ void Interface::debugMenu(interfaceData& data)
         }
 
         ImGui::Text("Update Modes: "); ImGui::SameLine();
-        if (ImGui::BeginCombo(".", Update::names[data.updateMode].c_str())) {
+        if (ImGui::BeginCombo("update_modes_combo", Update::names[data.updateMode].c_str())) {
             for (u8 n = 0; n < Update::names.size(); n++) {
                 const bool is_selected = (data.updateMode == n);
                 if (ImGui::Selectable(Update::names[n].c_str(), is_selected))
@@ -57,8 +57,8 @@ void Interface::debugMenu(interfaceData& data)
             ImGui::EndCombo();
         }
 
-        ImGui::Text("Scan Types: "); ImGui::SameLine();
-        if (ImGui::BeginCombo("..", Scan::names[data.scanMode].c_str())) {
+        ImGui::Text("Scan Modes: "); ImGui::SameLine();
+        if (ImGui::BeginCombo("scan_modes_combo", Scan::names[data.scanMode].c_str())) {
             for (u8 n = 0; n < Scan::names.size(); n++) {
                 const bool is_selected = (data.scanMode == n);
                 if (ImGui::Selectable(Scan::names[n].c_str(), is_selected))
@@ -72,12 +72,12 @@ void Interface::debugMenu(interfaceData& data)
 
         int fluidDispersionFactor = data.fluidDispersionFactor;
         ImGui::Text("Fluid Dispersion"); ImGui::SameLine();
-        ImGui::InputInt(". . .", &fluidDispersionFactor, 1, 10);
+        ImGui::InputInt("fluid_dispersion_inputint", &fluidDispersionFactor, 1, 10);
         data.fluidDispersionFactor = fluidDispersionFactor;
 
         int solidDispersionFactor = data.solidDispersionFactor;
         ImGui::Text("Solid Dispersion"); ImGui::SameLine();
-        ImGui::InputInt(". . . .", &solidDispersionFactor, 1, 10);
+        ImGui::InputInt("solid_dispersion_inputint", &solidDispersionFactor, 1, 10);
         data.solidDispersionFactor = solidDispersionFactor;
 
         ImGui::TreePop();
@@ -146,12 +146,13 @@ void Interface::debugMenu(interfaceData& data)
             if (data.drawMaterial == MaterialID::GOL_ALIVE)
                 data.drawMaterial = MaterialID::SAND; // TODO: store state of previous drawMaterial, don't default to sand
 
-            ImGui::Text("Draw Type: "); ImGui::SameLine();
-            if (ImGui::BeginCombo("...", MaterialID::names[data.drawMaterial].c_str())) {
+            ImGui::Text("Draw Mode: "); ImGui::SameLine();
+            if (ImGui::BeginCombo("draw_modes_combo", MaterialID::names[data.drawMaterial].c_str())) {
                 for (u8 n = 0; n < MaterialID::names.size(); n++) {
                     const bool is_selected = (data.drawMaterial == n);
                     if (ImGui::Selectable(MaterialID::names[n].c_str(), is_selected))
                         data.drawMaterial = n;
+
 
                     if (is_selected)
                         ImGui::SetItemDefaultFocus();
@@ -161,7 +162,8 @@ void Interface::debugMenu(interfaceData& data)
         }
 
         ImGui::Text("Draw Shape:"); ImGui::SameLine();
-        if (ImGui::BeginCombo("....", Shape::names[0].c_str())) {
+        if (ImGui::BeginCombo("draw_shape_combo", Shape::names[0].c_str())) {
+            std::cout << "drawShape: " << Shape::names[data.drawShape] << '\n';
             for (u8 n = 0; n < Shape::names.size(); n++) {
                 const bool is_selected = (data.drawShape == n);
                 if (ImGui::Selectable(Shape::names[n].c_str(), is_selected))
@@ -176,12 +178,12 @@ void Interface::debugMenu(interfaceData& data)
 
         int drawSize = data.drawSize;
         ImGui::Text("Draw Size  "); ImGui::SameLine();
-        ImGui::InputInt(". . . . . . . . . . .",  &drawSize,   1, 10);
+        ImGui::InputInt("draw_size_inputint",  &drawSize,   1, 10);
         data.drawSize = drawSize;
 
 		int drawChance = data.drawChance;
         ImGui::Text("Draw Chance"); ImGui::SameLine();
-        ImGui::InputInt(". . . . . . .", &drawChance, 1, 10);
+        ImGui::InputInt("draw_chance_inputint", &drawChance, 1, 10);
         data.drawChance = drawChance;
         // ImGui::InputInt("Cell Colour Variance", (int)data.drawColourVariance, 1, 10);
         // ^^ might revive this, re-generate random variant for a cell?
@@ -230,7 +232,7 @@ void Interface::gameWindow(interfaceData& data)
     ImGui::Begin("GameWindow");
     frameRate = io.Framerate;
 
-    loadedTex = loadedTex % 2;
+    loadedTex = loadedTex % data.textures.size();
     TextureData& texture = data.textures[loadedTex];
     // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow",
     //       Not the SDL2 generated win32 window

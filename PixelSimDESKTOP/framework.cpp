@@ -107,14 +107,14 @@ void Framework::update()
     interface->main();
     interface->debugMenu(data);
 
-    if (ImGui::GetFrameCount() < 2) return;
+    if (ImGui::GetFrameCount() <= 2) return;
 
     ImGuiIO& io = ImGui::GetIO();
     TextureData& texture = data.textures[TexIndex::GAME];
 
     data.drawSize           += (int)io.MouseWheel;
-    data.drawSize           = std::clamp(data.drawSize, 1, 1000);
-    data.drawChance         = std::clamp(data.drawChance, 1, 100);
+    data.drawSize           = std::clamp(data.drawSize, (u16)1, (u16)1000);
+    data.drawChance         = std::clamp(data.drawChance, (u8)1, (u8)100);
     data.scaleFactor        = std::clamp(data.scaleFactor, (u8) 1, (u8) 10);
     //data.drawColourVariance = std::clamp(data.drawColourVariance, 1, 255);
 
@@ -138,6 +138,7 @@ void Framework::update()
         data.reloadGame = false;
     }
 
+    game->createDrawIndicators(data.mouseX, data.mouseY, data.drawSize, data.drawShape);
     game->updateSim(data);
     game->updateTextureData(texture.data);
 
@@ -251,7 +252,7 @@ void Framework::loadImageRGB(TextureData& texture, std::string path)
     constexpr int bytesPerPixel = 4;
     const int size = image->w * image->h * bytesPerPixel;
 
-    texture.data   = std::vector<GLubyte>(size);
+    texture.data   = std::vector<u8>(size);
     texture.width  = image->w;
     texture.height = image->h;
 
@@ -387,6 +388,5 @@ void Framework::mouseDraw()
     } 
     
     // Mouse pos updated in interface->debugMenu() each frame. called before mouseDraw event so correct.
-   // game->mouseDraw(data.mouseX, data.mouseY, data.drawSize, data.drawChance, data.drawType, data.drawShape, data.drawColourVariance);
     game->mouseDraw(data.mouseX, data.mouseY, data.drawSize, data.drawChance, data.drawMaterial, data.drawShape);
 }

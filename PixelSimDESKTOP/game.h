@@ -3,18 +3,18 @@
 #include "cell.h"
 #include "interfaceData.h"
 
-class Game
-{
+class Game {
 public:
 	Game();
 	~Game();
 
 	void init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
 	void reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
-	void loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 imageHeight);
+	void loadImage(std::vector<u8> imageTextureData, u16 imageWidth, u16 imageHeight);
 	void updateSim(interfaceData& iData);
 	void mouseDraw(u16 x, u16 y, u16 size, u8 drawChance, u8 material, u8 shape);
-	void updateTextureData(std::vector<GLubyte>& textureData);
+	void createDrawIndicators(u16 x, u16 y, u16 size, u8 shape);
+	void updateTextureData(std::vector<u8>& textureData);
 	void reset();
 
 private:
@@ -33,13 +33,14 @@ private:
 	void updateCell(Cell& c, u16 x, u16 y);
 	void updateSand(u16 x, u16 y);
 	void updateWater(u16 x, u16 y);
-	void updateEntireTextureData(std::vector<GLubyte>& textureData);
+	void updateEntireTextureData(std::vector<u8>& textureData);
 
-	void draw_Circle(u16 x, u16 y, u16 size, u8 material, u8 drawChance);
-	void draw_CircleSegments(u16 xc, u16 yc, u16 x, u16 y, u8 material);
-	void draw_CircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance);
-	void draw_Line(u16 x, u16 y, u16 size, u8 material, u8 drawChance);
-	void draw_Square(u16 x, u16 y, u16 size, u8 material, u8 drawChance);
+	// make these generics. void foo(u16, u16, u8)
+	void drawCircle(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
+	void drawCircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
+	void drawLine(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
+	void drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
+	void drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
 
 	inline u32 cellIdx(u16 x, u16 y) { return (y * cellWidth) + x; }	
 	inline u32 textureIdx(u16 x, u16 y) { return 4 * ((y * textureWidth) + x); }
@@ -74,5 +75,6 @@ private:
 	
 	std::vector<Cell> cells;
 	std::vector<std::pair<u16, u16>> textureChanges;
+	std::vector<std::pair<u16, u16>> drawIndicators;
 	std::vector<Material> materials;
 };

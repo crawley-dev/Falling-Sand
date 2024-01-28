@@ -116,13 +116,6 @@ void Game::updateSim(interfaceData& data)
 	case Scan::GAME_OF_LIFE:	gol_Update();		 break;
 	}
 
-	//if (data.updateMode == Update::FLICKER) {
-	//	if (data.scanMode == Scan::TOP_DOWN)
-	//		data.scanMode = Scan::BOTTOM_UP_LEFT;
-	//	else if (data.scanMode == Scan::BOTTOM_UP_LEFT && data.frame % 3 == 0)
-	//		data.scanMode = Scan::TOP_DOWN;
-	//}
-
 	if (data.updateMode == Update::FLICKER) {
 		if (data.scanMode == Scan::BOTTOM_UP_LEFT)
 			data.scanMode = Scan::BOTTOM_UP_RIGHT;
@@ -351,6 +344,30 @@ void Game::swapCells(u16 x1, u16 y1, u16 x2, u16 y2)
 ---- Mouse Functions -------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
+void Game::createDrawIndicators(u16 mx, u16 my, u16 size, u8 shape)
+{
+	auto boundedPushBack = [&](u16 x, u16 y, u8 mat = 0) -> void { // need a 3rd param for consistency.
+		if (outOfBounds(x, y)) return;
+		drawIndicators.push_back(std::pair<u16, u16>(x, y));
+	};
+
+	const u32 x = mx / scaleFactor;
+	const u32 y = my / scaleFactor;
+
+	// edge cases.
+	if (outOfBounds(x, y)) return;
+	else if (size == 1)
+		boundedPushBack(x, y);
+
+	switch (shape) {
+	case Shape::CIRCLE: 	    
+	case Shape::CIRCLE_OUTLINE: drawCircleOutline(x, y, size, 0, 100, boundedPushBack); break;
+	case Shape::LINE:			drawLine         (x, y, size, 0, 100, boundedPushBack); break;
+	case Shape::SQUARE: 	    
+	case Shape::SQUARE_OUTLINE: drawSquareOutline(x, y, size, 0, 100, boundedPushBack); break;
+	}
+}
+
 void Game::mouseDraw(u16 mx, u16 my, u16 size, u8 drawChance, u8 material, u8 shape)
 {
 	const u32 x = mx / scaleFactor;
@@ -361,15 +378,18 @@ void Game::mouseDraw(u16 mx, u16 my, u16 size, u8 drawChance, u8 material, u8 sh
 	else if (size == 1)
 		changeMaterial(x, y, material);
 
+
+	auto changeMaterialLambda = [&](u16 x, u16 y, u8 material) -> void { changeMaterial(x, y, material); };
 	switch (shape) {
-	case Shape::CIRCLE:			draw_Circle(x, y, size, material, drawChance);	break;
-	case Shape::CIRCLE_OUTLINE: draw_CircleOutline(x, y, size, material, drawChance);  break;
-	case Shape::LINE:			draw_Line(x, y, size, material, drawChance);	break;
-	case Shape::SQUARE:			draw_Square(x, y, size, material, drawChance);	break;
+	case Shape::CIRCLE:			drawCircle       (x, y, size, material, drawChance, changeMaterialLambda); break;
+	case Shape::CIRCLE_OUTLINE: drawCircleOutline(x, y, size, material, drawChance, changeMaterialLambda); break;
+	case Shape::LINE:			drawLine         (x, y, size, material, drawChance, changeMaterialLambda); break;
+	case Shape::SQUARE:			drawSquare       (x, y, size, material, drawChance, changeMaterialLambda); break;
+	case Shape::SQUARE_OUTLINE: drawSquareOutline(x, y, size, material, drawChance, changeMaterialLambda); break;
 	}
 }
 
-void Game::draw_Circle(u16 x, u16 y, u16 size, u8 material, u8 drawChance)
+void Game::drawCircle(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo)
 {
 	int r2 = size * size;
 	int area = r2 << 2;
@@ -380,29 +400,28 @@ void Game::draw_Circle(u16 x, u16 y, u16 size, u8 material, u8 drawChance)
 		int tY = (i / rr) - size;
 
 		if (tX * tX + tY * tY <= r2)
-			if (getRand<u64>(drawChance, 100) == drawChance)
-				changeMaterial(x + tX, y + tY, material);
+			if (getRand<s64>(1, 100) <= drawChance)
+				foo(x + tX, y + tY, material);
 	}
 }
 
-void Game::draw_CircleSegments(u16 xc, u16 yc, u16 x, u16 y, u8 material)
+void Game::drawCircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16,u16,u8)> foo)
 {
-	changeMaterial(xc + x, yc + y, material);
-	changeMaterial(xc - x, yc + y, material);
-	changeMaterial(xc + x, yc - y, material);
-	changeMaterial(xc - x, yc - y, material);
-	changeMaterial(xc + y, yc + x, material);
-	changeMaterial(xc - y, yc + x, material);
-	changeMaterial(xc + y, yc - x, material);
-	changeMaterial(xc - y, yc - x, material);
-}
+	auto drawCircleSegments = [&](u16 xc, u16 yc, u16 x, u16 y, u8 material) -> void {
+		foo(xc + x, yc + y, material);
+		foo(xc - x, yc + y, material);
+		foo(xc + x, yc - y, material);
+		foo(xc - x, yc - y, material);
+		foo(xc + y, yc + x, material);
+		foo(xc - y, yc + x, material);
+		foo(xc + y, yc - x, material);
+		foo(xc - y, yc - x, material);
+	};
 
-void Game::draw_CircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance)
-{
 	s32 tX = 0;
 	s32 tY = size;
 	s32 d = 3 - 2 * size;
-	draw_CircleSegments(x, y, tX, tY, material);
+	drawCircleSegments(x, y, tX, tY, material);
 	while (tY >= tX) {
 		tX++;
 		if (d > 0) {
@@ -411,23 +430,40 @@ void Game::draw_CircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance
 		}
 		else 
 			d = d + 4 * tX + 6;
-		draw_CircleSegments(x, y, tX, tY, material);
+		drawCircleSegments(x, y, tX, tY, material);
 	}
 }
 
-void Game::draw_Line(u16 x, u16 y, u16 size, u8 material, u8 drawChance)
+void Game::drawLine(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo)
 {
 	for (s32 tX = -size; tX < size; tX++)
-		if (getRand<u64>(drawChance, 100) == drawChance)
-			changeMaterial(x + tX, y, material);
+		if (getRand<s64>(1, 100) <= drawChance)
+			foo(x + tX, y, material);
 }
 
-void Game::draw_Square(u16 x, u16 y, u16 size, u8 material, u8 drawChance)
+void Game::drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo)
 {
 	for (s32 tY = -size / 2; tY < size / 2; tY++)
 		for (s32 tX = -size / 2; tX < size / 2; tX++)
-			if (getRand<u64>(drawChance, 100) == drawChance)
-				changeMaterial(x + tX, y + tY, material);
+			if (getRand<s64>(1, 100) <= drawChance)
+				foo(x + tX, y + tY, material);
+}
+
+void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) 
+{
+	// seems like this could be shorter ?
+	for (s32 tX = -size / 2; tX < size / 2; tX++)
+		if (getRand<s64>(1, 100) <= drawChance)
+			foo(x + tX, y - size / 2, material);
+	for (s32 tX = -size / 2; tX < size / 2; tX++)
+		if (getRand<s64>(1, 100) <= drawChance)
+			foo(x + tX, y + size / 2, material);
+	for (s32 tY = -size / 2; tY < size / 2; tY++)
+		if (getRand<s64>(1, 100) <= drawChance)
+			foo(x - size / 2, y + tY, material);
+	for (s32 tY = -size / 2; tY < size / 2; tY++)
+		if (getRand<s64>(1, 100) <= drawChance)
+			foo(x + size / 2, y + tY, material);
 }
 
 /*--------------------------------------------------------------------------------------
@@ -436,7 +472,7 @@ void Game::draw_Square(u16 x, u16 y, u16 size, u8 material, u8 drawChance)
 
 // this causes flickering.. switching back to entire texture update.
 // might not be calling all cells that need updating, check cellswap etc.
-void Game::updateTextureData(std::vector<GLubyte>& textureData)
+void Game::updateTextureData(std::vector<u8>& textureData)
 {
 	if (sizeChanged) {
 		updateEntireTextureData(textureData);
@@ -448,10 +484,10 @@ void Game::updateTextureData(std::vector<GLubyte>& textureData)
 		Cell& c = cells[cellIdx(x,y)];
 		const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
  		
-		const GLubyte red = variant[0];
-		const GLubyte green = variant[1];
-		const GLubyte blue = variant[2];
-		const GLubyte alpha = variant[3];
+		const u8 red = variant[0];
+		const u8 green = variant[1];
+		const u8 blue = variant[2];
+		const u8 alpha = variant[3];
 		
 		for (s32 tY = 0; tY < scaleFactor; tY++)
 			for (s32 tX = 0; tX < scaleFactor; tX++) {
@@ -465,19 +501,33 @@ void Game::updateTextureData(std::vector<GLubyte>& textureData)
 	}
 	
 	textureChanges.clear();
+	textureChanges.insert(std::end(textureChanges), std::begin(drawIndicators), std::end(drawIndicators));
+
+	// handle mouseDraw Indicators
+	for (const auto& [x, y] : drawIndicators) {
+		for (s32 tY = 0; tY < scaleFactor; tY++)
+			for (s32 tX = 0; tX < scaleFactor; tX++) {
+				s32 texIdx = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
+				textureData[texIdx + 0] = 255;
+				textureData[texIdx + 1] = 255;
+				textureData[texIdx + 2] = 255;
+				textureData[texIdx + 3] = 255;
+			}
+	}
+	drawIndicators.clear();
 }
 
-void Game::updateEntireTextureData(std::vector<GLubyte>& textureData)
+void Game::updateEntireTextureData(std::vector<u8>& textureData)
 {
 	for (s32 y = 0; y < cellHeight; y++) {
 		for (s32 x = 0; x < cellWidth; x++) {
 			Cell& c = cells[cellIdx(x, y)];
 			const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
 			
-			const GLubyte red = variant[0];
-			const GLubyte green = variant[1];
-			const GLubyte blue = variant[2];
-			const GLubyte alpha = variant[3];
+			const u8 red = variant[0];
+			const u8 green = variant[1];
+			const u8 blue = variant[2];
+			const u8 alpha = variant[3];
 
 			for (s32 tY = 0; tY < scaleFactor; tY++)
 				for (s32 tX = 0; tX < scaleFactor; tX++) {
@@ -492,7 +542,7 @@ void Game::updateEntireTextureData(std::vector<GLubyte>& textureData)
 	}
 }
 
-void Game::loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 imageHeight)
+void Game::loadImage(std::vector<u8> imageTextureData, u16 imageWidth, u16 imageHeight)
 {
 	// ?? scale imageWidth and imageHeight to cellWidth and cellHeight 
 	//		^^ only really necessary for low res // really high res

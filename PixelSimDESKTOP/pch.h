@@ -13,15 +13,15 @@
 #include <random>
 #include <algorithm>
 #include <unordered_map>
-
-// External Libraries 
-#include "imgui.h"
-#include "imgui_impl_sdl2.h"
-#include "imgui_impl_opengl3.h"
 #include <stdio.h>
-#include <SDL.h>
-#include <SDL_opengl.h>
-#include <SDL_image.h>
+
+// External Libraries.. oh the linking..
+//#include "imgui.h"
+//#include "imgui_impl_sdl2.h"
+//#include "imgui_impl_opengl3.h"
+//#include <SDL.h>
+//#include <SDL_opengl.h>
+//#include <SDL_image.h>
 
 
 // Data Structures
@@ -45,3 +45,6 @@ using s8  = int8_t;		// char
 using s16 = int16_t;	// short
 using s32 = int32_t;	// long int (equal to int on 64 bit systems)
 using s64 = int64_t;	// long long
+
+using GLubyte = unsigned char;
+using GLuint  = unsigned int;
