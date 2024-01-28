@@ -2,10 +2,6 @@
 #include "pch.h"
 #include "framework.h"
 
-// >> TODO << \\
-// Abstract out functions:
-// init, update, render
-
 Framework::Framework() {}
 Framework::~Framework() {}
 
@@ -14,7 +10,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     // Setup SDL
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) return false;
     if (!(IMG_Init(IMG_INIT_JPG) & IMG_INIT_JPG)) return false; // on success, returns int that the macro expands to, png == 2
-    std::cout << "SDL Initialised! .. " << std::endl;
+    std::cout << consoleMessages[SDL_INIT] << std::endl;
 
     // GL 3.0 + GLSL 130
     const char* glsl_version = "#version 130";
@@ -22,7 +18,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-    std::cout << "OpenGL Initialised! .." << std::endl;
+    std::cout << consoleMessages[OPENGL_INIT] << std::endl;
 
     // Enable Native Support for Non QWERTY Input (e.g Japanese Kanji)
     SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
@@ -38,11 +34,11 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     gl_context  = SDL_GL_CreateContext(window);                                 // Create openGL Context
     SDL_GL_MakeCurrent(window, gl_context);                                     // Set SDL_Window Context
     if (SDL_GL_SetSwapInterval(-1) != 0) SDL_GL_SetSwapInterval(0);             // Enables Adaptive v-sync if possible, otherwise v-sync
-    std::cout << "Window Initialised! .." << std::endl;
+    std::cout << consoleMessages[WINDOW_INIT] << std::endl;
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();                                                     // Setup Dear ImGui context  
-    std::cout << "ImGui Context Initialised! .." << std::endl;
+    std::cout << consoleMessages[IMGUI_CONTEXT_INIT] << std::endl;
 
     // |= is a bitwise operator: 0101 |= 0110 -> 0111
     ImGuiIO& io = ImGui::GetIO();                                               // Setup ImGui Config
@@ -53,15 +49,17 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     io.ConfigDockingWithShift = true;                                           // Enable Docking on Shift
     io.ConfigDockingTransparentPayload = true;                                  // Enable Transparent Window on Docking
     io.Fonts->AddFontFromFileTTF("../Libraries/fonts/Cascadia.ttf", 15);        // Changing Font -> Cascadia Mono (vs editor font) | Relative paths FTW!
-    std::cout << "ImGui Config Initialised! .." << std::endl;
-    
+    std::cout << consoleMessages[IMGUI_CONFIG_INIT] << std::endl;
+
     interface = new Interface();
     if (!interface) return false;
-    std::cout << "Interface Initialised! .." << std::endl;
+    std::cout << consoleMessages[INTERFACE_INIT] << std::endl;
+
 
     game = new Game();
     if (!game) return false;
-    std::cout << "Game initialised! .." << std::endl;
+    std::cout << consoleMessages[GAME_INIT] << std::endl;
+
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
@@ -76,8 +74,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     // Setup Platform/Renderer backends
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version);
-    std::cout << "Setup Complete! .." << std::endl;
-    std::cout << std::endl;
+
 
     // Creating Textures.
     data = interfaceData();
@@ -138,9 +135,7 @@ void Framework::update()
         data.reloadGame = false;
     }
 
-    game->createDrawIndicators(data.mouseX, data.mouseY, data.drawSize, data.drawShape);
-    game->updateSim(data);
-    game->updateTextureData(texture.data);
+    game->update(data, texture.data);
 
     for (TextureData& tex : data.textures)
         updateTexture(tex);
@@ -197,7 +192,7 @@ void Framework::clean()
     SDL_DestroyWindow(window);
     IMG_Quit();
     SDL_Quit();
-    std::cout << "Game Cleaned! .." << std::endl;
+    std::cout << consoleMessages[FRAMEWORK_DEAD] << std::endl;
 }
 
 //.bmp loading slanted? weird.. 

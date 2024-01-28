@@ -163,7 +163,6 @@ void Interface::debugMenu(interfaceData& data)
 
         ImGui::Text("Draw Shape:"); ImGui::SameLine();
         if (ImGui::BeginCombo("draw_shape_combo", Shape::names[0].c_str())) {
-            std::cout << "drawShape: " << Shape::names[data.drawShape] << '\n';
             for (u8 n = 0; n < Shape::names.size(); n++) {
                 const bool is_selected = (data.drawShape == n);
                 if (ImGui::Selectable(Shape::names[n].c_str(), is_selected))

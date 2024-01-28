@@ -9,6 +9,32 @@
 #include "interface.h"
 #include "game.h"
 
+// scopes off the enum
+namespace framework {
+	enum : u8 {
+		SDL_INIT,
+		OPENGL_INIT,
+		WINDOW_INIT,
+		IMGUI_CONTEXT_INIT,
+		IMGUI_CONFIG_INIT,
+		INTERFACE_INIT,
+		GAME_INIT,
+		FRAMEWORK_DEAD,
+	};
+
+	const std::vector<std::string> consoleMessages = {
+		"[Pixel Sim]           SDL .. [INIT]",
+		"[Pixel Sim]        OpenGL .. [INIT]",
+		"[Pixel Sim]        Window .. [INIT]",
+		"[Pixel Sim] ImGui Context .. [INIT]",
+		"[Pixel Sim]  ImGui Config .. [INIT]",
+		"[Pixel Sim]     Interface .. [INIT]",
+		"[Pixel Sim]          Game .. [INIT]",
+		"[Pixel Sim]     Framework .. [DEAD]",
+	};
+};
+
+using namespace framework;
 class Framework {
 public:
 	Framework();	// Constructor
@@ -45,3 +71,4 @@ private:
 	SDL_Window* window		 = nullptr; // could use a unique ptr but would require a refactor, 
 	SDL_GLContext gl_context = nullptr; // thats too much effort for some memory management.
 };
+

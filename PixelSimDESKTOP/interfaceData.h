@@ -31,7 +31,7 @@ public:
 		BACKGROUND,
 		PRESENTED,
 	};
-};
+}; 
 
 namespace Update {
 	enum : u8 {
@@ -114,7 +114,7 @@ struct interfaceData
 	u8 updateMode		     = Update::FLICKER;
 	u8 drawShape		     = Shape::CIRCLE;
 	u8 drawMaterial		     =  1;
-	u8 drawChance		     = 99; 
+	u8 drawChance		     = 50; 
 	u8 scaleFactor		     =  2;
 	u8 fluidDispersionFactor =  4;
 	u8 solidDispersionFactor =  2;

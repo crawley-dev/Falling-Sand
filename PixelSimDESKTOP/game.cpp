@@ -5,6 +5,10 @@
 Game::Game() {}
 Game::~Game() {}
 
+/*--------------------------------------------------------------------------------------
+---- State Management Functions --------------------------------------------------------
+--------------------------------------------------------------------------------------*/
+
 void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 {
 	scaleFactor = newScaleFactor;
@@ -23,7 +27,7 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 
 	// generate 'nVariant' number of colour variations per material. for spice..
 	nVariants = 20;
-	u8 variation = 8; // don't raise this too high, will over/underflow u8..
+	u8 variation = 12; // don't raise this too high, will over/underflow u8..
 	for (Material& mat : materials) {
 		mat.variants.clear();
 		mat.variants.reserve(nVariants);
@@ -60,6 +64,20 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 	for (s32 i = 0; i < cellWidth * cellHeight; i++) // init cell.updated = true so updateTextureData runs on first time.
 		cells.emplace_back(MaterialID::EMPTY, true, getRand<u8>(0, nVariants - 1), 0);
 	sizeChanged = true;
+}
+
+void Game::update(interfaceData& data, std::vector<u8>& textureData)
+{
+	createDrawIndicators(data.mouseX, data.mouseY, data.drawSize, data.drawShape);
+	if (data.runSim) simulate(data);
+
+	data.textureChanges = textureChanges.size();
+
+	if (sizeChanged) {
+		updateEntireTextureData(textureData);
+		sizeChanged = false;
+	}
+	else updateTextureData(textureData);
 }
 
 void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
@@ -99,21 +117,19 @@ void Game::reset()
 ---- Simulation Update Routines --------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-void Game::updateSim(interfaceData& data)
+void Game::simulate(interfaceData& data) 
 {	// keep some form of global index that is incremented with each cell
 	// thereby eliminating the need to pass x,y to cellUpdate etc. instead just cell.
 
-	if (!data.runSim) return;
-	
 	fluidDispersionFactor = data.fluidDispersionFactor;
 	solidDispersionFactor = data.solidDispersionFactor;
 
 	switch (data.scanMode) {
-	case Scan::TOP_DOWN:		topDown_Update();	 break;
+	case Scan::TOP_DOWN:		topDownUpdate();	 break;
 	case Scan::BOTTOM_UP_LEFT:	l_bottomUp_Update(); break;
 	case Scan::BOTTOM_UP_RIGHT:	r_bottomUp_Update(); break;
-	case Scan::SNAKE:			snake_Update();		 break;
-	case Scan::GAME_OF_LIFE:	gol_Update();		 break;
+	case Scan::SNAKE:			snakeUpdate();		 break;
+	case Scan::GAME_OF_LIFE:	golUpdate();		 break;
 	}
 
 	if (data.updateMode == Update::FLICKER) {
@@ -123,11 +139,10 @@ void Game::updateSim(interfaceData& data)
 			data.scanMode = Scan::BOTTOM_UP_LEFT;
 	}
 
-	data.textureChanges = textureChanges.size();
 	data.frame++;
 }
 
-void Game::topDown_Update()
+void Game::topDownUpdate()
 {
 	for (s32 y = 0; y < cellHeight; y++)
 		for (s32 x = 0; x < cellWidth; x++) {
@@ -156,7 +171,7 @@ void Game::r_bottomUp_Update() {
 // >>>>>>>>>>^
 // ^<<<<<<<<<<
 // >>>>>>>>>>^
-void Game::snake_Update()
+void Game::snakeUpdate()
 {
 	for (s32 y = cellHeight - 1; y >= 0; y--)
 		if ((cellHeight - y) % 2 == 0) // --> 
@@ -171,7 +186,7 @@ void Game::snake_Update()
 			}
 }
 
-void Game::gol_Update()
+void Game::golUpdate()
 {
 	std::vector<Cell> nextFrameCells = cells; // Copying all cells to new vec is current bottleneck
 	for (s32 y = 1; y < cellHeight - 2; y++)  // doesn't check edge cells, can remove if statement & unroll adjacentcy for loop
@@ -208,9 +223,9 @@ void Game::updateCell(Cell& c, u16 x, u16 y)
 	if (c.updated) return;
 
 	switch (c.matID) {
-	case MaterialID::EMPTY:		return;
-	case MaterialID::CONCRETE:  return;
-	case MaterialID::GOL_ALIVE: return;
+	//case MaterialID::EMPTY:		return;
+	//case MaterialID::CONCRETE:	return;
+	//case MaterialID::GOL_ALIVE:	return;
 	case MaterialID::SAND:	updateSand(x, y);  break;
 	case MaterialID::WATER: updateWater(x, y); break;
 	}
@@ -256,14 +271,74 @@ void Game::updateSand(u16 x, u16 y)
 
 	trySwap(x, y, x + xDispersion, y + yDispersion);
 }
+#define WATER_REDO 0
+#if WATER_REDO
 
+void Game::updateWater(u16 x, u16 y) {
+	s8 yDispersion = 1;
+	s8 xDispersion = 1;
+
+	// whilst (mag(dX) + mag(dY) <= solidDispersionFactor)
+	// 1.  check for a side to side movement. << rand
+	// 2.	if possible: set side to side movement to new xDispersion
+	//		else: break;
+	// 3.	check vertical movement  (x+xDispersion, y+yDispersion)
+	// 4.	if possible: next iteration
+	//		else: break;
+
+	//while (abs(xDispersion) + abs(yDispersion) <= solidDispersionFactor) {
+	//	s8 dX = getRand<s8>();
+	//	if (!querySwap(x, y, x + dX, y + yDispersion)) break; // check if side to side movement is possible
+	//	xDispersion = dX;
+	//	if (!querySwap(x, y, x + xDispersion, y + yDispersion + 1)) break; // check if vertical movement is possible
+	//	yDispersion++;
+	//}
+
+	while (abs(xDispersion) + abs(yDispersion) <= solidDispersionFactor) {
+
+		// sand algo: why seperate vertical and horizontal movement?
+
+		// 1.0:	vertical movement:
+		// 1.1: >> do all possible vertical movement
+		// 2.0: horizontal movement: << water "tension"
+		// 2.1: >> check new pos' vertical movement
+		// 2.2	>> >> do movement
+
+		// 1.0: vertical movement:
+		for (s8 dY = yDispersion; dY <= fluidDispersionFactor; dY++) {
+			if (!querySwap(x, y, x + xDispersion, y + dY)) break;
+			yDispersion = dY;
+		}
+
+		// 2.0: horizontal movement:
+		for (u8 dX = abs(xDispersion); dX <= fluidDispersionFactor - yDispersion; dX++) {
+			// 2.1: check new pos' vertical movement
+			//if (querySwap(x, y, x + xDispersion, y + yDispersion + 1)) break;
+
+			if (getRand<s8>(1, 100) > 50) { // "more random" than 0 || 1
+
+				if (querySwap(x, y, x + dX, y + yDispersion)) xDispersion = dX;
+				else if (querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
+				else break;
+			}
+			else {
+				if (querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
+				else if (querySwap(x, y, x + dX, y + yDispersion)) xDispersion = dX;
+				else break;
+			}
+		}
+	}
+
+	trySwap(x, y, x + xDispersion, y + yDispersion);
+}
+#else
 void Game::updateWater(u16 x, u16 y) {
 	s8 yDispersion = 0;
 	s8 xDispersion = 0;
 
 	// First calculate vertical movement
-	for (u8 dY = 1; dY <= fluidDispersionFactor; dY++) {
-		if (!querySwap(x, y, x, y + dY)) break;
+	for (s8 dY = 1; dY <= fluidDispersionFactor; dY++) {
+		if (!querySwap(x, y, x + xDispersion, y + dY)) break;
 		yDispersion = dY;
 	}
 
@@ -286,9 +361,10 @@ void Game::updateWater(u16 x, u16 y) {
 			else break;
 		}
 	}
-
+	
 	trySwap(x, y, x + xDispersion, y + yDispersion);
 }
+#endif
 
 bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2)
 {
@@ -474,12 +550,6 @@ void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
 // might not be calling all cells that need updating, check cellswap etc.
 void Game::updateTextureData(std::vector<u8>& textureData)
 {
-	if (sizeChanged) {
-		updateEntireTextureData(textureData);
-		sizeChanged = false;
-		return;
-	}
-
 	for (const auto& [x,y] : textureChanges) { // cheeky structured binding.
 		Cell& c = cells[cellIdx(x,y)];
 		const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
