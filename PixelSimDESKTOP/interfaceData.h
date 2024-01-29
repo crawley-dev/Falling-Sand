@@ -5,6 +5,58 @@
 //	even when explicitly stating their equivalent type???
 // So I created scope blocked enums instead via nesting the enums
 
+namespace PixelPhysics {
+
+enum consoleMessages : u8 {
+	SDL_INIT,
+	OPENGL_INIT,
+	WINDOW_INIT,
+	IMGUI_CONTEXT_INIT,
+	IMGUI_CONFIG_INIT,
+	INTERFACE_INIT,
+	GAME_INIT,
+	FRAMEWORK_DEAD,
+};
+
+const std::vector<std::string> consoleMessages = {
+	"[Pixel Sim]           SDL .. [INIT]",
+	"[Pixel Sim]        OpenGL .. [INIT]",
+	"[Pixel Sim]        Window .. [INIT]",
+	"[Pixel Sim] ImGui Context .. [INIT]",
+	"[Pixel Sim]  ImGui Config .. [INIT]",
+	"[Pixel Sim]     Interface .. [INIT]",
+	"[Pixel Sim]          Game .. [INIT]",
+	"[Pixel Sim]     Framework .. [DEAD]",
+};
+
+struct {
+	enum MaterialID : u8 {
+		EMPTY,
+		SAND,
+		WATER,
+		CONCRETE,
+		NATURAL_GAS,
+		GOL_ALIVE,
+		COUNT,
+	};
+
+	const std::vector<std::string_view> MaterialID_names {
+		"EMPTY",
+		"SAND",
+		"WATER",
+		"CONCRETE",
+		"Natural Gas",
+		"Game of Life: Alive",
+	};
+//};
+
+enum Phase : u8 {
+	SOLID,
+	LIQUID,
+	GAS,
+};
+
+
 class TexIndex { // Scope Blocked Enum
 public:
 	enum : u8 {
@@ -126,4 +178,5 @@ struct interfaceData
 	u32 frame		         =  0;
 	u32 texReloadCount       =  0;
 	u32 textureChanges		 =  0;
+};
 };

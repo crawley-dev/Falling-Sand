@@ -153,7 +153,6 @@ void Interface::debugMenu(interfaceData& data)
                     if (ImGui::Selectable(MaterialID::names[n].c_str(), is_selected))
                         data.drawMaterial = n;
 
-
                     if (is_selected)
                         ImGui::SetItemDefaultFocus();
                 }
@@ -168,8 +167,10 @@ void Interface::debugMenu(interfaceData& data)
                 if (ImGui::Selectable(Shape::names[n].c_str(), is_selected))
                     data.drawShape = n;
         
-                if (is_selected)
+                if (is_selected) {
+                    std::cout << "Selected: " << Shape::names[n] << std::endl;
                     ImGui::SetItemDefaultFocus();
+                }
             }
             ImGui::EndCombo();
         }

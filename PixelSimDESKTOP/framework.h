@@ -1,40 +1,16 @@
 #pragma once
 #include "pch.h"
-#include "imgui.h"
-#include "imgui_impl_sdl2.h"
-#include "imgui_impl_opengl3.h"
-#include <SDL.h>
-#include <SDL_opengl.h>
-#include <SDL_image.h>
+//#include "imgui.h"
+//#include "imgui_impl_sdl2.h"
+//#include "imgui_impl_opengl3.h"
+//#include <SDL.h>
+//#include <SDL_opengl.h>
+//#include <SDL_image.h>
 #include "interface.h"
 #include "game.h"
 
-// scopes off the enum
-namespace framework {
-	enum : u8 {
-		SDL_INIT,
-		OPENGL_INIT,
-		WINDOW_INIT,
-		IMGUI_CONTEXT_INIT,
-		IMGUI_CONFIG_INIT,
-		INTERFACE_INIT,
-		GAME_INIT,
-		FRAMEWORK_DEAD,
-	};
 
-	const std::vector<std::string> consoleMessages = {
-		"[Pixel Sim]           SDL .. [INIT]",
-		"[Pixel Sim]        OpenGL .. [INIT]",
-		"[Pixel Sim]        Window .. [INIT]",
-		"[Pixel Sim] ImGui Context .. [INIT]",
-		"[Pixel Sim]  ImGui Config .. [INIT]",
-		"[Pixel Sim]     Interface .. [INIT]",
-		"[Pixel Sim]          Game .. [INIT]",
-		"[Pixel Sim]     Framework .. [DEAD]",
-	};
-};
-
-using namespace framework;
+using namespace PixelPhysics;
 class Framework {
 public:
 	Framework();	// Constructor
@@ -55,8 +31,8 @@ public:
 	void loadFromFile(TextureData& texture, std::string path);
 
 	void createTexture(TextureData& texture);
-	void reloadTextures();
 	void updateTexture(TextureData& texture);
+	void reloadTextures();
 
 	// Internal Functions
 	void mouseDraw();
@@ -66,9 +42,8 @@ private:
 	bool applicationRunning = false;
 
 	interfaceData data;
-	Game* game				 = nullptr; // std::unique_ptr<Game>      
-	Interface* interface	 = nullptr;	// std::unique_ptr<Interface>  
-	SDL_Window* window		 = nullptr; // could use a unique ptr but would require a refactor, 
+	Game* game = nullptr; // std::unique_ptr<Game>      
+	Interface* interface = nullptr;	// std::unique_ptr<Interface>  
+	SDL_Window* window = nullptr; // could use a unique ptr but would require a refactor, 
 	SDL_GLContext gl_context = nullptr; // thats too much effort for some memory management.
 };
-

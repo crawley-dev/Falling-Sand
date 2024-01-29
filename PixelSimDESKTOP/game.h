@@ -3,6 +3,7 @@
 #include "cell.h"
 #include "interfaceData.h"
 
+using namespace PixelPhysics;
 class Game {
 public:
 	Game();
@@ -33,7 +34,8 @@ private:
 	void updateCell(Cell& c, u16 x, u16 y);
 	void updateSand(u16 x, u16 y);
 	void updateWater(u16 x, u16 y);
-	void updateGOL(u16 x, u16 y);
+	void updateNaturalGas(u16 x, u16 y);
+	
 	void updateTextureData(std::vector<u8>& textureData);
 	void updateEntireTextureData(std::vector<u8>& textureData);
 

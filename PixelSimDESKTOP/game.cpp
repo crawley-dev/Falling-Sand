@@ -19,11 +19,13 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 
 	materials.clear();
 	materials.resize(MaterialID::COUNT); // just so i can [] access, clear code.
-	materials[MaterialID::EMPTY]	 = Material(50 , 50 , 50 , 255, 0   );
-	materials[MaterialID::SAND]		 = Material(245, 215, 176, 255, 1600);
-	materials[MaterialID::WATER]	 = Material(20 , 20 , 255, 125, 997 );
-	materials[MaterialID::CONCRETE]	 = Material(200, 200, 200, 255, 2000);
-	materials[MaterialID::GOL_ALIVE] = Material(0  , 255, 30 , 255, 0   );
+	materials[MaterialID::EMPTY]		= Material( 50,  50,  50, 255, Phase::SOLID,    0);
+	materials[MaterialID::SAND]			= Material(245, 215, 176, 255, Phase::SOLID, 1600);
+	materials[MaterialID::WATER]		= Material( 20,  20, 255, 125, Phase::SOLID,  997);
+	materials[MaterialID::CONCRETE]		= Material(200, 200, 200, 255, Phase::SOLID, 2000);
+	materials[MaterialID::NATURAL_GAS]	= Material( 20,  20,  50, 100, Phase::SOLID, 2000); // uhhh.. very heavy gas?
+	materials[MaterialID::GOL_ALIVE]	= Material(  0, 255,  30, 255, Phase::SOLID,    0); // TODO: fix gas movement density relationship
+
 
 	// generate 'nVariant' number of colour variations per material. for spice..
 	nVariants = 20;
@@ -34,7 +36,7 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 		for (u8 i = 0; i < nVariants; i++) {
 			std::vector<u8> variant;
 
-			if (mat.d == 1600 || mat.d == 997) {
+			if (mat.density == 1600 || mat.density == 997) {
 				//if (mat.r < 128) variant.push_back(mat.r - getRand<u8>(0, variation));
 				//else variant.push_back(mat.r + getRand<u8>(0, variation));
 				//
@@ -235,9 +237,17 @@ void Game::updateCell(Cell& c, u16 x, u16 y)
 	case MaterialID::SAND:	updateSand(x, y);  return;
 	case MaterialID::WATER: updateWater(x, y); return;
 	//case MaterialID::CONCRETE:	return;
-	//case MaterialID::GOL_ALIVE:	updateGOL(x, y); return;
+	//case MaterialID::GOL_ALIVE:	return;
+	case MaterialID::NATURAL_GAS: updateNaturalGas(x, y); return;
 	}
 }
+
+//	TODO: Compartmentalise updateXXXX functions.
+//			>> material will contain phase, dispersion, direction of travel
+//			>> e.g querySideToSide(x,y)
+//			>> e.g queryBelow(x,y)
+//			>> e.g queryAbove(x,y)
+
 
 void Game::updateSand(u16 x, u16 y)
 {
@@ -299,27 +309,36 @@ ESCAPE_WHILE_WATER:
 	trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
-// cells don't come alive..
-void Game::updateGOL(u16 x, u16 y) 
+void Game::updateNaturalGas(u16 x, u16 y)
 {
-	u8 adjAlive = 0;
-	adjAlive += (cells[cellIdx(x - 1, y - 1)].matID == MaterialID::GOL_ALIVE); // TL
-	adjAlive += (cells[cellIdx(x + 0, y - 1)].matID == MaterialID::GOL_ALIVE); // TM
-	adjAlive += (cells[cellIdx(x + 1, y - 1)].matID == MaterialID::GOL_ALIVE); // TR
-	adjAlive += (cells[cellIdx(x - 1, y + 0)].matID == MaterialID::GOL_ALIVE); // ML
-	adjAlive += (cells[cellIdx(x + 1, y + 0)].matID == MaterialID::GOL_ALIVE); // MR
-	adjAlive += (cells[cellIdx(x - 1, y + 1)].matID == MaterialID::GOL_ALIVE); // BL
-	adjAlive += (cells[cellIdx(x + 0, y + 1)].matID == MaterialID::GOL_ALIVE); // BM
-	adjAlive += (cells[cellIdx(x + 1, y + 1)].matID == MaterialID::GOL_ALIVE); // BR
+	s8 yDispersion = 0;
+	s8 xDispersion = 0;
+	s8 movesLeft = fluidDispersionFactor;
 
-	if (cells[cellIdx(x, y)].matID == MaterialID::GOL_ALIVE)
-		if (adjAlive != 2 && adjAlive != 3) 
-			changeMaterial(x, y, MaterialID::EMPTY); // seems to work fine 
-		else 
-			changeMaterial(x, y, MaterialID::GOL_ALIVE);
-	else if (cells[cellIdx(x, y)].matID == MaterialID::EMPTY)
-		if (adjAlive == 3)
-			changeMaterial(x, y, MaterialID::GOL_ALIVE);
+	while (movesLeft > 0) {
+		if (querySwap(x, y, x + xDispersion, y - yDispersion - 1)) { // check cell below
+			yDispersion--;
+			movesLeft--;
+			continue;
+		}
+
+		u8 dX = abs(xDispersion) + 1;
+		if (getRand<u8>(1, 100) > 50) {
+			if		(querySwap(x, y, x + dX, y - yDispersion)) xDispersion = dX;
+			else if (querySwap(x, y, x - dX, y - yDispersion)) xDispersion = -dX;
+			else goto ESCAPE_WHILE_NATURAL_GAS;
+			movesLeft--;
+		}
+		else {
+			if		(querySwap(x, y, x - dX, y - yDispersion)) xDispersion = -dX;
+			else if (querySwap(x, y, x + dX, y - yDispersion)) xDispersion = dX;
+			else goto ESCAPE_WHILE_NATURAL_GAS;
+			movesLeft--;
+		}
+	}
+
+ESCAPE_WHILE_NATURAL_GAS:
+	trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
 bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2)
@@ -328,7 +347,7 @@ bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2)
 
 	Cell& c1 = cells[cellIdx(x1, y1)];
 	Cell& c2 = cells[cellIdx(x2, y2)];
-	if (materials[c1.matID].d <= materials[c2.matID].d) return false;
+	if (materials[c1.matID].density <= materials[c2.matID].density) return false;
 
 	swapCells(x1,y1,x2,y2);
 	return true;
@@ -340,7 +359,7 @@ bool Game::querySwap(u16 x1, u16 y1, u16 x2, u16 y2)
 
 	Cell& c1 = cells[cellIdx(x1, y1)];
 	Cell& c2 = cells[cellIdx(x2, y2)];
-	if (materials[c1.matID].d <= materials[c2.matID].d) return false;
+	if (materials[c1.matID].density <= materials[c2.matID].density) return false;
 	
 	return true;
 }
@@ -598,7 +617,7 @@ void Game::loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 
 		scaledHeight = cellHeight;
 	}
 
-	materials.push_back(Material(sand.r, sand.g, sand.b, sand.a, sand.d)); // create new material for image
+	materials.push_back(Material(sand.r, sand.g, sand.b, sand.a, sand.density)); // create new material for image
 	const u16 imgMatIdx = materials.size() - 1; // if there are more than 65536 materials, it deserves to die.
 	Material& imgMat = materials[imgMatIdx];
 	
@@ -639,7 +658,7 @@ void Game::loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 
 		return r * g * b * a % r+g+b+a; // simplest hash ever, slow though.. 
 	};
 
-	materials.push_back(Material(sand.r, sand.g, sand.b, sand.a, sand.d)); // create new material for image
+	materials.push_back(Material(sand.r, sand.g, sand.b, sand.a, sand.density)); // create new material for image
 	Material& imgMat = materials[materials.size() - 1];
 
 	// puts the picture in top left of screen
