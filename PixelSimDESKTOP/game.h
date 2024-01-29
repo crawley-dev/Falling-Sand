@@ -69,7 +69,7 @@ private:
 
 	u8 fluidDispersionFactor;
 	u8 solidDispersionFactor;
-	u8 nVariants;
+	u8 nVariants;		
 	u8 scaleFactor;
 	u16 textureWidth, textureHeight;
     u16 cellWidth, cellHeight;

@@ -185,14 +185,18 @@ void Game::snakeUpdate()
 				updateCell(c, x, y);
 			}
 }
-/*
-void Game::golUpdate()
+void Game::golUpdate() 
 {
-	std::vector<Cell> nextFrameCells = cells; // Copying all cells to new vec is current bottleneck
-	for (s32 y = 1; y < cellHeight - 2; y++)  // doesn't check edge cells, can remove if statement & unroll adjacentcy for loop
-		for (s32 x = 1; x < cellWidth - 2; x++) {
-			Cell& c = nextFrameCells[cellIdx(x, y)];
-			//if (c.matID != MaterialID::GOL_ALIVE || c.matID != MaterialID::EMPTY) continue;
+
+	std::vector<std::pair<Cell,std::pair<u16,u16>>> updatedCells;
+	auto updateCellLambda = [&](u16 x, u16 y, u8 matID, u8 variant) -> void { 
+		updatedCells.emplace_back(Cell(matID, true, variant, 0), std::pair<u16,u16>(x,y));
+		textureChanges.push_back(std::pair<u16, u16>(x, y));
+	};
+
+	for (u16 y = 1; y < cellHeight - 2; y++)
+		for (u16 x = 1; x < cellWidth - 2; x++) {
+			Cell& c = cells[cellIdx(x, y)];
 
 			u8 adjAlive = 0;
 			adjAlive += (cells[cellIdx(x - 1, y - 1)].matID == MaterialID::GOL_ALIVE); // TL
@@ -205,17 +209,18 @@ void Game::golUpdate()
 			adjAlive += (cells[cellIdx(x + 1, y + 1)].matID == MaterialID::GOL_ALIVE); // BR
 
 			if (c.matID == MaterialID::GOL_ALIVE)
-				if (adjAlive != 2 && adjAlive != 3) changeMaterial(x, y, MaterialID::EMPTY); // seems to work fine 
-				else changeMaterial(x, y, MaterialID::GOL_ALIVE);
-			else if (c.matID == MaterialID::EMPTY)
-				if (adjAlive == 3)
-					changeMaterial(x, y, MaterialID::GOL_ALIVE);
-					//c.matID = MaterialID::GOL_ALIVE;
-			
+				if (adjAlive != 2 && adjAlive != 3)
+					updateCellLambda(x,y,MaterialID::EMPTY, c.variant);
+				else
+					updateCellLambda(x, y, MaterialID::GOL_ALIVE, c.variant);
+			else if (c.matID == MaterialID::EMPTY && adjAlive == 3)
+				updateCellLambda(x, y, MaterialID::GOL_ALIVE, c.variant);
 		}
-	cells = nextFrameCells; // Copying all cells is current bottleneck
+
+	for (auto& [cell, coords] : updatedCells)
+		cells[cellIdx(coords.first, coords.second)] = cell;
 }
-*/
+
 
 /*--------------------------------------------------------------------------------------
 ---- Updating Cells --------------------------------------------------------------------
@@ -230,7 +235,7 @@ void Game::updateCell(Cell& c, u16 x, u16 y)
 	case MaterialID::SAND:	updateSand(x, y);  return;
 	case MaterialID::WATER: updateWater(x, y); return;
 	//case MaterialID::CONCRETE:	return;
-	case MaterialID::GOL_ALIVE:	updateGOL(x, y); return;
+	//case MaterialID::GOL_ALIVE:	updateGOL(x, y); return;
 	}
 }
 

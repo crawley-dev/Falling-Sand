@@ -240,15 +240,15 @@ void Interface::gameWindow(interfaceData& data)
     constexpr int yOffset = 40;
     int windowX = (int)ImGui::GetWindowSize().x; 
     int windowY = (int)ImGui::GetWindowSize().y; 
-    if (windowX % 2 != 0) ++windowX;
-    if (windowY % 2 != 0) ++windowY;
+    if (windowX % 2 != 0) ++windowX; // i don't remember what this does
+    if (windowY % 2 != 0) ++windowY; // i don't remember what this does
 
     if (texture.width + xOffset != windowX || texture.height + yOffset != windowY) {
         data.reloadGame = true;
         texture.width   = (int)ImGui::GetWindowSize().x - xOffset;
         texture.height  = (int)ImGui::GetWindowSize().y - yOffset;
-        if (texture.width  % 2 != 0) ++texture.width;
-        if (texture.height % 2 != 0) ++texture.height;
+        if (texture.width  % 2 != 0) ++texture.width;  // i don't remember what this does
+        if (texture.height % 2 != 0) ++texture.height; // i don't remember what this does
         ImGui::SetWindowSize(ImVec2(texture.width, texture.height));
     }
     else data.reloadGame = false;
