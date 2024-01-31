@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "cell.h"
-#include "interfaceData.h"
+#include "state.h"
 
 using namespace PixelPhysics;
 class Game {
@@ -11,14 +11,14 @@ public:
 
 	void init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
 	void reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
-	void update(interfaceData& data, std::vector<u8>& textureData);
+	void update(AppState& state, std::vector<u8>& textureData);
 	void reset();
 
 	void loadImage(std::vector<u8> imageTextureData, u16 imageWidth, u16 imageHeight);
 	void mouseDraw(u16 x, u16 y, u16 size, u8 drawChance, u8 material, u8 shape);
 
 private:
-	void simulate(interfaceData& data);
+	void simulate(AppState& state);
 
 	void topDownUpdate();
 	void l_bottomUp_Update(); // cancer reading camel case
@@ -49,9 +49,9 @@ private:
 	void drawSquare			(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
 	void drawSquareOutline	(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
 
-	inline u32 cellIdx		(u16 x, u16 y) { return (y * cellWidth) + x; }	
-	inline u32 textureIdx	(u16 x, u16 y) { return 4 * ((y * textureWidth) + x); }
-	inline bool outOfBounds	(u16 x, u16 y) { return x >= cellWidth || y >= cellHeight || x < 0 || y < 0; }
+	inline u32 cellIdx		(u16 x, u16 y) const { return (y * cellWidth) + x; }	
+	inline u32 textureIdx	(u16 x, u16 y) const { return 4 * ((y * textureWidth) + x); }
+	inline bool outOfBounds	(u16 x, u16 y) const { return x >= cellWidth || y >= cellHeight || x < 0 || y < 0; }
 
 	template<typename T> // cheeky template
 	inline T getRand(T min = -1, T max = 1) { return splitMix64_NextRand() % (max - min + 1) + min; }

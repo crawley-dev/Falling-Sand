@@ -10,7 +10,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     // Setup SDL
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) return false;
     if (!(IMG_Init(IMG_INIT_JPG) & IMG_INIT_JPG)) return false; // on success, returns int that the macro expands to, png == 2
-    std::cout << consoleMessages[SDL_INIT] << std::endl;
+    std::cout << Message::names[Message::SDL_INIT] << std::endl;
 
     // GL 3.0 + GLSL 130
     const char* glsl_version = "#version 130";
@@ -18,7 +18,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-    std::cout << consoleMessages[OPENGL_INIT] << std::endl;
+    std::cout << Message::names[Message::OPENGL_INIT] << std::endl;
 
     // Enable Native Support for Non QWERTY Input (e.g Japanese Kanji)
     SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
@@ -33,12 +33,12 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     window  = SDL_CreateWindow(title, xpos, ypos, width, height, window_flags); // Create SDL Window
     gl_context  = SDL_GL_CreateContext(window);                                 // Create openGL Context
     SDL_GL_MakeCurrent(window, gl_context);                                     // Set SDL_Window Context
-    if (SDL_GL_SetSwapInterval(-1) != 0) SDL_GL_SetSwapInterval(0);             // Enables Adaptive v-sync if possible, otherwise v-sync
-    std::cout << consoleMessages[WINDOW_INIT] << std::endl;
+    //if (SDL_GL_SetSwapInterval(-1) != 0) SDL_GL_SetSwapInterval(0);             // Enables Adaptive v-sync if possible, otherwise v-sync
+    std::cout << Message::names[Message::WINDOW_INIT] << std::endl;
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();                                                     // Setup Dear ImGui context  
-    std::cout << consoleMessages[IMGUI_CONTEXT_INIT] << std::endl;
+    std::cout << Message::names[Message::IMGUI_CONTEXT_INIT] << std::endl;
 
     // |= is a bitwise operator: 0101 |= 0110 -> 0111
     ImGuiIO& io = ImGui::GetIO();                                               // Setup ImGui Config
@@ -49,16 +49,16 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     io.ConfigDockingWithShift = true;                                           // Enable Docking on Shift
     io.ConfigDockingTransparentPayload = true;                                  // Enable Transparent Window on Docking
     io.Fonts->AddFontFromFileTTF("../Libraries/fonts/Cascadia.ttf", 15);        // Changing Font -> Cascadia Mono (vs editor font) | Relative paths FTW!
-    std::cout << consoleMessages[IMGUI_CONFIG_INIT] << std::endl;
+    std::cout << Message::names[Message::IMGUI_CONFIG_INIT] << std::endl;
 
     interface = new Interface();
     if (!interface) return false;
-    std::cout << consoleMessages[INTERFACE_INIT] << std::endl;
+    std::cout << Message::names[Message::INTERFACE_INIT] << std::endl;
 
 
     game = new Game();
     if (!game) return false;
-    std::cout << consoleMessages[GAME_INIT] << std::endl;
+    std::cout << Message::names[Message::GAME_INIT] << std::endl;
 
 
     // Setup Dear ImGui style
@@ -77,10 +77,10 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
 
 
     // Creating Textures.
-    data = interfaceData();
-    data.textures.push_back(TextureData(TexID::GAME      , 0, 0, {}));
-    data.textures.push_back(TextureData(TexID::BACKGROUND, 0, 0, {}));
-    //data.textures.push_back(TextureData(PRESENT_TEXTURE_ID   , 0, 0, {}));
+    state = AppState();
+    state.textures.push_back(TextureData(TexID::GAME      , 0, 0, {}));
+    state.textures.push_back(TextureData(TexID::BACKGROUND, 0, 0, {}));
+    //state.textures.push_back(TextureData(PRESENT_TEXTURE_ID   , 0, 0, {}));
 
     applicationRunning = true;
     return true;
@@ -102,45 +102,45 @@ void Framework::handleEvents()
 void Framework::update()
 {
     interface->main();
-    interface->debugMenu(data);
+    interface->debugMenu(state);
 
     if (ImGui::GetFrameCount() <= 2) return;
 
     ImGuiIO& io = ImGui::GetIO();
-    TextureData& texture = data.textures[TexIndex::GAME];
+    TextureData& texture = state.textures[TexIndex::GAME];
 
-    data.drawSize           += (int)io.MouseWheel;
-    data.drawSize           = std::clamp(data.drawSize, (u16)1, (u16)1000);
-    data.drawChance         = std::clamp(data.drawChance, (u8)1, (u8)100);
-    data.scaleFactor        = std::clamp(data.scaleFactor, (u8) 1, (u8) 10);
-    //data.drawColourVariance = std::clamp(data.drawColourVariance, 1, 255);
+    state.drawSize           += (int)io.MouseWheel;
+    state.drawSize           = std::clamp(state.drawSize, (u16)1, (u16)1000);
+    state.drawChance         = std::clamp(state.drawChance, (u8)1, (u8)100);
+    state.scaleFactor        = std::clamp(state.scaleFactor, (u8) 1, (u8) 10);
+    //state.drawColourVariance = std::clamp(state.drawColourVariance, 1, 255);
 
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) data.runSim = !data.runSim;
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) state.runSim = !state.runSim;
     if (io.MouseDown[0]) mouseDraw();
-    if (data.resetSim) {
+    if (state.resetSim) {
         game->reset();
-        data.resetSim = false;
+        state.resetSim = false;
     }
 
     // shouldn't this be handled inside Game::update()??
-    if (data.loadImage) {
-        TextureData& img = data.textures[TexIndex::BACKGROUND];
-        loadImageRGB(img, data.imagePath);
+    if (state.loadImage) {
+        TextureData& img = state.textures[TexIndex::BACKGROUND];
+        loadImageRGB(img, state.imagePath);
         game->loadImage(img.data, img.width, img.height);
-        data.loadImage = false;
+        state.loadImage = false;
     }
-    if (data.reloadGame) {
+    if (state.reloadGame) {
         reloadTextures();
-        game->reload(texture.width, texture.height, data.scaleFactor);
-        data.reloadGame = false;
+        game->reload(texture.width, texture.height, state.scaleFactor);
+        state.reloadGame = false;
     }
 
-    game->update(data, texture.data);
+    game->update(state, texture.data);
 
-    for (TextureData& tex : data.textures)
+    for (TextureData& tex : state.textures)
         updateTexture(tex);
 
-    interface->gameWindow(data);
+    interface->gameWindow(state);
 
 }
 
@@ -155,11 +155,11 @@ void Framework::render()
 
     // Placed After ImGui::Render() to prevent ImGui HUD overwriting my textures.
     if (ImGui::GetFrameCount() == 2) {
-        for (TextureData texture : data.textures)
+        for (TextureData texture : state.textures)
             createTexture(texture);
 
-        TextureData& texture = data.textures[TexIndex::GAME];
-        game->init(texture.width, texture.height, data.scaleFactor);
+        TextureData& texture = state.textures[TexIndex::GAME];
+        game->init(texture.width, texture.height, state.scaleFactor);
     }
 
     // Handles Multiple Viewports && Swaps between 2 texture buffers for smoother rendering
@@ -181,7 +181,7 @@ void Framework::clean()
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    for (TextureData& tex : data.textures) 
+    for (TextureData& tex : state.textures) 
         glDeleteTextures(1, &tex.id);
 
     // free heap memory.
@@ -192,14 +192,14 @@ void Framework::clean()
     SDL_DestroyWindow(window);
     IMG_Quit();
     SDL_Quit();
-    std::cout << consoleMessages[FRAMEWORK_DEAD] << std::endl;
+    std::cout << Message::names[Message::FRAMEWORK_DEAD] << std::endl;
 }
 
 //.bmp loading slanted? weird.. 
 // TODO: Investigate SDL_ConvertSurfaceFormat
 void Framework::loadImageRGB(TextureData& texture, std::string path)
 {
-    TextureData& gameTexture = data.textures[TexIndex::GAME];
+    TextureData& gameTexture = state.textures[TexIndex::GAME];
 
     SDL_Surface* image = IMG_Load(path.c_str());
     if (image == NULL) {
@@ -358,11 +358,11 @@ void Framework::createTexture(TextureData& texture)
 
 void Framework::reloadTextures()
 {
-    for (TextureData& texture : data.textures) {
+    for (TextureData& texture : state.textures) {
         glDeleteTextures(1, &texture.id);
         createTexture(texture);
     }
-    data.texReloadCount++;
+    state.texReloadCount++;
 }
 
 void Framework::updateTexture(TextureData& texture)
@@ -383,5 +383,5 @@ void Framework::mouseDraw()
     } 
     
     // Mouse pos updated in interface->debugMenu() each frame. called before mouseDraw event so correct.
-    game->mouseDraw(data.mouseX, data.mouseY, data.drawSize, data.drawChance, data.drawMaterial, data.drawShape);
+    game->mouseDraw(state.mouseX, state.mouseY, state.drawSize, state.drawChance, state.drawMaterial, state.drawShape);
 }

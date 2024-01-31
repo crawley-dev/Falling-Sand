@@ -68,12 +68,12 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 	sizeChanged = true;
 }
 
-void Game::update(interfaceData& data, std::vector<u8>& textureData)
+void Game::update(State& state, std::vector<u8>& textureData)
 {
-	createDrawIndicators(data.mouseX, data.mouseY, data.drawSize, data.drawShape);
-	if (data.runSim) simulate(data);
+	createDrawIndicators(state.mouseX, state.mouseY, state.drawSize, state.drawShape);
+	if (state.runSim) simulate(state);
 
-	data.textureChanges = textureChanges.size();
+	state.textureChanges = textureChanges.size();
 
 	if (sizeChanged) {
 		updateEntireTextureData(textureData);

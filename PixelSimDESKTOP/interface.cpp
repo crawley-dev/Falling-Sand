@@ -45,10 +45,10 @@ void Interface::debugMenu(interfaceData& data)
         }
 
         ImGui::Text("Update Modes: "); ImGui::SameLine();
-        if (ImGui::BeginCombo("update_modes_combo", Update::names[data.updateMode].c_str())) {
-            for (u8 n = 0; n < Update::names.size(); n++) {
+        if (ImGui::BeginCombo("update_modes_combo", Update::names[data.updateMode].data())) {
+            for (u8 n = 0; n < Update::COUNT; n++) {
                 const bool is_selected = (data.updateMode == n);
-                if (ImGui::Selectable(Update::names[n].c_str(), is_selected))
+                if (ImGui::Selectable(Update::names[n].data(), is_selected))
                     data.updateMode = n;
 
                 if (is_selected)
@@ -58,10 +58,10 @@ void Interface::debugMenu(interfaceData& data)
         }
 
         ImGui::Text("Scan Modes: "); ImGui::SameLine();
-        if (ImGui::BeginCombo("scan_modes_combo", Scan::names[data.scanMode].c_str())) {
-            for (u8 n = 0; n < Scan::names.size(); n++) {
+        if (ImGui::BeginCombo("scan_modes_combo", Scan::names[data.scanMode].data())) {
+            for (u8 n = 0; n < Scan::COUNT; n++) {
                 const bool is_selected = (data.scanMode == n);
-                if (ImGui::Selectable(Scan::names[n].c_str(), is_selected))
+                if (ImGui::Selectable(Scan::names[n].data(), is_selected))
                     data.scanMode = n;
 
                 if (is_selected)
@@ -147,10 +147,10 @@ void Interface::debugMenu(interfaceData& data)
                 data.drawMaterial = MaterialID::SAND; // TODO: store state of previous drawMaterial, don't default to sand
 
             ImGui::Text("Draw Mode: "); ImGui::SameLine();
-            if (ImGui::BeginCombo("draw_modes_combo", MaterialID::names[data.drawMaterial].c_str())) {
-                for (u8 n = 0; n < MaterialID::names.size(); n++) {
+            if (ImGui::BeginCombo("draw_modes_combo", MaterialID::names[data.drawMaterial].data())) {
+                for (u8 n = 0; n < MaterialID::COUNT; n++) {
                     const bool is_selected = (data.drawMaterial == n);
-                    if (ImGui::Selectable(MaterialID::names[n].c_str(), is_selected))
+                    if (ImGui::Selectable(MaterialID::names[n].data(), is_selected))
                         data.drawMaterial = n;
 
                     if (is_selected)
@@ -161,10 +161,10 @@ void Interface::debugMenu(interfaceData& data)
         }
 
         ImGui::Text("Draw Shape:"); ImGui::SameLine();
-        if (ImGui::BeginCombo("draw_shape_combo", Shape::names[0].c_str())) {
-            for (u8 n = 0; n < Shape::names.size(); n++) {
+        if (ImGui::BeginCombo("draw_shape_combo", Shape::names[data.drawShape].data())) {
+            for (u8 n = 0; n < Shape::COUNT; n++) {
                 const bool is_selected = (data.drawShape == n);
-                if (ImGui::Selectable(Shape::names[n].c_str(), is_selected))
+                if (ImGui::Selectable(Shape::names[n].data(), is_selected))
                     data.drawShape = n;
         
                 if (is_selected) {
@@ -203,23 +203,23 @@ void Interface::debugMenu(interfaceData& data)
         const int TITLE_BAR_OFFSET_X = 8;
         const int TITLE_BAR_OFFSET_Y = 28;
         const int COLOUR_VARIANCE_RANGE = 20;
-        const char* scanMode = Scan::names[data.scanMode].c_str();
+        const char* scanMode = Scan::names[data.scanMode].data();
         data.mouseX = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
         data.mouseY = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
 
 
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
-        ImGui::Text("Application Framecount: %d\n", ImGui::GetFrameCount());
-        ImGui::Text("Game Framecount: %d\n"       , data.frame            );
-        ImGui::Text("Scale Factor: %d\n"          , data.scaleFactor      );
-        ImGui::Text("Reloaded Texture: %d Times\n", data.texReloadCount   );
-        ImGui::Text("Displayed Texture: %d\n"     , loadedTex             );
-        ImGui::Text("Texture Width: %d\n"         , texture.width         );
-        ImGui::Text("Texture Height: %d\n"        , texture.height        );
-        ImGui::Text("Texture Updates: %d\n"       , data.textureChanges   );
-        ImGui::Text("Mouse X: %d\n"               , data.mouseX           );
-        ImGui::Text("Mouse Y: %d\n"               , data.mouseY           );
-        ImGui::Text("Mouse Out of Bounds? %d\n"   , OutofBounds           );
+        ImGui::Text("Application Framecount: %d\n" ,    ImGui::GetFrameCount());
+        ImGui::Text("Game Framecount: %d\n"        ,    data.frame            );
+        ImGui::Text("Scale Factor: %d\n"           ,    data.scaleFactor      );
+        ImGui::Text("Textures Reloaded: %d Times\n",    data.texReloadCount   );
+        ImGui::Text("Displayed Texture: %s\n"      ,    TexID::names[loadedTex].data());
+        ImGui::Text("Texture Width: %d\n"          ,    texture.width         );
+        ImGui::Text("Texture Height: %d\n"         ,    texture.height        );
+        ImGui::Text("Texture Updates: %d\n"        ,    data.textureChanges   );
+        ImGui::Text("Mouse X: %d\n"                ,    data.mouseX           );
+        ImGui::Text("Mouse Y: %d\n"                ,    data.mouseY           );
+        ImGui::Text("Mouse Out of Bounds? %d\n"    ,    OutofBounds           );
 
         ImGui::TreePop();
     }

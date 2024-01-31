@@ -190,7 +190,7 @@
     <ClInclude Include="game.h" />
     <ClInclude Include="interface.h" />
     <ClInclude Include="cell.h" />
-    <ClInclude Include="interfaceData.h" />
+    <ClInclude Include="state.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

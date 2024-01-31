@@ -36,12 +36,12 @@ public:
 
 	// Internal Functions
 	void mouseDraw();
-	inline bool running() { return applicationRunning; }
+	inline bool running() const { return applicationRunning; } // const means this function cannot modify any member variables
 
 private:
 	bool applicationRunning = false;
 
-	interfaceData data;
+	AppState state;
 	Game* game = nullptr; // std::unique_ptr<Game>      
 	Interface* interface = nullptr;	// std::unique_ptr<Interface>  
 	SDL_Window* window = nullptr; // could use a unique ptr but would require a refactor, 

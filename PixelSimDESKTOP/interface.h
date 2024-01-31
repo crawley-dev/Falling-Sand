@@ -6,7 +6,7 @@
 //#include <SDL.h>
 //#include <SDL_opengl.h>
 //#include <SDL_image.h>
-#include "interfaceData.h"
+#include "state.h"
 
 using namespace PixelPhysics;
 class Interface {
@@ -16,8 +16,8 @@ public:
 
     void main();
     void boilerPlate();
-    void debugMenu(interfaceData& data);
-    void gameWindow(interfaceData& data);
+    void debugMenu(AppState& state);
+    void gameWindow(AppState& state);
     inline void demoWindow() { if (showDemoWindow) ImGui::ShowDemoWindow(&showDemoWindow); }
 
 private:
