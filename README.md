@@ -1,14 +1,14 @@
-# Cellular Automata Physics Simulation
+# Cellular Automata Simulation
+## - Falling Sand Simulation
+## - Conway's Game of Life
 
 #### Inspired By: Noita's Falling sand, Sandspiel & The Powder Toy
 
 #### Created With: SDL2, OpenGL & ImGui.
 
-## Using HIC++ Coding Standard.
+#### Using HIC++ Coding Standard.
 
-## use this: https://www.youtube.com/watch?v=5Ka3tbbT-9E
-
-## current Tasks:
+## Roadmap:
 
 ##### Importance Hierarchy: ↓
 
@@ -17,10 +17,8 @@
 - Re-write cell structure:
   - add x,y acceleration
   - store as 4 bits each, 0-15, 1 byte of data total
-  - ^^ is it worth doing? would need to re-interpolate bits to u4 value.
 - floats too expensive to store, not doing += (gravity \* deltaTime)..
 - y = mx + c algorithm for traversing non 1x1 y:x vectors.
-- base off of implemented water distribution.
 
 ### Saving // Loading game state:
 
