@@ -68,7 +68,7 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 	sizeChanged = true;
 }
 
-void Game::update(State& state, std::vector<u8>& textureData)
+void Game::update(AppState& state, std::vector<u8>& textureData)
 {
 	createDrawIndicators(state.mouseX, state.mouseY, state.drawSize, state.drawShape);
 	if (state.runSim) simulate(state);
@@ -119,14 +119,14 @@ void Game::reset()
 ---- Simulation Update Routines --------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-void Game::simulate(interfaceData& data) 
+void Game::simulate(AppState& state)
 {	// keep some form of global index that is incremented with each cell
 	// thereby eliminating the need to pass x,y to cellUpdate etc. instead just cell.
 
-	fluidDispersionFactor = data.fluidDispersionFactor;
-	solidDispersionFactor = data.solidDispersionFactor;
+	fluidDispersionFactor = state.fluidDispersionFactor;
+	solidDispersionFactor = state.solidDispersionFactor;
 
-	switch (data.scanMode) {
+	switch (state.scanMode) {
 	case Scan::TOP_DOWN:		topDownUpdate();	 break;
 	case Scan::BOTTOM_UP_LEFT:	l_bottomUp_Update(); break;
 	case Scan::BOTTOM_UP_RIGHT:	r_bottomUp_Update(); break;
@@ -134,14 +134,14 @@ void Game::simulate(interfaceData& data)
 	case Scan::GAME_OF_LIFE:	golUpdate();		 break;
 	}
 
-	if (data.updateMode == Update::FLICKER) {
-		if (data.scanMode == Scan::BOTTOM_UP_LEFT)
-			data.scanMode = Scan::BOTTOM_UP_RIGHT;
+	if (state.updateMode == Update::FLICKER) {
+		if (state.scanMode == Scan::BOTTOM_UP_LEFT)
+			state.scanMode = Scan::BOTTOM_UP_RIGHT;
 		else
-			data.scanMode = Scan::BOTTOM_UP_LEFT;
+			state.scanMode = Scan::BOTTOM_UP_LEFT;
 	}
 
-	data.frame++;
+	state.frame++;
 }
 
 void Game::topDownUpdate()

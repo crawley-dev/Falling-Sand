@@ -22,7 +22,7 @@ void Interface::boilerPlate()
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()); // adds docking by default
 }
 
-void Interface::debugMenu(interfaceData& data)
+void Interface::debugMenu(AppState& state)
 {   // pair of empty brackets {} defines a separate scope, required for each separator.
     ImGui::Begin("Debug Menu");
     
@@ -31,25 +31,25 @@ void Interface::debugMenu(interfaceData& data)
     if (ImGui::TreeNode("Simulation Settings")) 
     {
         ImGui::SeparatorText("Simulation Settings");
-        ImGui::Checkbox("Run Simulation", &data.runSim);
+        ImGui::Checkbox("Run Simulation", &state.runSim);
         
-        if (ImGui::Button("Reset Sim")) data.resetSim = true;
+        if (ImGui::Button("Reset Sim")) state.resetSim = true;
 
         if (ImGui::Button("Decrease Cell Scale")) {
-            data.scaleFactor--;
-            data.reloadGame = true;
+            state.scaleFactor--;
+            state.reloadGame = true;
         } ImGui::SameLine();
         if (ImGui::Button("Increase Cell Scale")) {
-            data.scaleFactor++;
-            data.reloadGame = true;
+            state.scaleFactor++;
+            state.reloadGame = true;
         }
 
         ImGui::Text("Update Modes: "); ImGui::SameLine();
-        if (ImGui::BeginCombo("update_modes_combo", Update::names[data.updateMode].data())) {
+        if (ImGui::BeginCombo("update_modes_combo", Update::names[state.updateMode].data())) {
             for (u8 n = 0; n < Update::COUNT; n++) {
-                const bool is_selected = (data.updateMode == n);
+                const bool is_selected = (state.updateMode == n);
                 if (ImGui::Selectable(Update::names[n].data(), is_selected))
-                    data.updateMode = n;
+                    state.updateMode = n;
 
                 if (is_selected)
                     ImGui::SetItemDefaultFocus();
@@ -58,11 +58,11 @@ void Interface::debugMenu(interfaceData& data)
         }
 
         ImGui::Text("Scan Modes: "); ImGui::SameLine();
-        if (ImGui::BeginCombo("scan_modes_combo", Scan::names[data.scanMode].data())) {
+        if (ImGui::BeginCombo("scan_modes_combo", Scan::names[state.scanMode].data())) {
             for (u8 n = 0; n < Scan::COUNT; n++) {
-                const bool is_selected = (data.scanMode == n);
+                const bool is_selected = (state.scanMode == n);
                 if (ImGui::Selectable(Scan::names[n].data(), is_selected))
-                    data.scanMode = n;
+                    state.scanMode = n;
 
                 if (is_selected)
                     ImGui::SetItemDefaultFocus();
@@ -70,15 +70,15 @@ void Interface::debugMenu(interfaceData& data)
             ImGui::EndCombo();
         }
 
-        int fluidDispersionFactor = data.fluidDispersionFactor;
+        int fluidDispersionFactor = state.fluidDispersionFactor;
         ImGui::Text("Fluid Dispersion"); ImGui::SameLine();
         ImGui::InputInt("fluid_dispersion_inputint", &fluidDispersionFactor, 1, 10);
-        data.fluidDispersionFactor = fluidDispersionFactor;
+        state.fluidDispersionFactor = fluidDispersionFactor;
 
-        int solidDispersionFactor = data.solidDispersionFactor;
+        int solidDispersionFactor = state.solidDispersionFactor;
         ImGui::Text("Solid Dispersion"); ImGui::SameLine();
         ImGui::InputInt("solid_dispersion_inputint", &solidDispersionFactor, 1, 10);
-        data.solidDispersionFactor = solidDispersionFactor;
+        state.solidDispersionFactor = solidDispersionFactor;
 
         ImGui::TreePop();
     }
@@ -92,10 +92,10 @@ void Interface::debugMenu(interfaceData& data)
         
         if (ImGui::Button("Change Texture")) loadedTex++; ImGui::SameLine();
         if (ImGui::Button("Load Image")) {
-            data.loadImage = true;
-            data.imagePath = "../Resources/Pictures/" + std::string(str);
+            state.loadImage = true;
+            state.imagePath = "../Resources/Pictures/" + std::string(str);
         }
-        else data.loadImage = false;
+        else state.loadImage = false;
 
         ImGui::TreePop();
     }
@@ -109,10 +109,10 @@ void Interface::debugMenu(interfaceData& data)
         static bool doFrameStepping = false;
 
         if (framesToStep > 0 && doFrameStepping) {
-            data.runSim = true;
+            state.runSim = true;
             framesToStep--;
         }
-        else if (doFrameStepping) data.runSim = false;
+        else if (doFrameStepping) state.runSim = false;
 
         ImGui::PushButtonRepeat(true); // lets you hold down a button to repeat it.
         if (ImGui::ArrowButton("##left", ImGuiDir_Left  )) { pseudoFrames--; } ImGui::SameLine();
@@ -126,7 +126,7 @@ void Interface::debugMenu(interfaceData& data)
         } ImGui::SameLine();
         if (ImGui::Button("Disable Frame Stepping")) {
             doFrameStepping = false;
-            data.runSim = true;
+            state.runSim = true;
         }
 
         ImGui::PopButtonRepeat(); // Imgui configuration is implemented with a stack? interesting
@@ -140,18 +140,18 @@ void Interface::debugMenu(interfaceData& data)
         // doesn't currently highlight which type is selected.
         // dig into deeper logic of ImGui.. bit painful..
         
-        if (data.scanMode == Scan::GAME_OF_LIFE)
-            data.drawMaterial = MaterialID::GOL_ALIVE;
+        if (state.scanMode == Scan::GAME_OF_LIFE)
+            state.drawMaterial = MaterialID::GOL_ALIVE;
         else {
-            if (data.drawMaterial == MaterialID::GOL_ALIVE)
-                data.drawMaterial = MaterialID::SAND; // TODO: store state of previous drawMaterial, don't default to sand
+            if (state.drawMaterial == MaterialID::GOL_ALIVE)
+                state.drawMaterial = MaterialID::SAND; // TODO: store state of previous drawMaterial, don't default to sand
 
             ImGui::Text("Draw Mode: "); ImGui::SameLine();
-            if (ImGui::BeginCombo("draw_modes_combo", MaterialID::names[data.drawMaterial].data())) {
+            if (ImGui::BeginCombo("draw_modes_combo", MaterialID::names[state.drawMaterial].data())) {
                 for (u8 n = 0; n < MaterialID::COUNT; n++) {
-                    const bool is_selected = (data.drawMaterial == n);
+                    const bool is_selected = (state.drawMaterial == n);
                     if (ImGui::Selectable(MaterialID::names[n].data(), is_selected))
-                        data.drawMaterial = n;
+                        state.drawMaterial = n;
 
                     if (is_selected)
                         ImGui::SetItemDefaultFocus();
@@ -161,11 +161,11 @@ void Interface::debugMenu(interfaceData& data)
         }
 
         ImGui::Text("Draw Shape:"); ImGui::SameLine();
-        if (ImGui::BeginCombo("draw_shape_combo", Shape::names[data.drawShape].data())) {
+        if (ImGui::BeginCombo("draw_shape_combo", Shape::names[state.drawShape].data())) {
             for (u8 n = 0; n < Shape::COUNT; n++) {
-                const bool is_selected = (data.drawShape == n);
+                const bool is_selected = (state.drawShape == n);
                 if (ImGui::Selectable(Shape::names[n].data(), is_selected))
-                    data.drawShape = n;
+                    state.drawShape = n;
         
                 if (is_selected) {
                     std::cout << "Selected: " << Shape::names[n] << std::endl;
@@ -176,16 +176,16 @@ void Interface::debugMenu(interfaceData& data)
         }
 
 
-        int drawSize = data.drawSize;
+        int drawSize = state.drawSize;
         ImGui::Text("Draw Size  "); ImGui::SameLine();
         ImGui::InputInt("draw_size_inputint",  &drawSize,   1, 10);
-        data.drawSize = drawSize;
+        state.drawSize = drawSize;
 
-		int drawChance = data.drawChance;
+		int drawChance = state.drawChance;
         ImGui::Text("Draw Chance"); ImGui::SameLine();
         ImGui::InputInt("draw_chance_inputint", &drawChance, 1, 10);
-        data.drawChance = drawChance;
-        // ImGui::InputInt("Cell Colour Variance", (int)data.drawColourVariance, 1, 10);
+        state.drawChance = drawChance;
+        // ImGui::InputInt("Cell Colour Variance", (int)state.drawColourVariance, 1, 10);
         // ^^ might revive this, re-generate random variant for a cell?
         
         ImGui::TreePop(); 
@@ -196,29 +196,29 @@ void Interface::debugMenu(interfaceData& data)
     {
         ImGui::SeparatorText("Debug Values"); 
         bool OutofBounds = false;
-        TextureData& texture = data.textures[loadedTex];
-        if (data.mouseX > texture.width || data.mouseX < 0 || data.mouseY > texture.height || data.mouseY < 0) OutofBounds = true;
+        TextureData& texture = state.textures[loadedTex];
+        if (state.mouseX > texture.width || state.mouseX < 0 || state.mouseY > texture.height || state.mouseY < 0) OutofBounds = true;
 
         ImVec2 windowPos = ImGui::GetMainViewport()->Pos;
         const int TITLE_BAR_OFFSET_X = 8;
         const int TITLE_BAR_OFFSET_Y = 28;
         const int COLOUR_VARIANCE_RANGE = 20;
-        const char* scanMode = Scan::names[data.scanMode].data();
-        data.mouseX = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
-        data.mouseY = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
+        const char* scanMode = Scan::names[state.scanMode].data();
+        state.mouseX = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
+        state.mouseY = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
 
 
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
         ImGui::Text("Application Framecount: %d\n" ,    ImGui::GetFrameCount());
-        ImGui::Text("Game Framecount: %d\n"        ,    data.frame            );
-        ImGui::Text("Scale Factor: %d\n"           ,    data.scaleFactor      );
-        ImGui::Text("Textures Reloaded: %d Times\n",    data.texReloadCount   );
+        ImGui::Text("Game Framecount: %d\n"        ,    state.frame            );
+        ImGui::Text("Scale Factor: %d\n"           ,    state.scaleFactor      );
+        ImGui::Text("Textures Reloaded: %d Times\n",    state.texReloadCount   );
         ImGui::Text("Displayed Texture: %s\n"      ,    TexID::names[loadedTex].data());
         ImGui::Text("Texture Width: %d\n"          ,    texture.width         );
         ImGui::Text("Texture Height: %d\n"         ,    texture.height        );
-        ImGui::Text("Texture Updates: %d\n"        ,    data.textureChanges   );
-        ImGui::Text("Mouse X: %d\n"                ,    data.mouseX           );
-        ImGui::Text("Mouse Y: %d\n"                ,    data.mouseY           );
+        ImGui::Text("Texture Updates: %d\n"        ,    state.textureChanges   );
+        ImGui::Text("Mouse X: %d\n"                ,    state.mouseX           );
+        ImGui::Text("Mouse Y: %d\n"                ,    state.mouseY           );
         ImGui::Text("Mouse Out of Bounds? %d\n"    ,    OutofBounds           );
 
         ImGui::TreePop();
@@ -227,13 +227,13 @@ void Interface::debugMenu(interfaceData& data)
     ImGui::End();
 }
 
-void Interface::gameWindow(interfaceData& data)
+void Interface::gameWindow(AppState& state)
 {
     ImGui::Begin("GameWindow");
     frameRate = io.Framerate;
 
-    loadedTex = loadedTex % data.textures.size();
-    TextureData& texture = data.textures[loadedTex];
+    loadedTex = loadedTex % state.textures.size();
+    TextureData& texture = state.textures[loadedTex];
     // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow",
     //       Not the SDL2 generated win32 window
 
@@ -245,14 +245,14 @@ void Interface::gameWindow(interfaceData& data)
     if (windowY % 2 != 0) ++windowY; // i don't remember what this does
 
     if (texture.width + xOffset != windowX || texture.height + yOffset != windowY) {
-        data.reloadGame = true;
+        state.reloadGame = true;
         texture.width   = (int)ImGui::GetWindowSize().x - xOffset;
         texture.height  = (int)ImGui::GetWindowSize().y - yOffset;
         if (texture.width  % 2 != 0) ++texture.width;  // i don't remember what this does
         if (texture.height % 2 != 0) ++texture.height; // i don't remember what this does
         ImGui::SetWindowSize(ImVec2(texture.width, texture.height));
     }
-    else data.reloadGame = false;
+    else state.reloadGame = false;
 
     {
         ImGui::BeginChild("GameRender");
