@@ -22,7 +22,7 @@ public:
 
 private:
     bool showDemoWindow = true;
-    float frameRate = 0;
+    int frameRate = 0;
     int loadedTex = 0;
     ImGuiIO& io = ImGui::GetIO();
 };

@@ -84,8 +84,8 @@ void Game::update(AppState& state, std::vector<u8>& textureData)
 
 void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 {
-	const u32 newCellWidth = newTextureWidth / newScaleFactor;
-	const u32 newCellHeight = newTextureHeight / newScaleFactor;
+	const u16 newCellWidth = newTextureWidth / newScaleFactor;
+	const u16 newCellHeight = newTextureHeight / newScaleFactor;
 
 	std::vector<Cell> newCells;
 	newCells.reserve(newCellWidth * newCellHeight);
