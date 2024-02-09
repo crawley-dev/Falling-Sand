@@ -3,7 +3,7 @@
 
 #include <iomanip>
 #include <iostream> 
-//#include <functional>
+#include <functional>
 #include <memory>
 #include <thread>
 #include <utility>

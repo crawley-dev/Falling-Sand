@@ -167,10 +167,8 @@ void Interface::debugMenu(AppState& state)
                 if (ImGui::Selectable(Shape::names[n].data(), is_selected))
                     state.drawShape = n;
         
-                if (is_selected) {
-                    std::cout << "Selected: " << Shape::names[n] << std::endl;
+                if (is_selected)
                     ImGui::SetItemDefaultFocus();
-                }
             }
             ImGui::EndCombo();
         }
@@ -210,16 +208,17 @@ void Interface::debugMenu(AppState& state)
 
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
         ImGui::Text("Application Framecount: %d\n" ,    ImGui::GetFrameCount());
-        ImGui::Text("Game Framecount: %d\n"        ,    state.frame            );
-        ImGui::Text("Scale Factor: %d\n"           ,    state.scaleFactor      );
-        ImGui::Text("Textures Reloaded: %d Times\n",    state.texReloadCount   );
+        ImGui::Text("Game Framecount: %d\n"        ,    state.frame             );
+        ImGui::Text("Scale Factor: %d\n"           ,    state.scaleFactor       );
+        ImGui::Text("Textures Reloaded: %d Times\n",    state.texReloadCount    );
         ImGui::Text("Displayed Texture: %s\n"      ,    TexID::names[loadedTex].data());
-        ImGui::Text("Texture Width: %d\n"          ,    texture.width         );
-        ImGui::Text("Texture Height: %d\n"         ,    texture.height        );
-        ImGui::Text("Texture Updates: %d\n"        ,    state.textureChanges   );
-        ImGui::Text("Mouse X: %d\n"                ,    state.mouseX           );
-        ImGui::Text("Mouse Y: %d\n"                ,    state.mouseY           );
-        ImGui::Text("Mouse Out of Bounds? %d\n"    ,    OutofBounds           );
+        ImGui::Text("Texture Width: %d\n"          ,    texture.width           );
+        ImGui::Text("Texture Height: %d\n"         ,    texture.height          );
+        ImGui::Text("Texture Updates: %d\n"        ,    state.textureChanges    );
+        ImGui::Text("Cell Updates: %d\n"           ,    state.cellChanges       );
+        ImGui::Text("Mouse X: %d\n"                ,    state.mouseX            );
+        ImGui::Text("Mouse Y: %d\n"                ,    state.mouseY            );
+        ImGui::Text("Mouse Out of Bounds? %d\n"    ,    OutofBounds             );
 
         ImGui::TreePop();
     }

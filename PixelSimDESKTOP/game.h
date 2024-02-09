@@ -20,11 +20,12 @@ public:
 private:
 	void simulate(AppState& state);
 
-	void topDownUpdate();
-	void l_bottomUp_Update(); // cancer reading camel case
-	void r_bottomUp_Update(); // cancer reading camel case
-	void snakeUpdate();
-	void golUpdate();
+	void l_bottomUp_Update	(u16 chunkX, u16 chunkY); // cancer reading camel case
+	void r_bottomUp_Update	(u16 chunkX, u16 chunkY); // cancer reading camel case
+	void l_topDownUpdate	(u16 chunkX, u16 chunkY); // cancer reading camel case
+	void r_topDownUpdate	(u16 chunkX, u16 chunkY); // cancer reading camel case
+	void snakeUpdate		(u16 chunkX, u16 chunkY);
+	void golUpdate			(u16 chunkX, u16 chunkY);
 
 	void changeMaterial	(u16 x, u16 y, u8 newMaterial);
 	void swapCells		(u16 x1, u16 y1, u16 x2, u16 y2);
@@ -67,6 +68,7 @@ private:
 	---- Variables ---------------------------------------------------
 	----------------------------------------------------------------*/
 	
+
 	bool sizeChanged = false;
 
 	u8 fluidDispersionFactor;
@@ -81,4 +83,5 @@ private:
 	std::vector<Material> materials;
 	std::vector<std::pair<u16, u16>> textureChanges;
 	std::vector<std::pair<u16, u16>> drawIndicators;
+	std::vector<std::pair<u16, u16>> chunkBorders;
 };

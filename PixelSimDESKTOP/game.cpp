@@ -5,12 +5,14 @@
 Game::Game() {}
 Game::~Game() {}
 
+constexpr u16 CHUNK_SIZE = 5; // N x N cells
+constexpr u16 CHUNK_SIZE_DISPLAY = CHUNK_SIZE*CHUNK_SIZE; // N x N cells
+
 /*--------------------------------------------------------------------------------------
 ---- State Management Functions --------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
-{
+void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
 	scaleFactor = newScaleFactor;
 	textureWidth = newTextureWidth;
 	textureHeight = newTextureHeight;
@@ -68,16 +70,30 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 	sizeChanged = true;
 }
 
-void Game::update(AppState& state, std::vector<u8>& textureData)
-{
-	createDrawIndicators(state.mouseX, state.mouseY, state.drawSize, state.drawShape);
-	
-	constexpr u16 CHUNK_SIZE = 5;
-	if (state.runSim) {
-		simulate(state);
-	}	
-	state.textureChanges = textureChanges.size();
+void Game::update(AppState& state, std::vector<u8>& textureData) {
+	// draw chunk borders (for debug purposes)
+	auto boundedPushBack = [&](u16 x, u16 y, u8 mat = 0) -> void
+		{ if (!(x >= textureWidth || y >= textureHeight || x < 0 || y < 0)) chunkBorders.push_back(std::pair<u16, u16>(x, y));  };
 
+	for (s32 y = 0; y < textureHeight; y += CHUNK_SIZE_DISPLAY)
+		for (s32 x = 0; x < textureWidth; x += CHUNK_SIZE_DISPLAY) {
+			for (s32 tX = 0; tX < CHUNK_SIZE_DISPLAY; tX++) {
+				boundedPushBack(x + tX, y);
+				boundedPushBack(x + tX, y + CHUNK_SIZE_DISPLAY);
+			}
+			for (s32 tY = 0; tY < CHUNK_SIZE_DISPLAY; tY++) {
+				boundedPushBack(x, y + tY);
+				boundedPushBack(x, y + tY + CHUNK_SIZE_DISPLAY);
+			}
+		}
+
+	if (state.runSim) 
+		simulate(state);
+
+	state.textureChanges = textureChanges.size();
+	state.cellChanges    = cells.size();
+
+	createDrawIndicators(state.mouseX, state.mouseY, state.drawSize, state.drawShape);
 	if (sizeChanged) {
 		updateEntireTextureData(textureData);
 		sizeChanged = false;
@@ -85,8 +101,7 @@ void Game::update(AppState& state, std::vector<u8>& textureData)
 	else updateTextureData(textureData);
 }
 
-void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
-{
+void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
 	const u32 newCellWidth = newTextureWidth / newScaleFactor;
 	const u32 newCellHeight = newTextureHeight / newScaleFactor;
 
@@ -109,8 +124,7 @@ void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 	scaleFactor = newScaleFactor;
 }
 
-void Game::reset()
-{
+void Game::reset() {
 	cells.clear();
 	cells.reserve(cellWidth * cellHeight);
 	for (s32 i = 0; i < cellWidth * cellHeight; i++)
@@ -122,33 +136,62 @@ void Game::reset()
 ---- Simulation Update Routines --------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-void Game::simulate(AppState& state)
-{	// keep some form of global index that is incremented with each cell
+void Game::simulate(AppState& state) {	
+	// keep some form of global index that is incremented with each cell
 	// thereby eliminating the need to pass x,y to cellUpdate etc. instead just cell.
 
 	fluidDispersionFactor = state.fluidDispersionFactor;
 	solidDispersionFactor = state.solidDispersionFactor;
 
+	/*switch (state.scanMode) {
+	case Scan::BOTTOM_UP_LEFT:	l_bottomUp_Update(chunkX, chunkY); break;
+	case Scan::BOTTOM_UP_RIGHT:	r_bottomUp_Update(chunkX, chunkY); break;
+	case Scan::TOP_DOWN_LEFT:	l_topDownUpdate();		break;	// might be useful for gas updates (== to botUp in this case)
+	case Scan::TOP_DOWN_RIGHT:	r_topDownUpdate();		break; // might be useful for gas updates (== to botUp in this case)
+	case Scan::SNAKE:			snakeUpdate();			break;
+	case Scan::GAME_OF_LIFE:	golUpdate();			break;
+	}*/
+
+	void (Game::*scan)(u16, u16) = nullptr; // can you just not fucking do this with std::function..
 	switch (state.scanMode) {
-	case Scan::TOP_DOWN:		topDownUpdate();	 break;
-	case Scan::BOTTOM_UP_LEFT:	l_bottomUp_Update(); break;
-	case Scan::BOTTOM_UP_RIGHT:	r_bottomUp_Update(); break;
-	case Scan::SNAKE:			snakeUpdate();		 break;
-	case Scan::GAME_OF_LIFE:	golUpdate();		 break;
+	case Scan::BOTTOM_UP_LEFT:  scan = &Game::l_bottomUp_Update;	break;
+	case Scan::BOTTOM_UP_RIGHT:	scan = &Game::r_bottomUp_Update;	break;
+	case Scan::TOP_DOWN_LEFT:	scan = &Game::l_topDownUpdate;		break;	// might be useful for gas updates (== to botUp in this case)
+	case Scan::TOP_DOWN_RIGHT:	scan = &Game::r_topDownUpdate;		break; // might be useful for gas updates (== to botUp in this case)
+	case Scan::SNAKE:			scan = &Game::snakeUpdate;			break;
+	//case Scan::GAME_OF_LIFE:	scan = &Game::golUpdate;			break;
 	}
 
-	if (state.updateMode == Update::FLICKER) {
-		if (state.scanMode == Scan::BOTTOM_UP_LEFT)
-			state.scanMode = Scan::BOTTOM_UP_RIGHT;
-		else
-			state.scanMode = Scan::BOTTOM_UP_LEFT;
+	for (u16 chunkY = 0; chunkY < cellHeight; chunkY += CHUNK_SIZE)
+		for (u16 chunkX = 0; chunkX < cellWidth; chunkX += CHUNK_SIZE) {
+			
+		}
+
+
+	if (state.updateMode == Update::CYCLE) {
+		state.scanMode = (state.scanMode += 1) % 2;
 	}
 
 	state.frame++;
 }
 
-void Game::topDownUpdate()
-{
+void Game::l_bottomUp_Update(u16 chunkX, u16 chunkY) {
+	for (s32 y = chunkY; y < chunkY + CHUNK_SIZE; y++)
+		for (s32 x = chunkX; x < chunkX + CHUNK_SIZE; x++) {
+			Cell& c = cells[cellIdx(x, y)];
+			updateCell(c, x, y);
+		}
+}
+
+void Game::r_bottomUp_Update(u16 chunkX, u16 chunkY) {
+	for (s32 y = chunkY; y < chunkY + CHUNK_SIZE; y++)
+		for (s32 x = chunkX; x < chunkX + CHUNK_SIZE; x++) {
+			Cell& c = cells[cellIdx(x, y)];
+			updateCell(c, x, y);
+		}
+}
+
+void Game::l_topDownUpdate(u16 chunkX, u16 chunkY) {
 	for (s32 y = 0; y < cellHeight; y++)
 		for (s32 x = 0; x < cellWidth; x++) {
 			Cell& c = cells[cellIdx(x, y)];
@@ -156,28 +199,19 @@ void Game::topDownUpdate()
 		}
 }
 
-void Game::l_bottomUp_Update()
-{
-	for (s32 y = cellHeight - 1; y >= 0; y--)
-		for (s32 x = 0; x < cellWidth; x++) {
-			Cell& c = cells[cellIdx(x, y)];
-			updateCell(c, x, y);
-		}
-}
-
-void Game::r_bottomUp_Update() {
-	for (s32 y = cellHeight - 1; y >= 0; y--)
+void Game::r_topDownUpdate(u16 chunkX, u16 chunkY) {
+	for (s32 y = 0; y < cellHeight; y++)
 		for (s32 x = cellWidth - 1; x >= 0; x--) {
 			Cell& c = cells[cellIdx(x, y)];
 			updateCell(c, x, y);
 		}
 }
 
+
 // >>>>>>>>>>^
 // ^<<<<<<<<<<
 // >>>>>>>>>>^
-void Game::snakeUpdate()
-{
+void Game::snakeUpdate(u16 chunkX, u16 chunkY) {
 	for (s32 y = cellHeight - 1; y >= 0; y--)
 		if ((cellHeight - y) % 2 == 0) // --> 
 			for (s32 x = 0; x < cellWidth; x++) {
@@ -190,9 +224,7 @@ void Game::snakeUpdate()
 				updateCell(c, x, y);
 			}
 }
-void Game::golUpdate() 
-{
-
+void Game::golUpdate(u16 chunkX, u16 chunkY) {
 	std::vector<std::pair<Cell,std::pair<u16,u16>>> updatedCells;
 	auto updateCellLambda = [&](u16 x, u16 y, u8 matID, u8 variant) -> void { 
 		updatedCells.emplace_back(Cell(matID, true, variant, 0), std::pair<u16,u16>(x,y));
@@ -231,17 +263,16 @@ void Game::golUpdate()
 ---- Updating Cells --------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-void Game::updateCell(Cell& c, u16 x, u16 y)
-{
+void Game::updateCell(Cell& c, u16 x, u16 y) {
 	if (c.updated) return;
 
 	switch (c.matID) {
-	//case MaterialID::EMPTY:		return;
-	case MaterialID::SAND:	updateSand(x, y);  return;
-	case MaterialID::WATER: updateWater(x, y); return;
-	//case MaterialID::CONCRETE:	return;
-	//case MaterialID::GOL_ALIVE:	return;
-	case MaterialID::NATURAL_GAS: updateNaturalGas(x, y); return;
+	case MaterialID::EMPTY:									return;
+	case MaterialID::SAND:	updateSand(x, y);				return;
+	case MaterialID::WATER: updateWater(x, y);				return;
+	case MaterialID::CONCRETE:								return;
+	case MaterialID::GOL_ALIVE:								return;
+	case MaterialID::NATURAL_GAS: updateNaturalGas(x, y);	return;
 	}
 }
 
@@ -252,8 +283,7 @@ void Game::updateCell(Cell& c, u16 x, u16 y)
 //			>> e.g queryAbove(x,y)
 
 
-void Game::updateSand(u16 x, u16 y)
-{
+void Game::updateSand(u16 x, u16 y) {
 	s8 yDispersion = 0;
 	s8 xDispersion = 0;
 	s8 movesLeft = solidDispersionFactor;
@@ -281,7 +311,7 @@ void Game::updateWater(u16 x, u16 y) {
 	s8 xDispersion = 0;
 	s8 movesLeft = fluidDispersionFactor;
 
-	while (movesLeft > 0) {
+	while (movesLeft-- > 0) {
 		// check for empty space below.. 
 		// check horizontal options
 		// >> if (can move) && (can move down) >> move
@@ -289,7 +319,7 @@ void Game::updateWater(u16 x, u16 y) {
 
 		if (querySwap(x, y, x + xDispersion, y + yDispersion + 1)) { // check cell below
 			yDispersion++;
-			movesLeft--;
+			//movesLeft--;
 			continue;
 		}
 
@@ -298,13 +328,12 @@ void Game::updateWater(u16 x, u16 y) {
 			if		(querySwap(x, y, x + dX, y + yDispersion)) xDispersion = dX;
 			else if (querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
 			else goto ESCAPE_WHILE_WATER;
-			movesLeft--;
-		}
-		else {
+			//movesLeft--;
+		} else {
 			if		(querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
 			else if (querySwap(x, y, x + dX, y + yDispersion)) xDispersion =  dX;
 			else goto ESCAPE_WHILE_WATER;
-			movesLeft--;
+			//movesLeft--;
 		}
 	}
 
@@ -312,8 +341,7 @@ ESCAPE_WHILE_WATER:
 	trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
-void Game::updateNaturalGas(u16 x, u16 y)
-{
+void Game::updateNaturalGas(u16 x, u16 y) {
 	s8 yDispersion = 0;
 	s8 xDispersion = 0;
 	s8 movesLeft = fluidDispersionFactor;
@@ -331,8 +359,7 @@ void Game::updateNaturalGas(u16 x, u16 y)
 			else if (querySwap(x, y, x - dX, y - yDispersion)) xDispersion = -dX;
 			else goto ESCAPE_WHILE_NATURAL_GAS;
 			movesLeft--;
-		}
-		else {
+		} else {
 			if		(querySwap(x, y, x - dX, y - yDispersion)) xDispersion = -dX;
 			else if (querySwap(x, y, x + dX, y - yDispersion)) xDispersion = dX;
 			else goto ESCAPE_WHILE_NATURAL_GAS;
@@ -344,8 +371,7 @@ ESCAPE_WHILE_NATURAL_GAS:
 	trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
-bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2)
-{
+bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
 	if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
 
 	Cell& c1 = cells[cellIdx(x1, y1)];
@@ -356,8 +382,7 @@ bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2)
 	return true;
 }
 
-bool Game::querySwap(u16 x1, u16 y1, u16 x2, u16 y2)
-{
+bool Game::querySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
 	if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
 
 	Cell& c1 = cells[cellIdx(x1, y1)];
@@ -367,8 +392,7 @@ bool Game::querySwap(u16 x1, u16 y1, u16 x2, u16 y2)
 	return true;
 }
 
-void Game::changeMaterial(u16 x, u16 y, u8 newMaterial)
-{
+void Game::changeMaterial(u16 x, u16 y, u8 newMaterial) {
 	if (outOfBounds(x, y)) return; // not consistent control flow, but it works.
 	Cell& c = cells[cellIdx(x, y)];
 	c.matID = newMaterial;
@@ -377,8 +401,7 @@ void Game::changeMaterial(u16 x, u16 y, u8 newMaterial)
 	textureChanges.push_back(std::pair<u16,u16>(x,y));
 }
 
-void Game::swapCells(u16 x1, u16 y1, u16 x2, u16 y2)
-{
+void Game::swapCells(u16 x1, u16 y1, u16 x2, u16 y2) {
 	Cell& c1 = cells[cellIdx(x1, y1)];
 	Cell& c2 = cells[cellIdx(x2, y2)];
 
@@ -398,20 +421,15 @@ void Game::swapCells(u16 x1, u16 y1, u16 x2, u16 y2)
 ---- Mouse Functions -------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-void Game::createDrawIndicators(u16 mx, u16 my, u16 size, u8 shape)
-{
+void Game::createDrawIndicators(u16 mx, u16 my, u16 size, u8 shape) {
 	auto boundedPushBack = [&](u16 x, u16 y, u8 mat = 0) -> void { // need a 3rd param for consistency.
-		if (outOfBounds(x, y)) return;
-		drawIndicators.push_back(std::pair<u16, u16>(x, y));
+		if (!outOfBounds(x, y)) drawIndicators.push_back(std::pair<u16, u16>(x, y));
 	};
 
 	const u32 x = mx / scaleFactor;
 	const u32 y = my / scaleFactor;
 
-	// edge cases.
 	if (outOfBounds(x, y)) return;
-	else if (size == 1)
-		boundedPushBack(x, y);
 
 	switch (shape) {
 	case Shape::CIRCLE: 	    
@@ -422,16 +440,11 @@ void Game::createDrawIndicators(u16 mx, u16 my, u16 size, u8 shape)
 	}
 }
 
-void Game::mouseDraw(u16 mx, u16 my, u16 size, u8 drawChance, u8 material, u8 shape)
-{
+void Game::mouseDraw(u16 mx, u16 my, u16 size, u8 drawChance, u8 material, u8 shape) {
 	const u32 x = mx / scaleFactor;
 	const u32 y = my / scaleFactor;
 
-	// edge cases.
 	if (outOfBounds(x, y)) return;
-	else if (size == 1)
-		changeMaterial(x, y, material);
-
 
 	auto changeMaterialLambda = [&](u16 x, u16 y, u8 material) -> void { changeMaterial(x, y, material); };
 	switch (shape) {
@@ -443,8 +456,7 @@ void Game::mouseDraw(u16 mx, u16 my, u16 size, u8 drawChance, u8 material, u8 sh
 	}
 }
 
-void Game::drawCircle(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo)
-{
+void Game::drawCircle(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) {
 	int r2 = size * size;
 	int area = r2 << 2;
 	int rr = size << 1;
@@ -459,8 +471,7 @@ void Game::drawCircle(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::f
 	}
 }
 
-void Game::drawCircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16,u16,u8)> foo)
-{
+void Game::drawCircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16,u16,u8)> foo) {
 	auto drawCircleSegments = [&](u16 xc, u16 yc, u16 x, u16 y, u8 material) -> void {
 		foo(xc + x, yc + y, material);
 		foo(xc - x, yc + y, material);
@@ -488,25 +499,21 @@ void Game::drawCircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
 	}
 }
 
-void Game::drawLine(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo)
-{
+void Game::drawLine(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) {
 	for (s32 tX = -size; tX < size; tX++)
 		if (getRand<s64>(1, 100) <= drawChance)
 			foo(x + tX, y, material);
 }
 
-void Game::drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo)
-{
+void Game::drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) {
 	for (s32 tY = -size / 2; tY < size / 2; tY++)
 		for (s32 tX = -size / 2; tX < size / 2; tX++)
 			if (getRand<s64>(1, 100) <= drawChance)
 				foo(x + tX, y + tY, material);
 }
 
-void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) 
-{
-	// seems like this could be shorter ?
-	// thank thee lord gpt
+void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo)  {
+	// draws from centre, not top left.
 	for (s32 tX = -size / 2; tX <= size / 2; tX++)
 		if (getRand<s64>(1, 100) <= drawChance)
 			foo(x + tX, y - size / 2, material);
@@ -527,8 +534,7 @@ void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
 
 // this causes flickering.. switching back to entire texture update.
 // might not be calling all cells that need updating, check cellswap etc.
-void Game::updateTextureData(std::vector<u8>& textureData)
-{
+void Game::updateTextureData(std::vector<u8>& textureData) {
 	for (const auto& [x,y] : textureChanges) { // cheeky structured binding.
 		Cell& c = cells[cellIdx(x,y)];
 		const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
@@ -540,7 +546,7 @@ void Game::updateTextureData(std::vector<u8>& textureData)
 		
 		for (s32 tY = 0; tY < scaleFactor; tY++)
 			for (s32 tX = 0; tX < scaleFactor; tX++) {
-				s32 texIdx = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
+				const s32 texIdx = textureIdx((x * scaleFactor) + tX, (y*scaleFactor) + tY);
 				textureData[texIdx + 0] = red;
 				textureData[texIdx + 1] = green;
 				textureData[texIdx + 2] = blue;
@@ -548,26 +554,36 @@ void Game::updateTextureData(std::vector<u8>& textureData)
 			}
 		c.updated = false;
 	}
-	
+
 	textureChanges.clear();
-	textureChanges.insert(std::end(textureChanges), std::begin(drawIndicators), std::end(drawIndicators));
+	textureChanges = drawIndicators; // clears draw Indicators next frame.
 
 	// handle mouseDraw Indicators
 	for (const auto& [x, y] : drawIndicators) {
-		for (s32 tY = 0; tY < scaleFactor; tY++)
-			for (s32 tX = 0; tX < scaleFactor; tX++) {
-				s32 texIdx = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
+		for (s32 tY = 0; tY < scaleFactor / 3; tY++)
+			for (s32 tX = 0; tX < scaleFactor / 3; tX++) {
+				const s32 texIdx = textureIdx((x*scaleFactor) + tX, (y*scaleFactor) + tY);
 				textureData[texIdx + 0] = 255;
 				textureData[texIdx + 1] = 255;
 				textureData[texIdx + 2] = 255;
 				textureData[texIdx + 3] = 255;
 			}
 	}
+
+	for (const auto& [x, y] : chunkBorders) {
+		const s32 texIdx = textureIdx(x, y);
+		//printf("x: %d, y: %d, idx: %d\n", x, y, texIdx);
+		textureData[texIdx + 0] = 255;
+		textureData[texIdx + 1] = 0;
+		textureData[texIdx + 2] = 0;
+		textureData[texIdx + 3] = 255;
+	}
+
+	chunkBorders.clear();
 	drawIndicators.clear();
 }
 
-void Game::updateEntireTextureData(std::vector<u8>& textureData)
-{
+void Game::updateEntireTextureData(std::vector<u8>& textureData) {
 	for (s32 y = 0; y < cellHeight; y++) {
 		for (s32 x = 0; x < cellWidth; x++) {
 			Cell& c = cells[cellIdx(x, y)];
@@ -580,7 +596,7 @@ void Game::updateEntireTextureData(std::vector<u8>& textureData)
 
 			for (s32 tY = 0; tY < scaleFactor; tY++)
 				for (s32 tX = 0; tX < scaleFactor; tX++) {
-					s32 idx = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
+					const s32 idx = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
 					textureData[idx + 0] = red;
 					textureData[idx + 1] = green;
 					textureData[idx + 2] = blue;
@@ -591,8 +607,7 @@ void Game::updateEntireTextureData(std::vector<u8>& textureData)
 	}
 }
 
-void Game::loadImage(std::vector<u8> imageTextureData, u16 imageWidth, u16 imageHeight)
-{
+void Game::loadImage(std::vector<u8> imageTextureData, u16 imageWidth, u16 imageHeight) {
 	// ?? scale imageWidth and imageHeight to cellWidth and cellHeight 
 	//		^^ only really necessary for low res // really high res
 	// .. interpolate image RGBA --> closest material RGBA

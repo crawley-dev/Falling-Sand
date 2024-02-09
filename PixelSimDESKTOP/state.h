@@ -109,30 +109,32 @@ struct TexID {
 struct Update {
 	enum : u8 {
 		STATIC,
-		FLICKER,
+		CYCLE,
 		COUNT,
 	};
 
 	static constexpr std::array<std::string_view, Update::COUNT> names {
 		"Static",
-		"Flicker",
+		"CYCLE",
 	};
 };
 
 struct Scan {
 	enum : u8 {
-		TOP_DOWN,
 		BOTTOM_UP_LEFT,
 		BOTTOM_UP_RIGHT,
+		TOP_DOWN_LEFT,
+		TOP_DOWN_RIGHT,
 		SNAKE,
 		GAME_OF_LIFE,
 		COUNT,
 	};
 
 	static constexpr std::array<std::string_view, Scan::COUNT> names {
-		"Top Down",
 		"Bottom Up L->R",
 		"Bottom Up R->L",
+		"Top Down L->R",
+		"Top Down R->L",
 		"Snake",
 		"Game of Life",
 	};
@@ -185,7 +187,7 @@ struct AppState {
 	bool loadImage  = false;
 
 	u8 scanMode			     = Scan::BOTTOM_UP_LEFT;
-	u8 updateMode		     = Update::FLICKER;
+	u8 updateMode		     = Update::CYCLE;
 	u8 drawShape		     = Shape::SQUARE;
 	u8 drawMaterial		     =  2;
 	u8 drawChance		     = 50; 
@@ -200,5 +202,6 @@ struct AppState {
 	u32 frame		         =  0;
 	u32 texReloadCount       =  0;
 	u32 textureChanges		 =  0;
+	u32 cellChanges 		 =  0;
 };
 };
