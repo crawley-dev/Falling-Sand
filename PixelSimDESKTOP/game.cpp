@@ -71,8 +71,11 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor)
 void Game::update(AppState& state, std::vector<u8>& textureData)
 {
 	createDrawIndicators(state.mouseX, state.mouseY, state.drawSize, state.drawShape);
-	if (state.runSim) simulate(state);
-
+	
+	constexpr u16 CHUNK_SIZE = 5;
+	if (state.runSim) {
+		simulate(state);
+	}	
 	state.textureChanges = textureChanges.size();
 
 	if (sizeChanged) {

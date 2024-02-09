@@ -3,7 +3,7 @@
 
 #include <iomanip>
 #include <iostream> 
-#include <functional>
+//#include <functional>
 #include <memory>
 #include <thread>
 #include <utility>
@@ -45,6 +45,9 @@ using s8  = int8_t;		// char
 using s16 = int16_t;	// short
 using s32 = int32_t;	// long int (equal to int on 64 bit systems)
 using s64 = int64_t;	// long long
+
+using f32 = float;		// float
+using f64 = double;		// double (long float)
 
 using GLubyte = unsigned char;
 using GLuint  = unsigned int;
