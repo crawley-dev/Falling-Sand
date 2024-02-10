@@ -5,19 +5,18 @@
 Game::Game() {}
 Game::~Game() {}
 
-constexpr u16 CHUNK_SIZE = 5; // N x N cells
-constexpr u16 CHUNK_SIZE_DISPLAY = CHUNK_SIZE*CHUNK_SIZE; // N x N cells
-
 /*--------------------------------------------------------------------------------------
 ---- State Management Functions --------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
 void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
-	scaleFactor = newScaleFactor;
-	textureWidth = newTextureWidth;
-	textureHeight = newTextureHeight;
-	cellWidth = newTextureWidth / scaleFactor;
-	cellHeight = newTextureHeight / scaleFactor;
+	scaleFactor		= newScaleFactor;
+	textureWidth	= newTextureWidth;
+	textureHeight	= newTextureHeight;
+	cellWidth		= newTextureWidth / scaleFactor;
+	cellHeight		= newTextureHeight / scaleFactor;
+	chunksWidth		= roundUp(cellWidth, CHUNK_SIZE);
+	chunksHeight	= roundUp(cellHeight, CHUNK_SIZE);
 
 	materials.clear();
 	materials.resize(MaterialID::COUNT); // just so i can [] access, clear code.
@@ -63,6 +62,7 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
 		}
 	}
 
+	resetChunks();
 	cells.clear();
 	cells.reserve(cellWidth * cellHeight);
 	for (s32 i = 0; i < cellWidth * cellHeight; i++) // init cell.updated = true so updateTextureData runs on first time.
@@ -72,11 +72,14 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
 
 void Game::update(AppState& state, std::vector<u8>& textureData) {
 	// draw chunk borders (for debug purposes)
-	auto boundedPushBack = [&](u16 x, u16 y, u8 mat = 0) -> void
-		{ if (!(x >= textureWidth || y >= textureHeight || x < 0 || y < 0)) chunkBorders.push_back(std::pair<u16, u16>(x, y));  };
+	const u16 width__ = cellWidth;
+	const u16 height__ = cellHeight;
+	constexpr u16 CHUNK_SIZE_DISPLAY = CHUNK_SIZE;
+	auto boundedPushBack = [&](u16 x, u16 y, u8 mat = 0) -> void 
+	{ if (!outOfBounds(x, y)) chunkBorders.push_back(std::pair<u16, u16>(x, y)); };
 
-	for (s32 y = 0; y < textureHeight; y += CHUNK_SIZE_DISPLAY)
-		for (s32 x = 0; x < textureWidth; x += CHUNK_SIZE_DISPLAY) {
+	for (s32 y = 0; y < height__; y += CHUNK_SIZE_DISPLAY)
+		for (s32 x = 0; x < width__; x += CHUNK_SIZE_DISPLAY) {
 			for (s32 tX = 0; tX < CHUNK_SIZE_DISPLAY; tX++) {
 				boundedPushBack(x + tX, y);
 				boundedPushBack(x + tX, y + CHUNK_SIZE_DISPLAY);
@@ -87,11 +90,12 @@ void Game::update(AppState& state, std::vector<u8>& textureData) {
 			}
 		}
 
+
 	if (state.runSim) 
 		simulate(state);
 
 	state.textureChanges = textureChanges.size();
-	state.cellChanges    = cells.size();
+	state.cellChanges = cells.size();//chunks.size() * CHUNK_SIZE * CHUNK_SIZE;//cells.size();
 
 	createDrawIndicators(state.mouseX, state.mouseY, state.drawSize, state.drawShape);
 	if (sizeChanged) {
@@ -116,17 +120,21 @@ void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) 
 
 	sizeChanged = true;
 
-	cells = newCells;
-	cellWidth = newCellWidth;
-	cellHeight = newCellHeight;
-	textureWidth = newTextureWidth;
-	textureHeight = newTextureHeight;
-	scaleFactor = newScaleFactor;
+	cells			= newCells;
+	cellWidth		= newCellWidth;
+	cellHeight		= newCellHeight;
+	chunksWidth		= roundUp(cellWidth, CHUNK_SIZE);
+	chunksHeight	= roundUp(cellHeight, CHUNK_SIZE);
+	scaleFactor		= newScaleFactor;
+	textureWidth	= newTextureWidth;
+	textureHeight	= newTextureHeight;
+	resetChunks();
 }
 
 void Game::reset() {
 	cells.clear();
 	cells.reserve(cellWidth * cellHeight);
+	resetChunks();
 	for (s32 i = 0; i < cellWidth * cellHeight; i++)
 		cells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants - 1), 0);
 	sizeChanged = true;
@@ -143,21 +151,13 @@ void Game::simulate(AppState& state) {
 	fluidDispersionFactor = state.fluidDispersionFactor;
 	solidDispersionFactor = state.solidDispersionFactor;
 
-	/*switch (state.scanMode) {
-	case Scan::BOTTOM_UP_LEFT:	l_bottomUp_Update(chunkX, chunkY); break;
-	case Scan::BOTTOM_UP_RIGHT:	r_bottomUp_Update(chunkX, chunkY); break;
-	case Scan::TOP_DOWN_LEFT:	l_topDownUpdate();		break;	// might be useful for gas updates (== to botUp in this case)
-	case Scan::TOP_DOWN_RIGHT:	r_topDownUpdate();		break; // might be useful for gas updates (== to botUp in this case)
-	case Scan::SNAKE:			snakeUpdate();			break;
-	case Scan::GAME_OF_LIFE:	golUpdate();			break;
-	}*/
-
+#if CHUNK_MULTITHREADING
 	void (Game::*scan)(u16, u16) = nullptr; // can you just not fucking do this with std::function..
 	switch (state.scanMode) {
 	case Scan::BOTTOM_UP_LEFT:  scan = &Game::l_bottomUp_Update;	break;
 	case Scan::BOTTOM_UP_RIGHT:	scan = &Game::r_bottomUp_Update;	break;
-	case Scan::TOP_DOWN_LEFT:	scan = &Game::l_topDownUpdate;		break;	// might be useful for gas updates (== to botUp in this case)
-	case Scan::TOP_DOWN_RIGHT:	scan = &Game::r_topDownUpdate;		break; // might be useful for gas updates (== to botUp in this case)
+	case Scan::TOP_DOWN_LEFT:	/*scan = &Game::l_topDownUpdate;*/	break;	// might be useful for gas updates (== to botUp in this case)
+	case Scan::TOP_DOWN_RIGHT:	/*scan = &Game::r_topDownUpdate;*/	break; // might be useful for gas updates (== to botUp in this case)
 	case Scan::SNAKE:			scan = &Game::snakeUpdate;			break;
 	//case Scan::GAME_OF_LIFE:	scan = &Game::golUpdate;			break;
 	}
@@ -166,6 +166,30 @@ void Game::simulate(AppState& state) {
 		for (u16 chunkX = 0; chunkX < cellWidth; chunkX += CHUNK_SIZE) {
 			
 		}
+#else 
+	//switch (state.scanMode) {
+	//case Scan::BOTTOM_UP_LEFT:	l_bottomUp_Update();	break;
+	//case Scan::BOTTOM_UP_RIGHT:	r_bottomUp_Update();	break;
+	//case Scan::TOP_DOWN_LEFT:	/*l_topDownUpdate();*/	break;	// might be useful for gas updates (== to botUp in this case)
+	//case Scan::TOP_DOWN_RIGHT:	/*r_topDownUpdate();*/	break;	// might be useful for gas updates (== to botUp in this case)
+	//case Scan::SNAKE:			snakeUpdate();			break;
+	//case Scan::GAME_OF_LIFE:	golUpdate();			break;
+	//}
+
+	if (state.scanMode == Scan::BOTTOM_UP_LEFT) {
+		for (s32 y = cellHeight - 1; y >= 0; y -= CHUNK_SIZE)
+			for (s32 x = 0; x < cellWidth; x += CHUNK_SIZE) {
+				updateChunk(x, y);
+				//printf("x: %d, y: %d, chunk: %d\n", x, y, chunkIdx(x, y));
+			}
+	} else {
+		for (s32 y = cellHeight - 1; y >= 0; y -= CHUNK_SIZE)
+			for (s32 x = cellWidth - 1; x >= 0; x -= CHUNK_SIZE) {
+				updateChunk(x, y);
+				//printf("x: %d, y: %d, chunk: %d\n", x, y, chunkIdx(x, y));
+			}
+	}
+#endif
 
 
 	if (state.updateMode == Update::CYCLE) {
@@ -175,38 +199,20 @@ void Game::simulate(AppState& state) {
 	state.frame++;
 }
 
+#if CHUNK_MULTITHREADING
 void Game::l_bottomUp_Update(u16 chunkX, u16 chunkY) {
 	for (s32 y = chunkY; y < chunkY + CHUNK_SIZE; y++)
 		for (s32 x = chunkX; x < chunkX + CHUNK_SIZE; x++) {
-			Cell& c = cells[cellIdx(x, y)];
-			updateCell(c, x, y);
+			updateCell(x, y);
 		}
 }
 
 void Game::r_bottomUp_Update(u16 chunkX, u16 chunkY) {
 	for (s32 y = chunkY; y < chunkY + CHUNK_SIZE; y++)
 		for (s32 x = chunkX; x < chunkX + CHUNK_SIZE; x++) {
-			Cell& c = cells[cellIdx(x, y)];
-			updateCell(c, x, y);
+			updateCell(x, y);
 		}
 }
-
-void Game::l_topDownUpdate(u16 chunkX, u16 chunkY) {
-	for (s32 y = 0; y < cellHeight; y++)
-		for (s32 x = 0; x < cellWidth; x++) {
-			Cell& c = cells[cellIdx(x, y)];
-			updateCell(c, x, y);
-		}
-}
-
-void Game::r_topDownUpdate(u16 chunkX, u16 chunkY) {
-	for (s32 y = 0; y < cellHeight; y++)
-		for (s32 x = cellWidth - 1; x >= 0; x--) {
-			Cell& c = cells[cellIdx(x, y)];
-			updateCell(c, x, y);
-		}
-}
-
 
 // >>>>>>>>>>^
 // ^<<<<<<<<<<
@@ -215,16 +221,43 @@ void Game::snakeUpdate(u16 chunkX, u16 chunkY) {
 	for (s32 y = cellHeight - 1; y >= 0; y--)
 		if ((cellHeight - y) % 2 == 0) // --> 
 			for (s32 x = 0; x < cellWidth; x++) {
-				Cell& c = cells[cellIdx(x, y)];
-				updateCell(c, x, y);
+				updateCell(x, y);
 			}
 		else					 // <--
 			for (s32 x = cellWidth - 1; x >= 0; x--) {
-				Cell& c = cells[cellIdx(x, y)];
-				updateCell(c, x, y);
+				updateCell(x, y);
 			}
 }
-void Game::golUpdate(u16 chunkX, u16 chunkY) {
+
+#else 
+void Game::l_bottomUp_Update() {
+	for (s32 y = cellHeight - 1; y >= 0; y--)
+		for (s32 x = 0; x < cellWidth; x++) {
+			updateCell(x, y);
+		}
+}
+
+void Game::r_bottomUp_Update() {
+	for (s32 y = cellHeight - 1; y >= 0; y--)
+		for (s32 x = cellWidth - 1; x >= 0; x--) {
+			updateCell(x, y);
+		}
+}
+
+void Game::snakeUpdate() {
+	for (s32 y = cellHeight - 1; y >= 0; y--)
+		if ((cellHeight - y) % 2 == 0) // --> 
+			for (s32 x = 0; x < cellWidth; x++) {
+				updateCell(x, y);
+			}
+		else					 // <--
+			for (s32 x = cellWidth - 1; x >= 0; x--) {
+				updateCell(x, y);
+			}
+}
+#endif
+
+void Game::golUpdate() {
 	std::vector<std::pair<Cell,std::pair<u16,u16>>> updatedCells;
 	auto updateCellLambda = [&](u16 x, u16 y, u8 matID, u8 variant) -> void { 
 		updatedCells.emplace_back(Cell(matID, true, variant, 0), std::pair<u16,u16>(x,y));
@@ -263,16 +296,33 @@ void Game::golUpdate(u16 chunkX, u16 chunkY) {
 ---- Updating Cells --------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-void Game::updateCell(Cell& c, u16 x, u16 y) {
-	if (c.updated) return;
+// convert chunks to bit flags.
+void Game::updateChunk(u16 x, u16 y) {
+	//printf("x: %d, y: %d, chunk: %d\n", x, y, chunkIdx(x,y));
+	bool chunk = chunks[chunkIdx(x,y)]; // eh?
+	if (!chunk) return;
+	chunk = false;
+	u32 temp = 0;
+
+	for (s32 tY = 0; tY < CHUNK_SIZE; tY++)
+		for (s32 tX = 0; tX < CHUNK_SIZE; tX++) {
+			temp += updateCell(x + tX, y + tY);
+		}
+	if (temp > 0) chunk = true;
+	chunks[chunkIdx(x, y)] = chunk;
+}
+
+bool Game::updateCell(u16 x, u16 y) {
+	Cell& c = cells[cellIdx(x, y)];
+	if (c.updated) return true;
 
 	switch (c.matID) {
-	case MaterialID::EMPTY:									return;
-	case MaterialID::SAND:	updateSand(x, y);				return;
-	case MaterialID::WATER: updateWater(x, y);				return;
-	case MaterialID::CONCRETE:								return;
-	case MaterialID::GOL_ALIVE:								return;
-	case MaterialID::NATURAL_GAS: updateNaturalGas(x, y);	return;
+	case MaterialID::EMPTY:			return false;
+	case MaterialID::SAND:			return updateSand(x, y);				
+	case MaterialID::WATER:			return updateWater(x, y);				
+	case MaterialID::CONCRETE:		return false; 						
+	case MaterialID::NATURAL_GAS:	return updateNaturalGas(x, y);	
+	//case MaterialID::GOL_ALIVE:	return true; 						
 	}
 }
 
@@ -283,7 +333,7 @@ void Game::updateCell(Cell& c, u16 x, u16 y) {
 //			>> e.g queryAbove(x,y)
 
 
-void Game::updateSand(u16 x, u16 y) {
+bool Game::updateSand(u16 x, u16 y) {
 	s8 yDispersion = 0;
 	s8 xDispersion = 0;
 	s8 movesLeft = solidDispersionFactor;
@@ -303,15 +353,15 @@ void Game::updateSand(u16 x, u16 y) {
 		else break;
 	}
 
-	trySwap(x, y, x + xDispersion, y + yDispersion);
+	return trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
-void Game::updateWater(u16 x, u16 y) {
+bool Game::updateWater(u16 x, u16 y) {
 	s8 yDispersion = 0;
 	s8 xDispersion = 0;
 	s8 movesLeft = fluidDispersionFactor;
 
-	while (movesLeft-- > 0) {
+	while (movesLeft > 0) {
 		// check for empty space below.. 
 		// check horizontal options
 		// >> if (can move) && (can move down) >> move
@@ -319,7 +369,7 @@ void Game::updateWater(u16 x, u16 y) {
 
 		if (querySwap(x, y, x + xDispersion, y + yDispersion + 1)) { // check cell below
 			yDispersion++;
-			//movesLeft--;
+			movesLeft--;
 			continue;
 		}
 
@@ -328,20 +378,20 @@ void Game::updateWater(u16 x, u16 y) {
 			if		(querySwap(x, y, x + dX, y + yDispersion)) xDispersion = dX;
 			else if (querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
 			else goto ESCAPE_WHILE_WATER;
-			//movesLeft--;
+			movesLeft--;
 		} else {
 			if		(querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
 			else if (querySwap(x, y, x + dX, y + yDispersion)) xDispersion =  dX;
 			else goto ESCAPE_WHILE_WATER;
-			//movesLeft--;
+			movesLeft--;
 		}
 	}
 
 ESCAPE_WHILE_WATER:
-	trySwap(x, y, x + xDispersion, y + yDispersion);
+	return trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
-void Game::updateNaturalGas(u16 x, u16 y) {
+bool Game::updateNaturalGas(u16 x, u16 y) {
 	s8 yDispersion = 0;
 	s8 xDispersion = 0;
 	s8 movesLeft = fluidDispersionFactor;
@@ -368,7 +418,7 @@ void Game::updateNaturalGas(u16 x, u16 y) {
 	}
 
 ESCAPE_WHILE_NATURAL_GAS:
-	trySwap(x, y, x + xDispersion, y + yDispersion);
+	return trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
 bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
@@ -398,6 +448,7 @@ void Game::changeMaterial(u16 x, u16 y, u8 newMaterial) {
 	c.matID = newMaterial;
 	c.updated = true;
 
+	chunks[chunkIdx(x, y)] = true;
 	textureChanges.push_back(std::pair<u16,u16>(x,y));
 }
 
@@ -571,12 +622,20 @@ void Game::updateTextureData(std::vector<u8>& textureData) {
 	}
 
 	for (const auto& [x, y] : chunkBorders) {
-		const s32 texIdx = textureIdx(x, y);
-		//printf("x: %d, y: %d, idx: %d\n", x, y, texIdx);
-		textureData[texIdx + 0] = 255;
-		textureData[texIdx + 1] = 0;
-		textureData[texIdx + 2] = 0;
-		textureData[texIdx + 3] = 255;
+		const s32 texIdx = textureIdx(x*scaleFactor, y*scaleFactor);
+		if (chunks[chunkIdx(x, y)]) {
+			textureData[texIdx + 0] = 0;
+			textureData[texIdx + 1] = 255;
+			textureData[texIdx + 2] = 0;
+			textureData[texIdx + 3] = 255;
+		}
+		else {
+			textureData[texIdx + 0] = 255;
+			textureData[texIdx + 1] = 0;
+			textureData[texIdx + 2] = 0;
+			textureData[texIdx + 3] = 255;
+		}
+		
 	}
 
 	chunkBorders.clear();

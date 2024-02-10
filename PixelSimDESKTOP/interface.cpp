@@ -43,6 +43,7 @@ void Interface::debugMenu(AppState& state)
             state.scaleFactor++;
             state.reloadGame = true;
         }
+        state.scaleFactor = std::clamp(state.scaleFactor, (u8)1, (u8)10);
 
         ImGui::Text("Update Modes: "); ImGui::SameLine();
         if (ImGui::BeginCombo("update_modes_combo", Update::names[state.updateMode].data())) {
@@ -177,13 +178,16 @@ void Interface::debugMenu(AppState& state)
         int drawSize = state.drawSize;
         ImGui::Text("Draw Size  "); ImGui::SameLine();
         ImGui::InputInt("draw_size_inputint",  &drawSize,   1, 10);
-        state.drawSize = drawSize;
+        state.drawSize = std::clamp(state.drawSize, (u16)1, (u16)1000);
+        u8 drawSizeModifier = ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) ? 10 : 1;
+        state.drawSize += (int)io.MouseWheel * drawSizeModifier;
 
 		int drawChance = state.drawChance;
         ImGui::Text("Draw Chance"); ImGui::SameLine();
         ImGui::InputInt("draw_chance_inputint", &drawChance, 1, 10);
-        state.drawChance = drawChance;
+        state.drawChance = std::clamp(state.drawChance, (u8)1, (u8)100);
         // ImGui::InputInt("Cell Colour Variance", (int)state.drawColourVariance, 1, 10);
+        //state.drawColourVariance = std::clamp(state.drawColourVariance, 1, 255);
         // ^^ might revive this, re-generate random variant for a cell?
         
         ImGui::TreePop(); 
@@ -214,6 +218,8 @@ void Interface::debugMenu(AppState& state)
         ImGui::Text("Displayed Texture: %s\n"      ,    TexID::names[loadedTex].data());
         ImGui::Text("Texture Width: %d\n"          ,    texture.width           );
         ImGui::Text("Texture Height: %d\n"         ,    texture.height          );
+        ImGui::Text("Cell Width: %d\n"             ,    texture.width/state.scaleFactor);
+        ImGui::Text("Cell Height: %d\n"            ,    texture.height/state.scaleFactor);
         ImGui::Text("Texture Updates: %d\n"        ,    state.textureChanges    );
         ImGui::Text("Cell Updates: %d\n"           ,    state.cellChanges       );
         ImGui::Text("Mouse X: %d\n"                ,    state.mouseX            );

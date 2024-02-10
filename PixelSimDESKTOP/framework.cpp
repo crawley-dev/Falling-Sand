@@ -110,12 +110,6 @@ void Framework::update()
     ImGuiIO& io = ImGui::GetIO();
     TextureData& texture = state.textures[TexIndex::GAME];
 
-    state.drawSize           += (int)io.MouseWheel;
-    state.drawSize           = std::clamp(state.drawSize, (u16)1, (u16)1000);
-    state.drawChance         = std::clamp(state.drawChance, (u8)1, (u8)100);
-    state.scaleFactor        = std::clamp(state.scaleFactor, (u8) 1, (u8) 10);
-    //state.drawColourVariance = std::clamp(state.drawColourVariance, 1, 255);
-
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) state.runSim = !state.runSim;
     if (io.MouseDown[0]) mouseDraw();
     if (state.resetSim) {

@@ -2,6 +2,8 @@
 #include "pch.h"
 #include "cell.h"
 #include "state.h"
+constexpr bool CHUNK_MULTITHREADING = false;
+constexpr u8 CHUNK_SIZE = 9;
 
 using namespace PixelPhysics;
 class Game {
@@ -20,22 +22,27 @@ public:
 private:
 	void simulate(AppState& state);
 
+#if CHUNK_MULTITHREADING
 	void l_bottomUp_Update	(u16 chunkX, u16 chunkY); // cancer reading camel case
 	void r_bottomUp_Update	(u16 chunkX, u16 chunkY); // cancer reading camel case
-	void l_topDownUpdate	(u16 chunkX, u16 chunkY); // cancer reading camel case
-	void r_topDownUpdate	(u16 chunkX, u16 chunkY); // cancer reading camel case
 	void snakeUpdate		(u16 chunkX, u16 chunkY);
-	void golUpdate			(u16 chunkX, u16 chunkY);
+#else
+	void l_bottomUp_Update	(); // cancer reading camel case
+	void r_bottomUp_Update	(); // cancer reading camel case
+	void snakeUpdate		();
+#endif
+	void golUpdate			();
 
 	void changeMaterial	(u16 x, u16 y, u8 newMaterial);
 	void swapCells		(u16 x1, u16 y1, u16 x2, u16 y2);
 	bool trySwap		(u16 x1, u16 y1, u16 x2, u16 y2);
 	bool querySwap		(u16 x1, u16 y1, u16 x2, u16 y2);
 
-	void updateCell(Cell& c, u16 x, u16 y);
-	void updateSand(u16 x, u16 y);
-	void updateWater(u16 x, u16 y);
-	void updateNaturalGas(u16 x, u16 y);
+	void updateChunk		(u16 x, u16 y);
+	bool updateCell			(u16 x, u16 y);
+	bool updateSand			(u16 x, u16 y);
+	bool updateWater		(u16 x, u16 y);
+	bool updateNaturalGas	(u16 x, u16 y);
 	
 	void updateTextureData(std::vector<u8>& textureData);
 	void updateEntireTextureData(std::vector<u8>& textureData);
@@ -50,9 +57,12 @@ private:
 	void drawSquare			(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
 	void drawSquareOutline	(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
 
+	inline bool outOfBounds	(u16 x, u16 y) const { return x >= cellWidth || y >= cellHeight || x < 0 || y < 0; }
 	inline u32 cellIdx		(u16 x, u16 y) const { return (y * cellWidth) + x; }	
 	inline u32 textureIdx	(u16 x, u16 y) const { return 4 * ((y * textureWidth) + x); }
-	inline bool outOfBounds	(u16 x, u16 y) const { return x >= cellWidth || y >= cellHeight || x < 0 || y < 0; }
+	inline u32 roundUp		(u16 x, u16 y) const { return (y > 0) ? (x+y-1) / y : 0; } // jesos
+	inline u32 chunkIdx		(u16 x, u16 y) const { return (roundUp(x, CHUNK_SIZE) * roundUp(y, CHUNK_SIZE)); }
+	inline void resetChunks	()				     { chunks.clear(); chunks.resize(chunkIdx(cellWidth, cellHeight), true); }
 
 	template<typename T> // cheeky template
 	inline T getRand(T min = -1, T max = 1) { return splitMix64_NextRand() % (max - min + 1) + min; }
@@ -77,8 +87,10 @@ private:
 	u8 scaleFactor;
 	u16 textureWidth, textureHeight;
     u16 cellWidth, cellHeight;
+	u16 chunksWidth, chunksHeight; // this is extremely confusing..
 	u64 seed = 1234567890987654321;
 	
+	std::vector<bool> chunks; // convert chunks to bitflags
 	std::vector<Cell> cells;
 	std::vector<Material> materials;
 	std::vector<std::pair<u16, u16>> textureChanges;
