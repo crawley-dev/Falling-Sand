@@ -40,7 +40,7 @@ using u8  = uint8_t;	// unsigned char
 using u16 = uint16_t;	// unsigned short
 using u32 = uint32_t;	// unsigned long int (equal to int on 64 bit systems)
 using u64 = uint64_t;	// unsigned long long
-			
+            
 using s8  = int8_t;		// char
 using s16 = int16_t;	// short
 using s32 = int32_t;	// long int (equal to int on 64 bit systems)

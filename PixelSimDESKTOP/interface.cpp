@@ -182,7 +182,7 @@ void Interface::debugMenu(AppState& state)
         u8 drawSizeModifier = ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) ? 10 : 1;
         state.drawSize += (int)io.MouseWheel * drawSizeModifier;
 
-		int drawChance = state.drawChance;
+        int drawChance = state.drawChance;
         ImGui::Text("Draw Chance"); ImGui::SameLine();
         ImGui::InputInt("draw_chance_inputint", &drawChance, 1, 10);
         state.drawChance = std::clamp(state.drawChance, (u8)1, (u8)100);
