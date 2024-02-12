@@ -8,7 +8,6 @@
 //#include <SDL_image.h>
 #include "state.h"
 
-using namespace PixelPhysics;
 class Interface {
 public:
     Interface();

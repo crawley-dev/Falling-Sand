@@ -33,7 +33,8 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     window  = SDL_CreateWindow(title, xpos, ypos, width, height, window_flags); // Create SDL Window
     gl_context  = SDL_GL_CreateContext(window);                                 // Create openGL Context
     SDL_GL_MakeCurrent(window, gl_context);                                     // Set SDL_Window Context
-    //if (SDL_GL_SetSwapInterval(-1) != 0) SDL_GL_SetSwapInterval(0);             // Enables Adaptive v-sync if possible, otherwise v-sync
+    //if (SDL_GL_SetSwapInterval(-1) != 0) SDL_GL_SetSwapInterval(0);           // Enables Adaptive v-sync if possible, otherwise v-sync
+    SDL_GL_SetSwapInterval(0);                                                  // Disables v-sync
     std::cout << Message::names[Message::WINDOW_INIT] << std::endl;
 
     IMGUI_CHECKVERSION();
@@ -108,12 +109,6 @@ void Framework::update()
 
     ImGuiIO& io = ImGui::GetIO();
     TextureData& texture = state.textures[TexIndex::GAME];
-
-    state.drawSize           += (int)io.MouseWheel;
-    state.drawSize           = std::clamp(state.drawSize, (u16)1, (u16)1000);
-    state.drawChance         = std::clamp(state.drawChance, (u8)1, (u8)100);
-    state.scaleFactor        = std::clamp(state.scaleFactor, (u8) 1, (u8) 10);
-    //state.drawColourVariance = std::clamp(state.drawColourVariance, 1, 255);
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) state.runSim = !state.runSim;
     if (io.MouseDown[0]) mouseDraw();

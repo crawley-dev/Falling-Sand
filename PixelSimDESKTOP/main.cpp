@@ -14,7 +14,6 @@ int main(int, char**)
     const int frameDelay = 1000 / FPS;
     int frameStart, frameTime;
 
-
     app = new Framework();
     if (!app->init("Pixel Physics Simulation", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height)) return -1;
 
