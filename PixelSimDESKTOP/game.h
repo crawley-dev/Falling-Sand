@@ -56,16 +56,16 @@ private:
     void drawSquare			(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     void drawSquareOutline	(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
 
-    inline bool outOfBounds	(u16 x, u16 y) const { return x >= cellWidth || y >= cellHeight || x < 0 || y < 0; }
-    inline u32 cellIdx		(u16 x, u16 y) const { return (y * cellWidth) + x; }	
-    inline u32 textureIdx	(u16 x, u16 y) const { return 4 * ((y * textureWidth) + x); }
-    inline u32 roundUp		(u16 x, u16 y) const { return (y > 0) ? (x+y-1) / y : 0; } // jesos
-    inline u32 chunkIdx		(u16 x, u16 y) const { return (roundUp(x, CHUNK_SIZE) * roundUp(y, CHUNK_SIZE)); }
-    inline void resetChunks	()				     { chunks.clear(); chunks.resize(chunkIdx(cellWidth, cellHeight), true); }
+    bool outOfBounds(u16 x, u16 y) { return x >= cellWidth || y >= cellHeight || x < 0 || y < 0; }
+    u32 cellIdx		(u16 x, u16 y) { return (y * cellWidth) + x; }	
+    u32 textureIdx	(u16 x, u16 y) { return 4 * ((y * textureWidth) + x); }
+    u32 roundUp		(u16 x, u16 y) { return (y > 0) ? (x+y-1) / y : 0; } // jesos
+    u32 chunkIdx	(u16 x, u16 y) { return (roundUp(x, CHUNK_SIZE) * roundUp(y, CHUNK_SIZE)); }
+    void resetChunks()			   { chunks.clear(); chunks.resize(chunkIdx(cellWidth, cellHeight), true); }
 
     template<typename T> // cheeky template
-    inline T getRand(T min = -1, T max = 1) { return splitMix64_NextRand() % (max - min + 1) + min; }
-    inline u64 splitMix64_NextRand() {
+    T getRand(T min = -1, T max = 1) { return splitMix64_NextRand() % (max - min + 1) + min; }
+    u64 splitMix64_NextRand() {
         u64 z = (seed += UINT64_C(0x9E3779B97F4A7C15));
         z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
         z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
