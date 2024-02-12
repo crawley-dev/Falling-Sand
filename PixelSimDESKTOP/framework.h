@@ -10,7 +10,6 @@
 #include "game.h"
 
 
-using namespace PixelPhysics;
 class Framework {
 public:
     Framework();	// Constructor

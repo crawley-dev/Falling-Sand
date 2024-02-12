@@ -5,7 +5,6 @@
 constexpr bool CHUNK_MULTITHREADING = false;
 constexpr u8 CHUNK_SIZE = 9;
 
-using namespace PixelPhysics;
 class Game {
 public:
     Game();

@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include "pch.h"
 
+
+
 // add:
 // >> default dispersion
 // >> default temperature
@@ -41,20 +43,3 @@ struct Cell {	// 32 bits of data, for more cache hits === speed.
     Cell() = default;
 };
 
-struct ChunkedCell {
-    u8 matID;
-    u8 variant;
-
-    ChunkedCell(u8 MATERIAL, u8 COLOUR_VARIANT) {
-        matID = MATERIAL;
-        variant = COLOUR_VARIANT;
-    }
-};
-
-struct Chunk {
-    std::vector<Cell> cells;
-    s32 x, y; // chunk position in the world
-    //u16 width, height; // chunk size !! should be constant (8x8)
-    u64 cellUpdates = 0; // each cell in a chunk has a bit in this flag.
-    bool updated = false; // still need a bool for the chunk itself sadge.. （*゜ー゜*）
-};

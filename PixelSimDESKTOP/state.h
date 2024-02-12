@@ -8,9 +8,6 @@
 // static constexpr std::array<std::string_view, Message::COUNT> names
 // figuring this combination out took too bloody long.. compile time arrays are a nightmare
 
-
-namespace PixelPhysics {
-
 struct Message {
     enum : u8 {
         SDL_INIT,
@@ -82,7 +79,7 @@ struct Flag {
     };
 };
 
-struct  TexIndex { 
+struct TexIndex { 
     enum : u8 {
         GAME,
         BACKGROUND,
@@ -203,5 +200,4 @@ struct AppState {
     u32 texReloadCount       =  0;
     u32 textureChanges		 =  0;
     u32 cellChanges 		 =  0;
-};
 };
