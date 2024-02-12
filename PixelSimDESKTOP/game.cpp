@@ -15,8 +15,6 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
     textureHeight   = newTextureHeight;
     cellWidth       = newTextureWidth / scaleFactor;
     cellHeight		= newTextureHeight / scaleFactor;
-    chunksWidth		= roundUp(cellWidth, CHUNK_SIZE);
-    chunksHeight	= roundUp(cellHeight, CHUNK_SIZE);
 
     materials.clear();
     materials.resize(MaterialID::COUNT); // just so i can [] access, clear code.
@@ -62,7 +60,6 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
         }
     }
 
-    resetChunks();
     cells.clear();
     cells.reserve(cellWidth * cellHeight);
     for (s32 i = 0; i < cellWidth * cellHeight; i++) // init cell.updated = true so updateTextureData runs on first time.
@@ -74,21 +71,21 @@ void Game::update(AppState& state, std::vector<u8>& textureData) {
     // draw chunk borders (for debug purposes)
     const u16 width__ = cellWidth;
     const u16 height__ = cellHeight;
-    constexpr u16 CHUNK_SIZE_DISPLAY = CHUNK_SIZE;
-    auto boundedPushBack = [&](u16 x, u16 y, u8 mat = 0) -> void 
-    { if (!outOfBounds(x, y)) chunkBorders.push_back(std::pair<u16, u16>(x, y)); };
+    //constexpr u16 CHUNK_SIZE_DISPLAY = CHUNK_SIZE;
+    //auto boundedPushBack = [&](u16 x, u16 y, u8 mat = 0) -> void 
+    //{ if (!outOfBounds(x, y)) chunkBorders.push_back(std::pair<u16, u16>(x, y)); };
 
-    for (s32 y = 0; y < height__; y += CHUNK_SIZE_DISPLAY)
-        for (s32 x = 0; x < width__; x += CHUNK_SIZE_DISPLAY) {
-            for (s32 tX = 0; tX < CHUNK_SIZE_DISPLAY; tX++) {
-                boundedPushBack(x + tX, y);
-                boundedPushBack(x + tX, y + CHUNK_SIZE_DISPLAY);
-            }
-            for (s32 tY = 0; tY < CHUNK_SIZE_DISPLAY; tY++) {
-                boundedPushBack(x, y + tY);
-                boundedPushBack(x, y + tY + CHUNK_SIZE_DISPLAY);
-            }
-        }
+    //for (s32 y = 0; y < height__; y += CHUNK_SIZE_DISPLAY)
+    //    for (s32 x = 0; x < width__; x += CHUNK_SIZE_DISPLAY) {
+    //        for (s32 tX = 0; tX < CHUNK_SIZE_DISPLAY; tX++) {
+    //            boundedPushBack(x + tX, y);
+    //            boundedPushBack(x + tX, y + CHUNK_SIZE_DISPLAY);
+    //        }
+    //        for (s32 tY = 0; tY < CHUNK_SIZE_DISPLAY; tY++) {
+    //            boundedPushBack(x, y + tY);
+    //            boundedPushBack(x, y + tY + CHUNK_SIZE_DISPLAY);
+    //        }
+    //    }
 
 
     if (state.runSim) 
@@ -123,18 +120,18 @@ void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) 
     cells			= newCells;
     cellWidth		= newCellWidth;
     cellHeight		= newCellHeight;
-    chunksWidth		= roundUp(cellWidth, CHUNK_SIZE);
-    chunksHeight	= roundUp(cellHeight, CHUNK_SIZE);
+    //chunksWidth		= roundUp(cellWidth, CHUNK_SIZE);
+    //chunksHeight	= roundUp(cellHeight, CHUNK_SIZE);
     scaleFactor		= newScaleFactor;
     textureWidth	= newTextureWidth;
     textureHeight	= newTextureHeight;
-    resetChunks();
+    //resetChunks();
 }
 
 void Game::reset() {
     cells.clear();
     cells.reserve(cellWidth * cellHeight);
-    resetChunks();
+    //resetChunks();
     for (s32 i = 0; i < cellWidth * cellHeight; i++)
         cells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants - 1), 0);
     sizeChanged = true;

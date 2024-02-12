@@ -2,8 +2,6 @@
 #include "pch.h"
 #include "cell.h"
 #include "state.h"
-constexpr bool CHUNK_MULTITHREADING = false;
-constexpr u8 CHUNK_SIZE = 9;
 
 class Game {
 public:
@@ -21,15 +19,9 @@ public:
 private:
     void simulate(AppState& state);
 
-#if CHUNK_MULTITHREADING
-    void l_bottomUp_Update	(u16 chunkX, u16 chunkY); // cancer reading camel case
-    void r_bottomUp_Update	(u16 chunkX, u16 chunkY); // cancer reading camel case
-    void snakeUpdate		(u16 chunkX, u16 chunkY);
-#else
     void l_bottomUp_Update	(); // cancer reading camel case
     void r_bottomUp_Update	(); // cancer reading camel case
     void snakeUpdate		();
-#endif
     void golUpdate			();
 
     void changeMaterial	(u16 x, u16 y, u8 newMaterial);
@@ -59,9 +51,9 @@ private:
     bool outOfBounds(u16 x, u16 y) { return x >= cellWidth || y >= cellHeight || x < 0 || y < 0; }
     u32 cellIdx		(u16 x, u16 y) { return (y * cellWidth) + x; }	
     u32 textureIdx	(u16 x, u16 y) { return 4 * ((y * textureWidth) + x); }
-    u32 roundUp		(u16 x, u16 y) { return (y > 0) ? (x+y-1) / y : 0; } // jesos
-    u32 chunkIdx	(u16 x, u16 y) { return (roundUp(x, CHUNK_SIZE) * roundUp(y, CHUNK_SIZE)); }
-    void resetChunks()			   { chunks.clear(); chunks.resize(chunkIdx(cellWidth, cellHeight), true); }
+    //u32 roundUp		(u16 x, u16 y) { return (y > 0) ? (x+y-1) / y : 0; } // jesos
+    //u32 chunkIdx	(u16 x, u16 y) { return (roundUp(x, CHUNK_SIZE) * roundUp(y, CHUNK_SIZE)); }
+    //void resetChunks()			   { chunks.clear(); chunks.resize(chunkIdx(cellWidth, cellHeight), true); }
 
     template<typename T> // cheeky template
     T getRand(T min = -1, T max = 1) { return splitMix64_NextRand() % (max - min + 1) + min; }
@@ -89,10 +81,10 @@ private:
     u16 chunksWidth, chunksHeight; // this is extremely confusing..
     u64 seed = 1234567890987654321;
     
-    std::vector<bool> chunks; // convert chunks to bitflags
+    //std::vector<bool> chunks; // convert chunks to bitflags
     std::vector<Cell> cells;
     std::vector<Material> materials;
     std::vector<std::pair<u16, u16>> textureChanges;
     std::vector<std::pair<u16, u16>> drawIndicators;
-    std::vector<std::pair<u16, u16>> chunkBorders;
+    //std::vector<std::pair<u16, u16>> chunkBorders;
 };
