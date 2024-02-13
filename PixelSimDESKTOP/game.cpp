@@ -148,46 +148,14 @@ void Game::simulate(AppState& state) {
     fluidDispersionFactor = state.fluidDispersionFactor;
     solidDispersionFactor = state.solidDispersionFactor;
 
-#if CHUNK_MULTITHREADING
-    void (Game::*scan)(u16, u16) = nullptr; // can you just not fucking do this with std::function..
     switch (state.scanMode) {
-    case Scan::BOTTOM_UP_LEFT:  scan = &Game::l_bottomUp_Update;	break;
-    case Scan::BOTTOM_UP_RIGHT:	scan = &Game::r_bottomUp_Update;	break;
-    case Scan::TOP_DOWN_LEFT:	/*scan = &Game::l_topDownUpdate;*/	break;	// might be useful for gas updates (== to botUp in this case)
-    case Scan::TOP_DOWN_RIGHT:	/*scan = &Game::r_topDownUpdate;*/	break; // might be useful for gas updates (== to botUp in this case)
-    case Scan::SNAKE:			scan = &Game::snakeUpdate;			break;
-    //case Scan::GAME_OF_LIFE:	scan = &Game::golUpdate;			break;
+    case Scan::BOTTOM_UP_LEFT:	l_bottomUpUpdate();	break;
+    case Scan::BOTTOM_UP_RIGHT:	r_bottomUpUpdate();	break;
+    //case Scan::TOP_DOWN_LEFT:	    l_topDownUpdate();	    break;	// might be useful for gas updates (== to botUp in this case)
+    //case Scan::TOP_DOWN_RIGHT:	r_topDownUpdate();	    break;	// might be useful for gas updates (== to botUp in this case)
+    case Scan::SNAKE:			snakeUpdate();			break;
+    case Scan::GAME_OF_LIFE:	golUpdate();			break;
     }
-
-    for (u16 chunkY = 0; chunkY < cellHeight; chunkY += CHUNK_SIZE)
-        for (u16 chunkX = 0; chunkX < cellWidth; chunkX += CHUNK_SIZE) {
-            
-        }
-#else 
-    //switch (state.scanMode) {
-    //case Scan::BOTTOM_UP_LEFT:	l_bottomUp_Update();	break;
-    //case Scan::BOTTOM_UP_RIGHT:	r_bottomUp_Update();	break;
-    //case Scan::TOP_DOWN_LEFT:	/*l_topDownUpdate();*/	break;	// might be useful for gas updates (== to botUp in this case)
-    //case Scan::TOP_DOWN_RIGHT:	/*r_topDownUpdate();*/	break;	// might be useful for gas updates (== to botUp in this case)
-    //case Scan::SNAKE:			snakeUpdate();			break;
-    //case Scan::GAME_OF_LIFE:	golUpdate();			break;
-    //}
-
-    if (state.scanMode == Scan::BOTTOM_UP_LEFT) {
-        for (s32 y = cellHeight - 1; y >= 0; y -= CHUNK_SIZE)
-            for (s32 x = 0; x < cellWidth; x += CHUNK_SIZE) {
-                updateChunk(x, y);
-                //printf("x: %d, y: %d, chunk: %d\n", x, y, chunkIdx(x, y));
-            }
-    } else {
-        for (s32 y = cellHeight - 1; y >= 0; y -= CHUNK_SIZE)
-            for (s32 x = cellWidth - 1; x >= 0; x -= CHUNK_SIZE) {
-                updateChunk(x, y);
-                //printf("x: %d, y: %d, chunk: %d\n", x, y, chunkIdx(x, y));
-            }
-    }
-#endif
-
 
     if (state.updateMode == Update::CYCLE) {
         state.scanMode = (state.scanMode += 1) % 2;
@@ -196,45 +164,14 @@ void Game::simulate(AppState& state) {
     state.frame++;
 }
 
-#if CHUNK_MULTITHREADING
-void Game::l_bottomUp_Update(u16 chunkX, u16 chunkY) {
-    for (s32 y = chunkY; y < chunkY + CHUNK_SIZE; y++)
-        for (s32 x = chunkX; x < chunkX + CHUNK_SIZE; x++) {
-            updateCell(x, y);
-        }
-}
-
-void Game::r_bottomUp_Update(u16 chunkX, u16 chunkY) {
-    for (s32 y = chunkY; y < chunkY + CHUNK_SIZE; y++)
-        for (s32 x = chunkX; x < chunkX + CHUNK_SIZE; x++) {
-            updateCell(x, y);
-        }
-}
-
-// >>>>>>>>>>^
-// ^<<<<<<<<<<
-// >>>>>>>>>>^
-void Game::snakeUpdate(u16 chunkX, u16 chunkY) {
-    for (s32 y = cellHeight - 1; y >= 0; y--)
-        if ((cellHeight - y) % 2 == 0) // --> 
-            for (s32 x = 0; x < cellWidth; x++) {
-                updateCell(x, y);
-            }
-        else					 // <--
-            for (s32 x = cellWidth - 1; x >= 0; x--) {
-                updateCell(x, y);
-            }
-}
-
-#else 
-void Game::l_bottomUp_Update() {
+void Game::l_bottomUpUpdate() {
     for (s32 y = cellHeight - 1; y >= 0; y--)
         for (s32 x = 0; x < cellWidth; x++) {
             updateCell(x, y);
         }
 }
 
-void Game::r_bottomUp_Update() {
+void Game::r_bottomUpUpdate() {
     for (s32 y = cellHeight - 1; y >= 0; y--)
         for (s32 x = cellWidth - 1; x >= 0; x--) {
             updateCell(x, y);
@@ -252,7 +189,6 @@ void Game::snakeUpdate() {
                 updateCell(x, y);
             }
 }
-#endif
 
 void Game::golUpdate() {
     std::vector<std::pair<Cell,std::pair<u16,u16>>> updatedCells;
@@ -292,22 +228,6 @@ void Game::golUpdate() {
 /*--------------------------------------------------------------------------------------
 ---- Updating Cells --------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
-
-// convert chunks to bit flags.
-void Game::updateChunk(u16 x, u16 y) {
-    //printf("x: %d, y: %d, chunk: %d\n", x, y, chunkIdx(x,y));
-    bool chunk = chunks[chunkIdx(x,y)]; // eh?
-    if (!chunk) return;
-    chunk = false;
-    u32 temp = 0;
-
-    for (s32 tY = 0; tY < CHUNK_SIZE; tY++)
-        for (s32 tX = 0; tX < CHUNK_SIZE; tX++) {
-            temp += updateCell(x + tX, y + tY);
-        }
-    if (temp > 0) chunk = true;
-    chunks[chunkIdx(x, y)] = chunk;
-}
 
 bool Game::updateCell(u16 x, u16 y) {
     Cell& c = cells[cellIdx(x, y)];
@@ -445,7 +365,6 @@ void Game::changeMaterial(u16 x, u16 y, u8 newMaterial) {
     c.matID = newMaterial;
     c.updated = true;
 
-    chunks[chunkIdx(x, y)] = true;
     textureChanges.push_back(std::pair<u16,u16>(x,y));
 }
 
@@ -618,24 +537,6 @@ void Game::updateTextureData(std::vector<u8>& textureData) {
             }
     }
 
-    for (const auto& [x, y] : chunkBorders) {
-        const s32 texIdx = textureIdx(x*scaleFactor, y*scaleFactor);
-        if (chunks[chunkIdx(x, y)]) {
-            textureData[texIdx + 0] = 0;
-            textureData[texIdx + 1] = 255;
-            textureData[texIdx + 2] = 0;
-            textureData[texIdx + 3] = 255;
-        }
-        else {
-            textureData[texIdx + 0] = 255;
-            textureData[texIdx + 1] = 0;
-            textureData[texIdx + 2] = 0;
-            textureData[texIdx + 3] = 255;
-        }
-        
-    }
-
-    chunkBorders.clear();
     drawIndicators.clear();
 }
 

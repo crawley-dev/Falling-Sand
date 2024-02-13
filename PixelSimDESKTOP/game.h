@@ -19,8 +19,8 @@ public:
 private:
     void simulate(AppState& state);
 
-    void l_bottomUp_Update	(); // cancer reading camel case
-    void r_bottomUp_Update	(); // cancer reading camel case
+    void l_bottomUpUpdate	(); // cancer reading camel case
+    void r_bottomUpUpdate	(); // cancer reading camel case
     void snakeUpdate		();
     void golUpdate			();
 
