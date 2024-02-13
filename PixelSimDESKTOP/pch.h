@@ -24,6 +24,9 @@
 #include <SDL_image.h>
 
 
+// Boost!
+#include <boost/container_hash/hash.hpp>
+
 // Data Structures
 #include <string>
 #include <stack>
