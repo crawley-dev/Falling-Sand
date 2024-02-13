@@ -208,9 +208,9 @@ void Interface::debugMenu(AppState& state)
         const char* scanMode = Scan::names[state.scanMode].data();
         state.mouseX = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
         state.mouseY = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
+        
 
-
-        ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
+        ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
         ImGui::Text("Application Framecount: %d\n" ,    ImGui::GetFrameCount());
         ImGui::Text("Game Framecount: %d\n"        ,    state.frame             );
         ImGui::Text("Scale Factor: %d\n"           ,    state.scaleFactor       );
@@ -235,10 +235,10 @@ void Interface::debugMenu(AppState& state)
 void Interface::gameWindow(AppState& state)
 {
     ImGui::Begin("GameWindow");
-    frameRate = io.Framerate;
+    //frameRate = io.Framerate;
 
-    loadedTex = loadedTex % state.textures.size();
-    TextureData& texture = state.textures[loadedTex];
+    loadedTex = loadedTex % state.textures.size();    // this needs to be here....
+    TextureData& texture = state.textures[loadedTex]; // this needs to be here....
     // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow",
     //       Not the SDL2 generated win32 window
 
@@ -246,8 +246,8 @@ void Interface::gameWindow(AppState& state)
     constexpr int yOffset = 40;
     int windowX = (int)ImGui::GetWindowSize().x; 
     int windowY = (int)ImGui::GetWindowSize().y; 
-    if (windowX % 2 != 0) ++windowX; // i don't remember what this does
-    if (windowY % 2 != 0) ++windowY; // i don't remember what this does
+    if (windowX % 2 != 0) ++windowX;
+    if (windowY % 2 != 0) ++windowY;
 
     if (texture.width + xOffset != windowX || texture.height + yOffset != windowY) {
         state.reloadGame = true;
