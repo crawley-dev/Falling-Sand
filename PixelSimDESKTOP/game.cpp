@@ -17,14 +17,14 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
     cellHeight		= newTextureHeight / scaleFactor;
 
     materials.clear();
-    materials.resize(MaterialID::COUNT); // just so i can [] access, clear code.
-    materials[MaterialID::EMPTY]		= Material( 50,  50,  50, 255, Phase::SOLID,    0);
-    materials[MaterialID::SAND]			= Material(245, 215, 176, 255, Phase::SOLID, 1600);
-    materials[MaterialID::WATER]		= Material( 20,  20, 255, 125, Phase::SOLID,  997);
-    materials[MaterialID::CONCRETE]		= Material(200, 200, 200, 255, Phase::SOLID, 2000);
-    materials[MaterialID::NATURAL_GAS]	= Material( 20,  20,  50, 100, Phase::SOLID, 2000); // uhhh.. very heavy gas?
-    materials[MaterialID::GOL_ALIVE]	= Material(  0, 255,  30, 255, Phase::SOLID,    0); // TODO: fix gas movement density relationship
-
+    materials.resize(MaterialID::COUNT);//Material(R  , G  , B  , A  , Dispersion, Density)
+    materials[MaterialID::EMPTY]		= Material(50 , 50 , 50 , 255, 0,     0);
+    materials[MaterialID::SAND]			= Material(245, 215, 176, 255, 3,  1600);
+    materials[MaterialID::WATER]		= Material(20 , 20 , 255, 125, 5,   997);
+    materials[MaterialID::CONCRETE]     = Material(200, 200, 200, 255, 0, 65535); // max u16 value
+    materials[MaterialID::NATURAL_GAS]	= Material(20 , 20 , 50 , 100, 8,    50);
+    materials[MaterialID::FIRE]	        = Material(255, 165, 0  , 200, 8,    10);
+    materials[MaterialID::GOL_ALIVE]	= Material(0  , 255, 30 , 255, 0,     0);
 
     // generate 'nVariant' number of colour variations per material. for spice..
     nVariants = 20;
@@ -36,14 +36,6 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
             std::vector<u8> variant;
 
             if (mat.density == 1600 || mat.density == 997) {
-                //if (mat.r < 128) variant.push_back(mat.r - getRand<u8>(0, variation));
-                //else variant.push_back(mat.r + getRand<u8>(0, variation));
-                //
-                //if (mat.r < 128) variant.push_back(mat.g - getRand<u8>(0, variation));
-                //else variant.push_back(mat.g + getRand<u8>(0, variation));
-                //
-                //if (mat.r < 128) variant.push_back(mat.b - getRand<u8>(0, variation));
-                //else variant.push_back(mat.b + getRand<u8>(0, variation));
                 variant.push_back(mat.r - getRand<u8>(0, variation));
                 variant.push_back(mat.g - getRand<u8>(0, variation));
                 variant.push_back(mat.b - getRand<u8>(0, variation));
@@ -68,26 +60,6 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
 }
 
 void Game::update(AppState& state, std::vector<u8>& textureData) {
-    // draw chunk borders (for debug purposes)
-    const u16 width__ = cellWidth;
-    const u16 height__ = cellHeight;
-    //constexpr u16 CHUNK_SIZE_DISPLAY = CHUNK_SIZE;
-    //auto boundedPushBack = [&](u16 x, u16 y, u8 mat = 0) -> void 
-    //{ if (!outOfBounds(x, y)) chunkBorders.push_back(std::pair<u16, u16>(x, y)); };
-
-    //for (s32 y = 0; y < height__; y += CHUNK_SIZE_DISPLAY)
-    //    for (s32 x = 0; x < width__; x += CHUNK_SIZE_DISPLAY) {
-    //        for (s32 tX = 0; tX < CHUNK_SIZE_DISPLAY; tX++) {
-    //            boundedPushBack(x + tX, y);
-    //            boundedPushBack(x + tX, y + CHUNK_SIZE_DISPLAY);
-    //        }
-    //        for (s32 tY = 0; tY < CHUNK_SIZE_DISPLAY; tY++) {
-    //            boundedPushBack(x, y + tY);
-    //            boundedPushBack(x, y + tY + CHUNK_SIZE_DISPLAY);
-    //        }
-    //    }
-
-
     if (state.runSim) 
         simulate(state);
 
@@ -120,12 +92,9 @@ void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) 
     cells			= newCells;
     cellWidth		= newCellWidth;
     cellHeight		= newCellHeight;
-    //chunksWidth		= roundUp(cellWidth, CHUNK_SIZE);
-    //chunksHeight	= roundUp(cellHeight, CHUNK_SIZE);
     scaleFactor		= newScaleFactor;
     textureWidth	= newTextureWidth;
     textureHeight	= newTextureHeight;
-    //resetChunks();
 }
 
 void Game::reset() {
@@ -157,7 +126,8 @@ void Game::simulate(AppState& state) {
     case Scan::GAME_OF_LIFE:	golUpdate();			break;
     }
 
-    if (state.updateMode == Update::CYCLE) {
+    //if (state.updateMode == Update::CYCLE) {
+    if (state.scanMode == Scan::BOTTOM_UP_LEFT || state.scanMode == Scan::BOTTOM_UP_RIGHT) {
         state.scanMode = (state.scanMode += 1) % 2;
     }
 
@@ -190,10 +160,11 @@ void Game::snakeUpdate() {
             }
 }
 
-void Game::golUpdate() {
+
+void Game::golUpdate() { 
     std::vector<std::pair<Cell,std::pair<u16,u16>>> updatedCells;
     auto updateCellLambda = [&](u16 x, u16 y, u8 matID, u8 variant) -> void { 
-        updatedCells.emplace_back(Cell(matID, true, variant, 0), std::pair<u16,u16>(x,y));
+        updatedCells.emplace_back(Cell(true, matID, variant, 0), std::pair<u16,u16>(x,y));
         textureChanges.push_back(std::pair<u16, u16>(x, y));
     };
 
@@ -239,7 +210,7 @@ bool Game::updateCell(u16 x, u16 y) {
     case MaterialID::WATER:			return updateWater(x, y);				
     case MaterialID::CONCRETE:		return false; 						
     case MaterialID::NATURAL_GAS:	return updateNaturalGas(x, y);	
-    //case MaterialID::GOL_ALIVE:	return true; 						
+    //case MaterialID::FIRE:          return updateFire(x, y);
     }
 }
 
@@ -311,31 +282,54 @@ ESCAPE_WHILE_WATER:
 bool Game::updateNaturalGas(u16 x, u16 y) {
     s8 yDispersion = 0;
     s8 xDispersion = 0;
-    s8 movesLeft = fluidDispersionFactor;
+    s8 movesLeft = 4;
 
     while (movesLeft > 0) {
-        if (querySwap(x, y, x + xDispersion, y - yDispersion - 1)) { // check cell below
+        if (querySwapAbove(x, y, x + xDispersion, y + yDispersion - 1)) { // check cell above
             yDispersion--;
             movesLeft--;
             continue;
         }
-
+    
         u8 dX = abs(xDispersion) + 1;
         if (getRand<u8>(1, 100) > 50) {
-            if		(querySwap(x, y, x + dX, y - yDispersion)) xDispersion = dX;
-            else if (querySwap(x, y, x - dX, y - yDispersion)) xDispersion = -dX;
+            if		(querySwapAbove(x, y, x + dX, y + yDispersion)) xDispersion = dX;
+            else if (querySwapAbove(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
             else goto ESCAPE_WHILE_NATURAL_GAS;
             movesLeft--;
         } else {
-            if		(querySwap(x, y, x - dX, y - yDispersion)) xDispersion = -dX;
-            else if (querySwap(x, y, x + dX, y - yDispersion)) xDispersion = dX;
+            if		(querySwapAbove(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
+            else if (querySwapAbove(x, y, x + dX, y + yDispersion)) xDispersion = dX;
             else goto ESCAPE_WHILE_NATURAL_GAS;
             movesLeft--;
         }
     }
 
 ESCAPE_WHILE_NATURAL_GAS:
-    return trySwap(x, y, x + xDispersion, y + yDispersion);
+    return trySwapAbove(x, y, x + xDispersion, y + yDispersion);
+}
+
+bool Game::trySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
+    if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
+
+    Cell& c1 = cells[cellIdx(x1, y1)];
+    Cell& c2 = cells[cellIdx(x2, y2)];
+    if (materials[c1.matID].density > materials[c2.matID].density) return false;
+
+    swapCells(x1, y1, x2, y2);
+    return true;
+}
+
+bool Game::querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
+    if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
+
+    Cell& c1 = cells[cellIdx(x1, y1)];
+    Cell& c2 = cells[cellIdx(x2, y2)];
+    //printf("c1: %d, c2: %d\n", c1.matID, c2.matID); // "c1: 4, c2: 0\n")
+    if (materials[c1.matID].density >= materials[c2.matID].density) return false;
+
+    swapCells(x1, y1, x2, y2);
+    return true;
 }
 
 bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
@@ -527,8 +521,8 @@ void Game::updateTextureData(std::vector<u8>& textureData) {
 
     // handle mouseDraw Indicators
     for (const auto& [x, y] : drawIndicators) {
-        for (s32 tY = 0; tY < scaleFactor / 3; tY++)
-            for (s32 tX = 0; tX < scaleFactor / 3; tX++) {
+        for (s32 tY = 0; tY < scaleFactor / 2; tY++)
+            for (s32 tX = 0; tX < scaleFactor / 2; tX++) {
                 const s32 texIdx = textureIdx((x*scaleFactor) + tX, (y*scaleFactor) + tY);
                 textureData[texIdx + 0] = 255;
                 textureData[texIdx + 1] = 255;

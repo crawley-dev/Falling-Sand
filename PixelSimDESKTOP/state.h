@@ -37,10 +37,11 @@ struct Message {
 struct MaterialID {
     enum : u8 {
         EMPTY,
-        SAND,
-        WATER,
         CONCRETE,
+        SAND,
+        WATER, 
         NATURAL_GAS,
+        FIRE,
         GOL_ALIVE,
         COUNT,
     };
@@ -52,21 +53,6 @@ struct MaterialID {
         "CONCRETE",
         "Natural Gas",
         "Game of Life: Alive",
-    };
-};
-
-struct Phase {
-    enum : u8 {
-        SOLID,
-        LIQUID,
-        GAS,
-        COUNT,
-    };
-
-    static constexpr std::array<std::string_view, Phase::COUNT> names{
-        "Solid",
-        "Liquid",
-        "Gas",
     };
 };
 

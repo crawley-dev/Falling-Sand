@@ -9,18 +9,17 @@
 // >> default phase (solid, liquid, gas, (plasma???))
 struct Material {
     u8 r, g, b, a;
-    //u8 dispersion;
-    u8 phase;
+    u8 dispersion;
+    //u8 phase;
     u16 density;
     std::vector<std::vector<u8>> variants;
 
-    Material(u8 RED, u8 GREEN, u8 BLUE, u8 ALPHA, /*u8 DISPERSION,*/ u8 PHASE, u16 DENSITY) {
+    Material(u8 RED, u8 GREEN, u8 BLUE, u8 ALPHA, u8 DISPERSION, u16 DENSITY) {
         r = RED;
         g = GREEN;
         b = BLUE;
         a = ALPHA;
-        //dispersion	= DISPERSION;
-        phase		= PHASE;
+        dispersion	= DISPERSION;
         density		= DENSITY;
         variants	= { {RED,GREEN,BLUE,ALPHA} };
     }

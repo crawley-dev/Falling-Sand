@@ -6,30 +6,25 @@
 Interface::Interface() {}
 Interface::~Interface() {}
 
-void Interface::main()
-{
+void Interface::main() {
     io = ImGui::GetIO(); // keep IO upto date
-
     boilerPlate();
     demoWindow();
 }
 
-void Interface::boilerPlate()
-{
+void Interface::boilerPlate() {
     ImGui_ImplOpenGL3_NewFrame();                           // init openGl frame  
     ImGui_ImplSDL2_NewFrame();                              // init SDL2   frame
     ImGui::NewFrame();                                      // init imgui  frame
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()); // adds docking by default
 }
 
-void Interface::debugMenu(AppState& state)
-{   // pair of empty brackets {} defines a separate scope, required for each separator.
+void Interface::debugMenu(AppState& state) { // pair of empty brackets {} defines a separate scope, required for each separator.
     ImGui::Begin("Debug Menu");
     
 
     ImGui::SetNextItemOpen(true);
-    if (ImGui::TreeNode("Simulation Settings")) 
-    {
+    if (ImGui::TreeNode("Simulation Settings"))  {
         ImGui::SeparatorText("Simulation Settings");
         ImGui::Checkbox("Run Simulation", &state.runSim);
         
@@ -45,18 +40,18 @@ void Interface::debugMenu(AppState& state)
         }
         state.scaleFactor = std::clamp(state.scaleFactor, (u8)1, (u8)10);
 
-        ImGui::Text("Update Modes: "); ImGui::SameLine();
-        if (ImGui::BeginCombo("update_modes_combo", Update::names[state.updateMode].data())) {
-            for (u8 n = 0; n < Update::COUNT; n++) {
-                const bool is_selected = (state.updateMode == n);
-                if (ImGui::Selectable(Update::names[n].data(), is_selected))
-                    state.updateMode = n;
-
-                if (is_selected)
-                    ImGui::SetItemDefaultFocus();
-            }
-            ImGui::EndCombo();
-        }
+        //ImGui::Text("Update Modes: "); ImGui::SameLine();
+        //if (ImGui::BeginCombo("update_modes_combo", Update::names[state.updateMode].data())) {
+        //    for (u8 n = 0; n < Update::COUNT; n++) {
+        //        const bool is_selected = (state.updateMode == n);
+        //        if (ImGui::Selectable(Update::names[n].data(), is_selected))
+        //            state.updateMode = n;
+        //
+        //        if (is_selected)
+        //            ImGui::SetItemDefaultFocus();
+        //    }
+        //    ImGui::EndCombo();
+        //}
 
         ImGui::Text("Scan Modes: "); ImGui::SameLine();
         if (ImGui::BeginCombo("scan_modes_combo", Scan::names[state.scanMode].data())) {
@@ -84,8 +79,7 @@ void Interface::debugMenu(AppState& state)
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("Texture Manipulation")) 
-    {
+    if (ImGui::TreeNode("Texture Manipulation")) {
         ImGui::SeparatorText("Manipulating Textures");
 
         static char str[128] = ""; // could overflow the buffer. yay.. this will probably not work at some point..
@@ -101,8 +95,7 @@ void Interface::debugMenu(AppState& state)
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("Frame Stepping"))
-    {
+    if (ImGui::TreeNode("Frame Stepping")) {
         ImGui::SeparatorText("Frame Stepping");
         
         static int framesToStep = 0;
@@ -135,14 +128,14 @@ void Interface::debugMenu(AppState& state)
     }
 
     ImGui::SetNextItemOpen(true);
-    if (ImGui::TreeNode("Cell Drawing"))
-    {
+    if (ImGui::TreeNode("Cell Drawing")) {
         ImGui::SeparatorText("Cell Drawing");
         // doesn't currently highlight which type is selected.
         // dig into deeper logic of ImGui.. bit painful..
         
-        if (state.scanMode == Scan::GAME_OF_LIFE)
+        if (state.scanMode == Scan::GAME_OF_LIFE) {
             state.drawMaterial = MaterialID::GOL_ALIVE;
+        }
         else {
             if (state.drawMaterial == MaterialID::GOL_ALIVE)
                 state.drawMaterial = MaterialID::SAND; // TODO: store state of previous drawMaterial, don't default to sand
@@ -194,8 +187,7 @@ void Interface::debugMenu(AppState& state)
     }
 
     ImGui::SetNextItemOpen(true);
-    if (ImGui::TreeNode("Debug Values"))
-    {
+    if (ImGui::TreeNode("Debug Values")) {
         ImGui::SeparatorText("Debug Values"); 
         bool OutofBounds = false;
         TextureData& texture = state.textures[loadedTex];
@@ -232,8 +224,7 @@ void Interface::debugMenu(AppState& state)
     ImGui::End();
 }
 
-void Interface::gameWindow(AppState& state)
-{
+void Interface::gameWindow(AppState& state) {
     ImGui::Begin("GameWindow");
     //frameRate = io.Framerate;
 
