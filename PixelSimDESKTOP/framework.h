@@ -22,6 +22,10 @@ public:
     void render();
     void clean();
 
+    inline bool running() const { return applicationRunning; } // const means this function cannot modify any member variables
+
+
+private:
     // Texture Handling
     void loadImageRGB(TextureData& texture, std::string path);
     void loadImageRGBA(TextureData& texture, std::string path); // png is somehow rgb not rgba..
@@ -32,12 +36,15 @@ public:
     void createTexture(TextureData& texture);
     void updateTexture(TextureData& texture);
     void reloadTextures();
-
+   
     // Internal Functions
     void mouseDraw();
-    inline bool running() const { return applicationRunning; } // const means this function cannot modify any member variables
+    
+   /*----------------------------------------------------------------
+   ---- Variables ---------------------------------------------------
+   ----------------------------------------------------------------*/
 
-private:
+
     bool applicationRunning = false;
 
     AppState state;

@@ -19,6 +19,9 @@
     <Filter Include="Header Files\imgui">
       <UniqueIdentifier>{addc9935-8aa4-42cf-82a0-d5f91a67969d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Formatting">
+      <UniqueIdentifier>{ddcdaa5d-8675-4507-968a-4523daf113ae}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -104,5 +107,10 @@
     <ClInclude Include="game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".clang-format">
+      <Filter>Formatting</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -370,12 +370,12 @@ void Framework::mouseDraw()
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    static int lastFrameCall   = 0;
-    constexpr int minFramesTilDraw = 5;
-    if (ImGui::GetFrameCount() - lastFrameCall > minFramesTilDraw) {
-        lastFrameCall = ImGui::GetFrameCount();
-        return;
-    } 
+    //static int lastFrameCall   = 0;
+    //constexpr int minFramesTilDraw = 5;
+    //if (ImGui::GetFrameCount() - lastFrameCall > minFramesTilDraw) {
+    //    lastFrameCall = ImGui::GetFrameCount();
+    //    return;
+    //} 
     
     // Mouse pos updated in interface->debugMenu() each frame. called before mouseDraw event so correct.
     game->mouseDraw(state.mouseX, state.mouseY, state.drawSize, state.drawChance, state.drawMaterial, state.drawShape);

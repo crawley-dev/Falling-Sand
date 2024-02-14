@@ -28,35 +28,20 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
 
     // generate 'nVariant' number of colour variations per material. for spice..
     nVariants = 20;
-    u8 variation = 12; // don't raise this too high, will over/underflow u8..
+    constexpr u8 VARIATION = 12; // don't raise this too high, will over/underflow u8..
     for (Material& mat : materials) {
         mat.variants.clear();
         mat.variants.reserve(nVariants);
         for (u8 i = 0; i < nVariants; i++) {
-            std::vector<u8> variant;
-
-            if (mat.density == 1600 || mat.density == 997) {
-                //if (mat.r < 128) variant.push_back(mat.r - getRand<u8>(0, variation));
-                //else variant.push_back(mat.r + getRand<u8>(0, variation));
-                //
-                //if (mat.r < 128) variant.push_back(mat.g - getRand<u8>(0, variation));
-                //else variant.push_back(mat.g + getRand<u8>(0, variation));
-                //
-                //if (mat.r < 128) variant.push_back(mat.b - getRand<u8>(0, variation));
-                //else variant.push_back(mat.b + getRand<u8>(0, variation));
-                variant.push_back(mat.r - getRand<u8>(0, variation));
-                variant.push_back(mat.g - getRand<u8>(0, variation));
-                variant.push_back(mat.b - getRand<u8>(0, variation));
-                variant.push_back(mat.a); // dont mess with opacity..
+            if (mat.density == 1600 || mat.density == 997) 
+            {
+                mat.variants.push_back({ static_cast<u8>(mat.r - getRand<u8>(0, VARIATION)), static_cast<u8>(mat.g - getRand<u8>(0, VARIATION)),
+                                         static_cast<u8>(mat.b - getRand<u8>(0, VARIATION)),
+                                         mat.a });
             }
             else {
-                variant.push_back(mat.r);
-                variant.push_back(mat.g);
-                variant.push_back(mat.b);
-                variant.push_back(mat.a);
+                mat.variants.push_back({ mat.r, mat.g, mat.b, mat.a });
             }
-
-            mat.variants.push_back(variant);
         }
     }
 
@@ -527,8 +512,8 @@ void Game::updateTextureData(std::vector<u8>& textureData) {
 
     // handle mouseDraw Indicators
     for (const auto& [x, y] : drawIndicators) {
-        for (s32 tY = 0; tY < scaleFactor / 3; tY++)
-            for (s32 tX = 0; tX < scaleFactor / 3; tX++) {
+        for (s32 tY = 0; tY < scaleFactor / 2; tY++)
+            for (s32 tX = 0; tX < scaleFactor / 2; tX++) {
                 const s32 texIdx = textureIdx((x*scaleFactor) + tX, (y*scaleFactor) + tY);
                 textureData[texIdx + 0] = 255;
                 textureData[texIdx + 1] = 255;
