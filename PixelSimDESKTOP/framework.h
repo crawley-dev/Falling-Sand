@@ -1,19 +1,13 @@
 #pragma once
-#include "pch.h"
-//#include "imgui.h"
-//#include "imgui_impl_sdl2.h"
-//#include "imgui_impl_opengl3.h"
-//#include <SDL.h>
-//#include <SDL_opengl.h>
-//#include <SDL_image.h>
-#include "interface.h"
 #include "game.h"
+#include "interface.h"
+#include "pch.h"
 
 
 class Framework {
 public:
-    Framework();	// Constructor
-    ~Framework();	// Deconstructor
+    Framework();  // Constructor
+    ~Framework(); // Deconstructor
 
     // Application Cycle Abstraction
     bool init(const char* title, int xpos, int ypos, int width, int height);
@@ -41,8 +35,8 @@ private:
     bool applicationRunning = false;
 
     AppState state;
-    Game* game = nullptr; // std::unique_ptr<Game>      
-    Interface* interface = nullptr;	// std::unique_ptr<Interface>  
-    SDL_Window* window = nullptr; // could use a unique ptr but would require a refactor, 
+    Game* game               = nullptr; // std::unique_ptr<Game>
+    Interface* interface     = nullptr; // std::unique_ptr<Interface>
+    SDL_Window* window       = nullptr; // could use a unique ptr but would require a refactor,
     SDL_GLContext gl_context = nullptr; // thats too much effort for some memory management.
 };
