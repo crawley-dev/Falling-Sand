@@ -31,10 +31,10 @@ private:
     inline bool trySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2);
     inline bool querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2);
 
-    inline void changeMaterial	(u16 x, u16 y, u8 newMaterial);
-    inline void swapCells		(u16 x1, u16 y1, u16 x2, u16 y2);
-    inline bool trySwap		    (u16 x1, u16 y1, u16 x2, u16 y2);
-    inline bool querySwap		(u16 x1, u16 y1, u16 x2, u16 y2);
+    inline void changeMaterial(u16 x, u16 y, u8 newMaterial);
+    inline void swapCells(u16 x1, u16 y1, u16 x2, u16 y2);
+    inline bool trySwap(u16 x1, u16 y1, u16 x2, u16 y2);
+    inline bool querySwap(u16 x1, u16 y1, u16 x2, u16 y2);
 
     bool updateCell(u16 x, u16 y);
     bool updateSand(u16 x, u16 y);
@@ -56,8 +56,10 @@ private:
     u32  cellIdx(u16 x, u16 y) const { return (y * cellWidth) + x; }
     u32  textureIdx(u16 x, u16 y) const { return 4 * ((y * textureWidth) + x); }
 
-    template<typename T> // cheeky template
-    inline T getRand(T min = -1, T max = 1) { return splitMix64_NextRand() % (max - min + 1) + min; }
+    template <typename T> // cheeky template
+    inline T getRand(T min = -1, T max = 1) {
+        return splitMix64_NextRand() % (max - min + 1) + min;
+    }
     inline u64 splitMix64_NextRand() {
         u64 z = (seed += UINT64_C(0x9E3779B97F4A7C15));
         z     = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
@@ -77,8 +79,8 @@ private:
     u8 fluidDispersionFactor;
     u8 solidDispersionFactor;
 
-    u8 nVariants;		
-    u8 scaleFactor;
+    u8  nVariants;
+    u8  scaleFactor;
     u16 textureWidth, textureHeight;
     u16 cellWidth, cellHeight;
     u64 seed = 1234567890987654321;
@@ -88,5 +90,3 @@ private:
     std::vector<std::pair<u16, u16>> textureChanges;
     std::vector<std::pair<u16, u16>> drawIndicators;
 };
-
-
