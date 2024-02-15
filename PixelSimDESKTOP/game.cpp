@@ -40,6 +40,8 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
                                         static_cast<u8>(mat.g - getRand<u8>(0, VARIATION)),
                                         static_cast<u8>(mat.b - getRand<u8>(0, VARIATION)),
                                         mat.a});
+            } else {
+                mat.variants.push_back({mat.r, mat.g, mat.b, mat.a});
             }
         }
     }
