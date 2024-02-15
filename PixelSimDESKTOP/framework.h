@@ -28,15 +28,15 @@ public:
     void reloadTextures();
 
     // Internal Functions
-    void mouseDraw();
+    void        mouseDraw();
     inline bool running() const { return applicationRunning; } // const means this function cannot modify any member variables
 
 private:
     bool applicationRunning = false;
 
-    AppState state;
-    Game* game               = nullptr; // std::unique_ptr<Game>
-    Interface* interface     = nullptr; // std::unique_ptr<Interface>
-    SDL_Window* window       = nullptr; // could use a unique ptr but would require a refactor,
+    AppState      state;
+    Game*         game       = nullptr; // std::unique_ptr<Game>
+    Interface*    interface  = nullptr; // std::unique_ptr<Interface>
+    SDL_Window*   window     = nullptr; // could use a unique ptr but would require a refactor,
     SDL_GLContext gl_context = nullptr; // thats too much effort for some memory management.
 };

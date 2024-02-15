@@ -21,12 +21,12 @@ void Game::init(u16 width, u16 height, u8 scale) {
     // Init materials
     materials.clear();
     materials.resize(MaterialID::COUNT); // just so i can [] access, clear code.
-    materials[MaterialID::EMPTY]       = Material(50, 50, 50, 255, Phase::SOLID, 0);
-    materials[MaterialID::SAND]        = Material(245, 215, 176, 255, Phase::SOLID, 1600);
-    materials[MaterialID::WATER]       = Material(20, 20, 255, 125, Phase::SOLID, 997);
-    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, Phase::SOLID, 2000);
-    materials[MaterialID::NATURAL_GAS] = Material(20, 20, 50, 100, Phase::SOLID, 2000);
-    materials[MaterialID::GOL_ALIVE]   = Material(0, 255, 30, 255, Phase::SOLID, 0);
+    materials[MaterialID::EMPTY]       = Material(50, 50, 50, 255, 0);
+    materials[MaterialID::SAND]        = Material(245, 215, 176, 255, 1600);
+    materials[MaterialID::WATER]       = Material(20, 20, 255, 125, 997);
+    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 2000);
+    materials[MaterialID::NATURAL_GAS] = Material(20, 20, 50, 100, 2000);
+    materials[MaterialID::GOL_ALIVE]   = Material(0, 255, 30, 255, 0);
 
     // create material colour variations
     for (Material& mat : materials) {
@@ -46,6 +46,8 @@ void Game::init(u16 width, u16 height, u8 scale) {
 }
 
 void Game::update(AppState& state, std::vector<u8>& textureData) {
+    cameraX = state.cameraX;
+    cameraY = state.cameraY;
 
     if (state.runSim) simulate(state);
     updateEntireTexture(textureData);
@@ -93,13 +95,13 @@ void Game::simulate(AppState& state) {
     // precompute? if (!sizeChanged) this is consistent across frames?
     s32 chunksToRenderX = cellWidth / CHUNK_SIZE + (cellWidth % CHUNK_SIZE != 0) ? 1 : 0;
     s32 chunksToRenderY = cellHeight / CHUNK_SIZE + (cellHeight % CHUNK_SIZE != 0) ? 1 : 0;
-    //printf("camera chunk x: %d, camera chunk y: %d\n", cameraChunkX, cameraChunkY);
+    printf("camera chunk x: %d, camera chunk y: %d\n", cameraChunkX, cameraChunkY);
 
     for (s32 y = cameraChunkY; y < cameraChunkY + chunksToRenderY; y++)
         for (s32 x = cameraChunkX; x < cameraChunkX + chunksToRenderX; x++) {
             Chunk& chunk = getChunk(x, y);
             //if (chunk.updated) continue;
-
+            chunkChanges.push_back(chunk); // needs to be changed.
             switch (state.scanMode) {
             case Scan::BOTTOM_UP_L: l_bottomUpUpdate(chunk); break;
             case Scan::BOTTOM_UP_R: r_bottomUpUpdate(chunk); break;
@@ -110,7 +112,9 @@ void Game::simulate(AppState& state) {
 void Game::l_bottomUpUpdate(Chunk& chunk) {
     for (s32 y = CHUNK_SIZE - 1; y >= 0; y--)
         for (s32 x = 0; x < CHUNK_SIZE; x++) {
-            if () { updateCell(chunk.cells[cellIdx(x, y)], x + chunk.x, y + chunk.y); }
+            //if (chunk.cellUpdates & (1 << ((y * CHUNK_SIZE) + x))) {
+            updateCell(chunk.cells[cellIdx(x, y)], x + chunk.x, y + chunk.y);
+            //}
         }
 }
 
@@ -120,12 +124,17 @@ void Game::r_bottomUpUpdate(Chunk& chunk) {
 }
 
 inline Chunk& Game::getChunk(s32 x, s32 y) {
-    if (!chunkMap.contains({x, y})) createChunk(x, y);
+    if (!chunkMap.contains({x, y})) {
+        Chunk chunk = Chunk(x, y);
+        chunks.push_back(chunk);
+        chunkMap[{x, y}] = chunk;
+        printf("Chunk (%d,%d) created", x, y);
+    }
     Chunk& chunk = chunkMap[{x, y}];
     return chunk;
 }
 
-inline void Game::createChunk(s32 x, s32 y) { chunkMap[{x, y}] = Chunk(x, y); }
+//inline void Game::createChunk(s32 x, s32 y) { chunkMap[{x, y}] = Chunk(x, y); }
 
 /*--------------------------------------------------------------------------------------
 ---- Updating Cells --------------------------------------------------------------------
@@ -133,17 +142,16 @@ inline void Game::createChunk(s32 x, s32 y) { chunkMap[{x, y}] = Chunk(x, y); }
 
 bool Game::updateCell(Cell& c, u16 x, u16 y) {
     //if (c.updated) return true;
-
     switch (c.matID) {
-    case MaterialID::EMPTY: return false;
-    case MaterialID::SAND: return updateSand(x, y);
-    case MaterialID::WATER: return updateWater(x, y);
-    case MaterialID::CONCRETE: return false;
-    case MaterialID::NATURAL_GAS:
-        return updateNaturalGas(x, y);
+    //case MaterialID::EMPTY:       return false;
+    //case MaterialID::CONCRETE:    return false;
+    //case MaterialID::SAND: return updateSand(x, y);
+    //case MaterialID::WATER:       return updateWater(x, y);
+    //case MaterialID::NATURAL_GAS: return updateNaturalGas(x, y);
+    default:
+        return false;
         //case MaterialID::FIRE:          return updateFire(x, y);
     }
-    return false;
 }
 
 /*--------------------------------------------------------------------------------------
@@ -176,15 +184,45 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
                 }
             // c.updated = false;
         }
+    }*/
+
+    for (auto& chunk : chunkChanges) {
+        for (s32 y = 0; y < CHUNK_SIZE; y++)
+            for (s32 x = 0; x < CHUNK_SIZE; x++) {
+                const Cell&            c       = chunk.cells[cellIdx(x, y)];
+                const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
+
+                for (s32 tY = 0; tY < scaleFactor; tY++)
+                    for (s32 tX = 0; tX < scaleFactor; tX++) {
+                        const s32 idx        = textureIdx((x + chunk.x) * scaleFactor + tX, (y + chunk.y) * scaleFactor + tY);
+                        textureData[idx + 0] = variant[0];
+                        textureData[idx + 1] = variant[1];
+                        textureData[idx + 2] = variant[2];
+                        textureData[idx + 3] = variant[3];
+                    }
+            }
     }
-    */
-    for (s32 y = 0; y < textureHeight; y++) {
-        for (s32 x = 0; x < textureWidth; x++) {
-            const s32 idx        = textureIdx(x, y);
-            textureData[idx + 0] = 20;
-            textureData[idx + 1] = 255;
-            textureData[idx + 2] = 50;
-            textureData[idx + 3] = 255;
+
+    s32 cx{5}, cy{5};
+    for (s32 y = 0; y < cellHeight; y++)
+        for (s32 x = 0; x < cellWidth; x++) {
+            u8 scaler = 1;
+            u8 r, g, b, a;
+            if ((x + cameraX) % CHUNK_SIZE == 0 || (y + cameraY) % CHUNK_SIZE == 0) { // chunk borders
+                r      = 255;
+                g      = 20;
+                b      = 20;
+                a      = 255;
+                scaler = 2;
+            }
+
+            for (s32 tY = 0; tY < scaleFactor / scaler; tY++)
+                for (s32 tX = 0; tX < scaleFactor / scaler; tX++) {
+                    const s32 idx        = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
+                    textureData[idx + 0] = r;
+                    textureData[idx + 1] = g;
+                    textureData[idx + 2] = b;
+                    textureData[idx + 3] = a;
+                }
         }
-    }
 }

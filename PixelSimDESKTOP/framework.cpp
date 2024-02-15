@@ -34,7 +34,7 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     window                       = SDL_CreateWindow(title, xpos, ypos, width, height, window_flags); // Create SDL Window
     gl_context                   = SDL_GL_CreateContext(window);                                     // Create openGL Context
     SDL_GL_MakeCurrent(window, gl_context);                                                          // Set SDL_Window Context
-    if (SDL_GL_SetSwapInterval(-1) != 0) SDL_GL_SetSwapInterval(0);                                  // Enables Adaptive v-sync if possible, otherwise v-sync
+    if (SDL_GL_SetSwapInterval(-1) != 0) SDL_GL_SetSwapInterval(0); // Enables Adaptive v-sync if possible, otherwise v-sync
     //SDL_GL_SetSwapInterval(0);                                                  // Disables v-sync
     std::cout << Message::names[Message::WINDOW_INIT] << std::endl;
 
@@ -43,14 +43,15 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     std::cout << Message::names[Message::IMGUI_CONTEXT_INIT] << std::endl;
 
     // |= is a bitwise operator: 0101 |= 0110 -> 0111
-    ImGuiIO& io = ImGui::GetIO();                                        // Setup ImGui Config
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;                // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;                 // Enable Gamepad Controls
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;                    // Enable Docking
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;                  // Enable Multi-Viewport / Platform Windows
-    io.ConfigDockingWithShift          = true;                           // Enable Docking on Shift
-    io.ConfigDockingTransparentPayload = true;                           // Enable Transparent Window on Docking
-    io.Fonts->AddFontFromFileTTF("../Libraries/fonts/Cascadia.ttf", 15); // Changing Font -> Cascadia Mono (vs editor font) | Relative paths FTW!
+    ImGuiIO& io = ImGui::GetIO();                         // Setup ImGui Config
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Multi-Viewport / Platform Windows
+    io.ConfigDockingWithShift          = true;            // Enable Docking on Shift
+    io.ConfigDockingTransparentPayload = true;            // Enable Transparent Window on Docking
+    io.Fonts->AddFontFromFileTTF("../Libraries/fonts/Cascadia.ttf",
+                                 15); // Changing Font -> Cascadia Mono (vs editor font) | Relative paths FTW!
     std::cout << Message::names[Message::IMGUI_CONFIG_INIT] << std::endl;
 
     interface = new Interface();
@@ -94,7 +95,8 @@ void Framework::handleEvents() {
         ImGui_ImplSDL2_ProcessEvent(&event);
         if (event.type == SDL_QUIT)
             applicationRunning = false;
-        else if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
+        else if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE &&
+                 event.window.windowID == SDL_GetWindowID(window))
             applicationRunning = true;
     }
 }
@@ -105,17 +107,24 @@ void Framework::update() {
 
     if (ImGui::GetFrameCount() <= 2) return;
 
-    ImGuiIO& io          = ImGui::GetIO();
+    ImGuiIO&     io      = ImGui::GetIO();
     TextureData& texture = state.textures[TexIndex::GAME];
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) state.runSim = !state.runSim;
+
+    if (ImGui::GetFrameCount() % 2 == 0) {
+        u8 multiplier = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) ? 3 : 1;
+        state.cameraY -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_W))); // use floats?
+        state.cameraX -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_A))); // use floats?
+        state.cameraY += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_S))); // use floats?
+        state.cameraX += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_D))); // use floats?
+    }
     if (io.MouseDown[0]) mouseDraw();
+
     if (state.resetSim) {
         game->reset();
         state.resetSim = false;
     }
-
-    // shouldn't this be handled inside Game::update()??
     if (state.loadImage) {
         TextureData& img = state.textures[TexIndex::BACKGROUND];
         loadImageRGB(img, state.imagePath);
@@ -153,7 +162,7 @@ void Framework::render() {
 
     // Handles Multiple Viewports && Swaps between 2 texture buffers for smoother rendering
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-        SDL_Window* backup_current_window    = SDL_GL_GetCurrentWindow();
+        SDL_Window*   backup_current_window  = SDL_GL_GetCurrentWindow();
         SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
         ImGui::UpdatePlatformWindows();
         ImGui::RenderPlatformWindowsDefault();
@@ -230,7 +239,7 @@ void Framework::loadImageRGB(TextureData& texture, std::string path) {
     // R | G | B | A
     // 1 + 1 + 1 + 1 == 4 bytes
     constexpr int bytesPerPixel = 4;
-    const int size              = image->w * image->h * bytesPerPixel;
+    const int     size          = image->w * image->h * bytesPerPixel;
 
     texture.data   = std::vector<u8>(size);
     texture.width  = image->w;
@@ -330,10 +339,16 @@ void Framework::createTexture(TextureData& texture) {
     glBindTexture(GL_TEXTURE_2D, texture.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.data.data());
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);    // GL_LINEAR --> GL_NEAREST
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);    // FASTER but produces blocky, pixelated texture (not noticeable-ish)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // GL_LINEAR --> GL_NEAREST
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_MAG_FILTER,
+                    GL_LINEAR); // FASTER but produces blocky, pixelated texture (not noticeable-ish)
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_T,
+                    GL_CLAMP_TO_EDGE); // GL_CLAMP_TO_EDGE == the default behaviour of texture wrapping. (don't need it)
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_S,
+                    GL_CLAMP_TO_EDGE); // GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
 }
 
 void Framework::reloadTextures() {
@@ -346,13 +361,21 @@ void Framework::reloadTextures() {
 
 void Framework::updateTexture(TextureData& texture) {
     glBindTexture(GL_TEXTURE_2D, texture.id);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texture.width, texture.height, GL_RGBA, GL_UNSIGNED_BYTE, texture.data.data()); // data.data, weird..
+    glTexSubImage2D(GL_TEXTURE_2D,
+                    0,
+                    0,
+                    0,
+                    texture.width,
+                    texture.height,
+                    GL_RGBA,
+                    GL_UNSIGNED_BYTE,
+                    texture.data.data()); // data.data, weird..
 }
 
 void Framework::mouseDraw() {
     ImGuiIO& io = ImGui::GetIO();
 
-    static int lastFrameCall       = 0;
+    static int    lastFrameCall    = 0;
     constexpr int minFramesTilDraw = 5;
     if (ImGui::GetFrameCount() - lastFrameCall > minFramesTilDraw) {
         lastFrameCall = ImGui::GetFrameCount();

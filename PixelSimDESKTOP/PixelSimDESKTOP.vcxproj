@@ -191,7 +191,6 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="interface.h" />
-    <ClInclude Include="cell.h" />
     <ClInclude Include="state.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

@@ -9,17 +9,15 @@ constexpr u8 VARIATION     = 12;
 struct Material {
     u8 r, g, b, a;
     // u8 dispersion;
-    u8 phase;
-    u16 density;
+    u16                          density;
     std::vector<std::vector<u8>> variants;
 
-    Material(u8 RED, u8 GREEN, u8 BLUE, u8 ALPHA, /*u8 DISPERSION,*/ u8 PHASE, u16 DENSITY) {
+    Material(u8 RED, u8 GREEN, u8 BLUE, u8 ALPHA, /*u8 DISPERSION,*/ u16 DENSITY) {
         r = RED;
         g = GREEN;
         b = BLUE;
         a = ALPHA;
         // dispersion	= DISPERSION;
-        phase    = PHASE;
         density  = DENSITY;
         variants = {{RED, GREEN, BLUE, ALPHA}};
     }
@@ -48,9 +46,9 @@ struct Chunk {
     Chunk(s32 X, s32 Y) {
         x           = X;
         y           = Y;
-        updated     = false;
         cellUpdates = 0; // |= 1 << cellidx
-        // cells.resize(CHUNK_SIZE * CHUNK_SIZE, Cell(MaterialID::SAND, 0));
+        cells.resize(CHUNK_SIZE * CHUNK_SIZE, Cell(MaterialID::SAND, 0));
+        //updated     = false;
     }
     Chunk() = default;
 };
@@ -96,15 +94,15 @@ private:
     // void drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
 
     static bool outOfBounds(u8 x, u8 y) { return x >= CHUNK_SIZE || y >= CHUNK_SIZE || x < 0 || y < 0; }
-    static u8 cellIdx(u8 x, u8 y) { return (y * CHUNK_SIZE) + x; }
-    s32 spaccy_textureIdx(s16 x, s16 y) {
+    static u8   cellIdx(u8 x, u8 y) { return (y * CHUNK_SIZE) + x; }
+    s32         spaccy_textureIdx(s16 x, s16 y) const {
         return 4 * ((y - cameraY) * textureWidth) + (x - cameraX);
     } // position relative to camera. is it in frame? where abouts?
-    u32 textureIdx(u16 x, u16 y) { return 4 * ((y * textureWidth) + x); }
+    u32 textureIdx(u16 x, u16 y) const { return 4 * ((y * textureWidth) + x); }
 
 
     Chunk& getChunk(s32 x, s32 y);
-    void createChunk(s32 x, s32 y);
+    void   createChunk(s32 x, s32 y);
 
     template <typename T> // cheeky template
     T getRand(T min = -1, T max = 1) {
@@ -123,15 +121,16 @@ private:
 
     bool sizeChanged;
 
-    u8 solidDispersion, fluidDispersion, gasDispersion;
-    u8 scaleFactor;                  // cell 1x1 --> texture N x N
+    u8  solidDispersion, fluidDispersion, gasDispersion;
+    u8  scaleFactor;                 // cell 1x1 --> texture N x N
     s32 cameraX, cameraY;            // camera posistion in the world. from top left corner.
     u32 cellWidth, cellHeight;       // size of render target in cell
     u32 textureWidth, textureHeight; // size of render target.
     u64 randSeed = 1234567890987654321;
 
-    std::vector<Material> materials; // material data
-    // std::vector<Chunk*> chunkChanges;
-    std::vector<Chunk> chunks;                                                                 // for iterating over all chunks
-    std::unordered_map<std::pair<s32, s32>, Chunk, boost::hash<std::pair<s32, s32>>> chunkMap; // for indexing into a chunk
+    std::vector<Chunk*> chunkChanges;
+    //std::vector<std::pair<u16, u16>>                                                 textureChanges;
+    std::vector<Material>                                                            materials; // material data
+    std::vector<Chunk>                                                               chunks;    // for iterating over all chunks
+    std::unordered_map<std::pair<s32, s32>, Chunk, boost::hash<std::pair<s32, s32>>> chunkMap;  // for indexing into a chunk
 };

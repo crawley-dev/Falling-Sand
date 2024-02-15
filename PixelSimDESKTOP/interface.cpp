@@ -1,7 +1,6 @@
 #pragma once
 // clang-format off
 #include "pch.h"
-#include "cell.h"
 #include "interface.h"
 // clang-format on
 
@@ -103,8 +102,8 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
     if (ImGui::TreeNode("Frame Stepping")) {
         ImGui::SeparatorText("Frame Stepping");
 
-        static int framesToStep     = 0;
-        static int pseudoFrames     = 1;
+        static int  framesToStep    = 0;
+        static int  pseudoFrames    = 1;
         static bool doFrameStepping = false;
 
         if (framesToStep > 0 && doFrameStepping) {
@@ -144,7 +143,8 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         if (state.scanMode == Scan::GAME_OF_LIFE)
             state.drawMaterial = MaterialID::GOL_ALIVE;
         else {
-            if (state.drawMaterial == MaterialID::GOL_ALIVE) state.drawMaterial = MaterialID::SAND; // TODO: store state of previous drawMaterial, don't default to sand
+            if (state.drawMaterial == MaterialID::GOL_ALIVE)
+                state.drawMaterial = MaterialID::SAND; // TODO: store state of previous drawMaterial, don't default to sand
 
             ImGui::Text("Draw Mode: ");
             ImGui::SameLine();
@@ -195,17 +195,17 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
     ImGui::SetNextItemOpen(true);
     if (ImGui::TreeNode("Debug Values")) {
         ImGui::SeparatorText("Debug Values");
-        bool OutofBounds     = false;
-        TextureData& texture = state.textures[loadedTex];
+        bool         OutofBounds = false;
+        TextureData& texture     = state.textures[loadedTex];
         if (state.mouseX > texture.width || state.mouseX < 0 || state.mouseY > texture.height || state.mouseY < 0) OutofBounds = true;
 
-        ImVec2 windowPos                = ImGui::GetMainViewport()->Pos;
-        const int TITLE_BAR_OFFSET_X    = 8;
-        const int TITLE_BAR_OFFSET_Y    = 28;
-        const int COLOUR_VARIANCE_RANGE = 20;
-        const char* scanMode            = Scan::names[state.scanMode].data();
-        state.mouseX                    = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
-        state.mouseY                    = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
+        ImVec2      windowPos             = ImGui::GetMainViewport()->Pos;
+        const int   TITLE_BAR_OFFSET_X    = 8;
+        const int   TITLE_BAR_OFFSET_Y    = 28;
+        const int   COLOUR_VARIANCE_RANGE = 20;
+        const char* scanMode              = Scan::names[state.scanMode].data();
+        state.mouseX                      = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
+        state.mouseY                      = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
 
 
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
@@ -241,8 +241,8 @@ void Interface::gameWindow(AppState& state) {
 
     constexpr int xOffset = 10;
     constexpr int yOffset = 40;
-    int windowX           = (int)ImGui::GetWindowSize().x;
-    int windowY           = (int)ImGui::GetWindowSize().y;
+    int           windowX = (int)ImGui::GetWindowSize().x;
+    int           windowY = (int)ImGui::GetWindowSize().y;
     if (windowX % 2 != 0) ++windowX; // i don't remember what this does
     if (windowY % 2 != 0) ++windowY; // i don't remember what this does
 

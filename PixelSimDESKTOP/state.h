@@ -105,10 +105,10 @@ struct Update {
 
 struct Scan {
     enum : u8 {
-        BOTTOM_UP_LEFT,
-        BOTTOM_UP_RIGHT,
-        TOP_DOWN_LEFT,
-        TOP_DOWN_RIGHT,
+        BOTTOM_UP_L,
+        BOTTOM_UP_R,
+        TOP_DOWN_L,
+        TOP_DOWN_R,
         SNAKE,
         GAME_OF_LIFE,
         COUNT,
@@ -169,7 +169,7 @@ struct AppState {
     bool reloadGame = false;
     bool loadImage  = false;
 
-    u8 scanMode              = Scan::BOTTOM_UP_LEFT;
+    u8 scanMode              = Scan::BOTTOM_UP_L;
     u8 updateMode            = Update::CYCLE;
     u8 drawShape             = Shape::SQUARE;
     u8 drawMaterial          = MaterialID::WATER;
@@ -186,4 +186,7 @@ struct AppState {
     u32 texReloadCount = 0;
     u32 textureChanges = 0;
     u32 cellChanges    = 0;
+
+    s32 cameraX = 0;
+    s32 cameraY = 0;
 };
