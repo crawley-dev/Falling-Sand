@@ -37,36 +37,23 @@ struct Message {
 struct MaterialID {
     enum : u8 {
         EMPTY,
+        CONCRETE,
         SAND,
         WATER,
-        CONCRETE,
         NATURAL_GAS,
+        FIRE,
         GOL_ALIVE,
         COUNT,
     };
 
     static constexpr std::array<std::string_view, MaterialID::COUNT> names{
         "EMPTY",
+        "CONCRETE",
         "SAND",
         "WATER",
-        "CONCRETE",
         "Natural Gas",
+        "FIRE",
         "Game of Life: Alive",
-    };
-};
-
-struct Phase {
-    enum : u8 {
-        SOLID,
-        LIQUID,
-        GAS,
-        COUNT,
-    };
-
-    static constexpr std::array<std::string_view, Phase::COUNT> names{
-        "Solid",
-        "Liquid",
-        "Gas",
     };
 };
 
@@ -118,10 +105,10 @@ struct Update {
 
 struct Scan {
     enum : u8 {
-        BOTTOM_UP_L,
-        BOTTOM_UP_R,
-        TOP_DOWN_L,
-        TOP_DOWN_R,
+        BOTTOM_UP_LEFT,
+        BOTTOM_UP_RIGHT,
+        TOP_DOWN_LEFT,
+        TOP_DOWN_RIGHT,
         SNAKE,
         GAME_OF_LIFE,
         COUNT,
@@ -158,9 +145,9 @@ struct Shape {
 };
 
 struct TextureData {
-    GLuint id  = 0; // can't be u8 because ptrs.
-    u16 width  = 0;
-    u16 height = 0;
+    GLuint          id     = 0; // can't be u8 because ptrs.
+    u16             width  = 0;
+    u16             height = 0;
     std::vector<u8> data;
 
     TextureData(u32 ID, u16 WIDTH, u16 HEIGHT, std::vector<u8> DATA) {
@@ -174,7 +161,7 @@ struct TextureData {
 
 struct AppState {
     std::vector<TextureData> textures;
-    std::string imagePath;
+    std::string              imagePath;
 
     // Efficient Flag: u64 flags = 0;
     bool runSim     = false;
@@ -185,7 +172,7 @@ struct AppState {
     u8 scanMode              = Scan::BOTTOM_UP_LEFT;
     u8 updateMode            = Update::CYCLE;
     u8 drawShape             = Shape::SQUARE;
-    u8 drawMaterial          = 2;
+    u8 drawMaterial          = MaterialID::WATER;
     u8 drawChance            = 50;
     u8 scaleFactor           = 10;
     u8 fluidDispersionFactor = 4;
