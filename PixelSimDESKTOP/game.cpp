@@ -19,14 +19,14 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
     cellHeight    = newTextureHeight / scaleFactor;
 
     materials.clear();
-    materials.resize(MaterialID::COUNT); //Material(R  , G  , B  , A  , Dispersion, Density)
-    materials[MaterialID::EMPTY]       = Material(50, 50, 50, 255, 0, 0);
+    materials.resize(MaterialID::COUNT);                                    //Material(R  , G  , B  , A  , Dispersion, Density)
+    materials[MaterialID::EMPTY]       = Material(50, 50, 50, 255, 0, 500); // find a better solution in the future than somewhat heavy air..
     materials[MaterialID::SAND]        = Material(245, 215, 176, 255, 3, 1600);
     materials[MaterialID::WATER]       = Material(20, 20, 255, 125, 5, 997);
     materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 0, 65535); // max u16 value
-    materials[MaterialID::NATURAL_GAS] = Material(20, 20, 50, 100, 8, 50);
+    materials[MaterialID::NATURAL_GAS] = Material(20, 20, 50, 100, 8, 10000);
     materials[MaterialID::FIRE]        = Material(255, 165, 0, 200, 8, 10);
-    materials[MaterialID::GOL_ALIVE]   = Material(0, 255, 30, 255, 0, 0);
+    materials[MaterialID::GOL_ALIVE]   = Material(0, 255, 30, 255, 0, 65535);
 
     // generate 'nVariant' number of colour variations per material. for spice..
     nVariants              = 20;
@@ -43,14 +43,18 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
             } else {
                 mat.variants.push_back({mat.r, mat.g, mat.b, mat.a});
             }
+            if ((s16)mat.r - mat.variants[i][0] > VARIATION) mat.variants[i][0] = mat.r;
+            if ((s16)mat.g - mat.variants[i][1] > VARIATION) mat.variants[i][1] = mat.g;
+            if ((s16)mat.b - mat.variants[i][2] > VARIATION) mat.variants[i][2] = mat.b;
+            if ((s16)mat.a - mat.variants[i][3] > VARIATION) mat.variants[i][3] = mat.a;
         }
-    }
 
-    cells.clear();
-    cells.reserve(cellWidth * cellHeight);
-    for (s32 i = 0; i < cellWidth * cellHeight; i++) // init cell.updated = true so updateTextureData runs on first time.
-        cells.emplace_back(MaterialID::EMPTY, true, getRand<u8>(0, nVariants - 1), 0);
-    sizeChanged = true;
+        cells.clear();
+        cells.reserve(cellWidth * cellHeight);
+        for (s32 i = 0; i < cellWidth * cellHeight; i++) // init cell.updated = true so updateTextureData runs on first time.
+            cells.emplace_back(MaterialID::EMPTY, true, getRand<u8>(0, nVariants - 1), 0);
+        sizeChanged = true;
+    }
 }
 
 void Game::update(AppState &state, std::vector<u8> &textureData) {
@@ -246,7 +250,7 @@ bool Game::updateWater(u16 x, u16 y) {
             continue;
         }
 
-        u8 dX = abs(xDispersion) + 1;
+        s8 dX = abs(xDispersion) + 1;
         if (getRand<u8>(1, 100) > 50) {
             if (querySwap(x, y, x + dX, y + yDispersion)) xDispersion = dX;
             else if (querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
@@ -313,7 +317,6 @@ bool Game::querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
     //printf("c1: %d, c2: %d\n", c1.matID, c2.matID); // "c1: 4, c2: 0\n")
     if (materials[c1.matID].density >= materials[c2.matID].density) return false;
 
-    swapCells(x1, y1, x2, y2);
     return true;
 }
 
@@ -469,21 +472,20 @@ void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
 ---- Updating Texture ------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-// this causes flickering.. switching back to entire texture update.
-// might not be calling all cells that need updating, check cellswap etc.
+// Iterates over textureChanges list, updates relevant textureData with cell data.
 void Game::updateTextureData(std::vector<u8> &textureData) {
-    for (const auto &[x, y] : textureChanges) { // cheeky structured binding.
-        Cell                  &c       = cells[cellIdx(x, y)];
-        const std::vector<u8> &variant = materials[c.matID].variants[c.variant];
+    for (const auto &[x, y] : textureChanges) {
+        Cell                  &c       = cells[cellIdx(x, y)];                   // grab cell with changes
+        const std::vector<u8> &variant = materials[c.matID].variants[c.variant]; // grab cell's colour variant
 
-        const u8 red   = variant[0];
-        const u8 green = variant[1];
-        const u8 blue  = variant[2];
-        const u8 alpha = variant[3];
+        const u8 red   = variant[0]; // might be slowing code down?
+        const u8 green = variant[1]; // might be slowing code down?
+        const u8 blue  = variant[2]; // might be slowing code down?
+        const u8 alpha = variant[3]; // might be slowing code down?
 
         for (s32 tY = 0; tY < scaleFactor; tY++)
-            for (s32 tX = 0; tX < scaleFactor; tX++) {
-                const s32 texIdx        = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
+            for (s32 tX = 0; tX < scaleFactor; tX++) {                                                // iterates over each pixel in the cell
+                const s32 texIdx        = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY); // index into 1d array
                 textureData[texIdx + 0] = red;
                 textureData[texIdx + 1] = green;
                 textureData[texIdx + 2] = blue;
@@ -491,12 +493,9 @@ void Game::updateTextureData(std::vector<u8> &textureData) {
             }
         c.updated = false;
     }
-
     textureChanges.clear();
-    textureChanges = drawIndicators; // clears draw Indicators next frame.
-
-    // handle mouseDraw Indicators
-    for (const auto &[x, y] : drawIndicators) {
+    textureChanges = drawIndicators;            // clears this frames draw indicators next frame.
+    for (const auto &[x, y] : drawIndicators) { //
         for (s32 tY = 0; tY < scaleFactor / 2; tY++)
             for (s32 tX = 0; tX < scaleFactor / 2; tX++) {
                 const s32 texIdx        = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
@@ -506,7 +505,6 @@ void Game::updateTextureData(std::vector<u8> &textureData) {
                 textureData[texIdx + 3] = 255;
             }
     }
-
     drawIndicators.clear();
 }
 

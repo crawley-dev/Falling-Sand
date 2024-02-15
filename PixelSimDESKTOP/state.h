@@ -21,14 +21,16 @@ struct Message {
         COUNT,
     };
 
-    static constexpr std::array<std::string_view, Message::COUNT> names{"[Pixel Sim]           SDL .. [INIT]",
-                                                                        "[Pixel Sim]        OpenGL .. [INIT]",
-                                                                        "[Pixel Sim]        Window .. [INIT]",
-                                                                        "[Pixel Sim] ImGui Context .. [INIT]",
-                                                                        "[Pixel Sim]  ImGui Config .. [INIT]",
-                                                                        "[Pixel Sim]     Interface .. [INIT]",
-                                                                        "[Pixel Sim]          Game .. [INIT]",
-                                                                        "[Pixel Sim]     Framework .. [DEAD]"};
+    static constexpr std::array<std::string_view, Message::COUNT> names{
+        "[Pixel Sim]           SDL .. [INIT]",
+        "[Pixel Sim]        OpenGL .. [INIT]",
+        "[Pixel Sim]        Window .. [INIT]",
+        "[Pixel Sim] ImGui Context .. [INIT]",
+        "[Pixel Sim]  ImGui Config .. [INIT]",
+        "[Pixel Sim]     Interface .. [INIT]",
+        "[Pixel Sim]          Game .. [INIT]",
+        "[Pixel Sim]     Framework .. [DEAD]",
+    };
 };
 
 
@@ -44,7 +46,15 @@ struct MaterialID {
         COUNT,
     };
 
-    static constexpr std::array<std::string_view, MaterialID::COUNT> names{"EMPTY", "CONCRETE", "SAND", "WATER", "Natural Gas", "Fire", "Game of Life : Alive "};
+    static constexpr std::array<std::string_view, MaterialID::COUNT> names{
+        "EMPTY",
+        "CONCRETE",
+        "SAND",
+        "WATER",
+        "Natural Gas",
+        "FIRE",
+        "Game of Life: Alive",
+    };
 };
 
 struct Flag {
@@ -73,7 +83,11 @@ struct TexID {
         COUNT,
     };
 
-    static constexpr std::array<std::string_view, TexID::COUNT - 2> names{"Game", "Background", "Presented"};
+    static constexpr std::array<std::string_view, TexID::COUNT - 2> names{
+        "Game",
+        "Background",
+        "Presented",
+    };
 };
 
 struct Update {
@@ -83,7 +97,10 @@ struct Update {
         COUNT,
     };
 
-    static constexpr std::array<std::string_view, Update::COUNT> names{"Static", "CYCLE"};
+    static constexpr std::array<std::string_view, Update::COUNT> names{
+        "Static",
+        "CYCLE",
+    };
 };
 
 struct Scan {
@@ -97,7 +114,14 @@ struct Scan {
         COUNT,
     };
 
-    static constexpr std::array<std::string_view, Scan::COUNT> names{"Bottom Up L->R", "Bottom Up R->L", "Top Down L->R", "Top Down R->L", "Snake", "Game of Life"};
+    static constexpr std::array<std::string_view, Scan::COUNT> names{
+        "Bottom Up L->R",
+        "Bottom Up R->L",
+        "Top Down L->R",
+        "Top Down R->L",
+        "Snake",
+        "Game of Life",
+    };
 };
 
 
@@ -111,7 +135,13 @@ struct Shape {
         COUNT,
     };
 
-    static constexpr std::array<std::string_view, Shape::COUNT> names{"Circle", "Circle Outline", "Line", "Square", "Square Outline"};
+    static constexpr std::array<std::string_view, Shape::COUNT> names{
+        "Circle",
+        "Circle Outline",
+        "Line",
+        "Square",
+        "Square Outline",
+    };
 };
 
 struct TextureData {
@@ -142,7 +172,7 @@ struct AppState {
     u8 scanMode              = Scan::BOTTOM_UP_LEFT;
     u8 updateMode            = Update::CYCLE;
     u8 drawShape             = Shape::SQUARE;
-    u8 drawMaterial          = 2;
+    u8 drawMaterial          = MaterialID::WATER;
     u8 drawChance            = 50;
     u8 scaleFactor           = 10;
     u8 fluidDispersionFactor = 4;

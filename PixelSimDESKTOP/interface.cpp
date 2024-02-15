@@ -1,9 +1,9 @@
 #pragma once
 // clang-format off
 #include "pch.h"
-#include "cell.h"
 #include "interface.h"
-// clang-format on
+#include "cell.h"
+// clang-format on  
 
 Interface::Interface() {}
 Interface::~Interface() {}
@@ -56,7 +56,7 @@ void Interface::debugMenu(AppState &state) { // pair of empty brackets {} define
         //    ImGui::EndCombo();
         //}
 
-        ImGui::Text("Scan Modes: ");
+        ImGui::Text("Scan Modes:     ");
         ImGui::SameLine();
         if (ImGui::BeginCombo("scan_modes_combo", Scan::names[state.scanMode].data())) {
             for (u8 n = 0; n < Scan::COUNT; n++) {
@@ -175,12 +175,13 @@ void Interface::debugMenu(AppState &state) { // pair of empty brackets {} define
 
 
         int drawSize = state.drawSize;
-        ImGui::Text("Draw Size  ");
+        ImGui::Text("Draw Size: ");
         ImGui::SameLine();
         ImGui::InputInt("draw_size_inputint", &drawSize, 1, 10);
-        state.drawSize      = std::clamp(state.drawSize, (u16)1, (u16)1000);
         u8 drawSizeModifier = ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) ? 10 : 1;
         state.drawSize += (int)io.MouseWheel * drawSizeModifier;
+        state.drawSize = (state.drawSize > 10000) ? 1 : state.drawSize;
+        //state.drawSize  = std::clamp(state.drawSize, (u16)1, (u16)10000);
 
         int drawChance = state.drawChance;
         ImGui::Text("Draw Chance");
