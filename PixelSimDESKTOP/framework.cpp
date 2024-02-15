@@ -113,7 +113,7 @@ void Framework::update() {
         state.resetSim = false;
     }
     if (state.loadImage) {
-        TextureData &img = state.textures[TexIndex::BACKGROUND];
+        TextureData &img = state.textures[1];
         loadImageRGB(img, state.imagePath);
         game->loadImage(texture.data, img.data, img.width, img.height);
         state.loadImage = false;
