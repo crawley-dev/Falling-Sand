@@ -9,10 +9,8 @@ Framework::~Framework() {}
 
 bool Framework::init(const char *title, int xpos, int ypos, int width, int height) {
     // Setup SDL
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-        return false;
-    if (!(IMG_Init(IMG_INIT_JPG) & IMG_INIT_JPG))
-        return false; // on success, returns int that the macro expands to, png == 2
+    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) return false;
+    if (!(IMG_Init(IMG_INIT_JPG) & IMG_INIT_JPG)) return false; // on success, returns int that the macro expands to, png == 2
     std::cout << Message::names[Message::SDL_INIT] << std::endl;
 
     // GL 3.0 + GLSL 130
@@ -36,8 +34,7 @@ bool Framework::init(const char *title, int xpos, int ypos, int width, int heigh
     window                       = SDL_CreateWindow(title, xpos, ypos, width, height, window_flags); // Create SDL Window
     gl_context                   = SDL_GL_CreateContext(window);                                     // Create openGL Context
     SDL_GL_MakeCurrent(window, gl_context);                                                          // Set SDL_Window Context
-    if (SDL_GL_SetSwapInterval(-1) != 0)
-        SDL_GL_SetSwapInterval(0); // Enables Adaptive v-sync if possible, otherwise v-sync
+    if (SDL_GL_SetSwapInterval(-1) != 0) SDL_GL_SetSwapInterval(0);                                  // Enables Adaptive v-sync if possible, otherwise v-sync
     //SDL_GL_SetSwapInterval(0);                                                  // Disables v-sync
     std::cout << Message::names[Message::WINDOW_INIT] << std::endl;
 
@@ -57,14 +54,12 @@ bool Framework::init(const char *title, int xpos, int ypos, int width, int heigh
     std::cout << Message::names[Message::IMGUI_CONFIG_INIT] << std::endl;
 
     interface = new Interface();
-    if (!interface)
-        return false;
+    if (!interface) return false;
     std::cout << Message::names[Message::INTERFACE_INIT] << std::endl;
 
 
     game = new Game();
-    if (!game)
-        return false;
+    if (!game) return false;
     std::cout << Message::names[Message::GAME_INIT] << std::endl;
 
 
@@ -97,10 +92,8 @@ void Framework::handleEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSDL2_ProcessEvent(&event);
-        if (event.type == SDL_QUIT)
-            applicationRunning = false;
-        else if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
-            applicationRunning = true;
+        if (event.type == SDL_QUIT) applicationRunning = false;
+        else if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window)) applicationRunning = true;
     }
 }
 
@@ -108,16 +101,13 @@ void Framework::update() {
     interface->main();
     interface->debugMenu(state);
 
-    if (ImGui::GetFrameCount() <= 2)
-        return;
+    if (ImGui::GetFrameCount() <= 2) return;
 
     ImGuiIO     &io      = ImGui::GetIO();
     TextureData &texture = state.textures[TexIndex::GAME];
 
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space)))
-        state.runSim = !state.runSim;
-    if (io.MouseDown[0])
-        mouseDraw();
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) state.runSim = !state.runSim;
+    if (io.MouseDown[0]) mouseDraw();
     if (state.resetSim) {
         game->reset();
         state.resetSim = false;
