@@ -47,7 +47,7 @@ void Game::init(u16 width, u16 height, u8 scale) {
 
 void Game::update(AppState& state, std::vector<u8>& textureData) {
 
-    // if (state.runSim) simulate(state);
+    if (state.runSim) simulate(state);
     updateEntireTexture(textureData);
     // if (sizeChanged) {
     //     updateEntireTexture(textureData);
@@ -56,7 +56,15 @@ void Game::update(AppState& state, std::vector<u8>& textureData) {
     //     updateTexture(textureData);
 }
 
-void Game::reload(u16 width, u16 height, u8 scale) {}
+void Game::reload(u16 width, u16 height, u8 scale) {
+    printf("reloaded\n width: %d\n  height: %d\n  scale: %d\n", width, height, scale);
+    textureWidth  = width;
+    textureHeight = height;
+    scaleFactor   = scale;
+    cellHeight    = textureHeight / scaleFactor;
+    cellWidth     = textureWidth / scaleFactor;
+    sizeChanged   = true;
+}
 
 void Game::reset() {}
 
@@ -85,26 +93,58 @@ void Game::simulate(AppState& state) {
     // precompute? if (!sizeChanged) this is consistent across frames?
     s32 chunksToRenderX = cellWidth / CHUNK_SIZE + (cellWidth % CHUNK_SIZE != 0) ? 1 : 0;
     s32 chunksToRenderY = cellHeight / CHUNK_SIZE + (cellHeight % CHUNK_SIZE != 0) ? 1 : 0;
+    //printf("camera chunk x: %d, camera chunk y: %d\n", cameraChunkX, cameraChunkY);
 
-    // for (s32 y = cameraChunkY; y < cameraChunkY + chunksToRenderY; y++)
-    //     for (s32 x = cameraChunkX; x < cameraChunkX + chunksToRenderX; x++) {
-    //         if (!chunkMap.contains({ x, y })) createChunk(x, y);
-    //         Chunk& chunk = chunkMap[{x, y}];
-    //         if (chunk.updated) continue;
-    //         for (Cell& cell : chunk.cells) {
-    //             updateCell(cell);
-    //         }
-    //     }
+    for (s32 y = cameraChunkY; y < cameraChunkY + chunksToRenderY; y++)
+        for (s32 x = cameraChunkX; x < cameraChunkX + chunksToRenderX; x++) {
+            Chunk& chunk = getChunk(x, y);
+            //if (chunk.updated) continue;
+
+            switch (state.scanMode) {
+            case Scan::BOTTOM_UP_L: l_bottomUpUpdate(chunk); break;
+            case Scan::BOTTOM_UP_R: r_bottomUpUpdate(chunk); break;
+            }
+        }
 }
 
-Chunk* Game::getChunk(s32 x, s32 y) {
-    // if chunk exists, return it
-    // else create it and return it
-
-    return nullptr;
+void Game::l_bottomUpUpdate(Chunk& chunk) {
+    for (s32 y = CHUNK_SIZE - 1; y >= 0; y--)
+        for (s32 x = 0; x < CHUNK_SIZE; x++) {
+            if () { updateCell(chunk.cells[cellIdx(x, y)], x + chunk.x, y + chunk.y); }
+        }
 }
 
-void Game::createChunk(s32 x, s32 y) {}
+void Game::r_bottomUpUpdate(Chunk& chunk) {
+    for (s32 y = CHUNK_SIZE - 1; y >= 0; y--)
+        for (s32 x = CHUNK_SIZE - 1; x >= 0; x--) { updateCell(chunk.cells[cellIdx(x, y)], x + chunk.x, y + chunk.y); }
+}
+
+inline Chunk& Game::getChunk(s32 x, s32 y) {
+    if (!chunkMap.contains({x, y})) createChunk(x, y);
+    Chunk& chunk = chunkMap[{x, y}];
+    return chunk;
+}
+
+inline void Game::createChunk(s32 x, s32 y) { chunkMap[{x, y}] = Chunk(x, y); }
+
+/*--------------------------------------------------------------------------------------
+---- Updating Cells --------------------------------------------------------------------
+--------------------------------------------------------------------------------------*/
+
+bool Game::updateCell(Cell& c, u16 x, u16 y) {
+    //if (c.updated) return true;
+
+    switch (c.matID) {
+    case MaterialID::EMPTY: return false;
+    case MaterialID::SAND: return updateSand(x, y);
+    case MaterialID::WATER: return updateWater(x, y);
+    case MaterialID::CONCRETE: return false;
+    case MaterialID::NATURAL_GAS:
+        return updateNaturalGas(x, y);
+        //case MaterialID::FIRE:          return updateFire(x, y);
+    }
+    return false;
+}
 
 /*--------------------------------------------------------------------------------------
 ---- Texture Update Routines ----------------------------------------------------------

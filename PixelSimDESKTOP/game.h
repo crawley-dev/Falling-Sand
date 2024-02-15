@@ -41,7 +41,8 @@ struct Chunk {
     // u16 width, height;    // chunk size is fixed at 8x8 << atleast rn
     s32 x, y;        // chunk position in the world
     u64 cellUpdates; // each cell in a chunk has a bit in this flag.
-    bool updated;    // still need a bool for the chunk itself sadge.. （*゜ー゜*）
+    //bool updated;    // still need a bool for the chunk itself sadge.. （*゜ー゜*）
+    // maybe i don't need it! if cellUpdates == 0, no cells need updating therefore skip!
     std::vector<Cell> cells;
 
     Chunk(s32 X, s32 Y) {
@@ -72,15 +73,15 @@ private:
     void simulate(AppState& state);
 
     // 1 loop, change variables based on left or right
-    // void l_bottomUp_Update  (std::vector<Cell>& cells); // pass in chunk
-    // void r_bottomUp_Update  (std::vector<Cell>& cells); // pass in chunk
+    void l_bottomUpUpdate(Chunk& chunk);
+    void r_bottomUpUpdate(Chunk& chunk);
 
     // void querySwap          (u16 x1, u16 y1, u16 x2, u16 y2);
     // void swapCells          (u16 x1, u16 y1, u16 x2, u16 y2);
     // void changeMaterial     (u16 x, u16 y, u8 newMaterial);
 
     // void updateChunk(Chunk &c);
-    // void updateCell(Cell &c);       // ref necessary?
+    bool updateCell(Cell& c, u16 x, u16 y); // ref necessary?
     // void updateSand(Cell &c);       // ref necessary?
     // void updateWater(Cell &c);      // ref necessary?
     // void updateNaturalGas(Cell &c); // ref necessary?
@@ -96,11 +97,13 @@ private:
 
     static bool outOfBounds(u8 x, u8 y) { return x >= CHUNK_SIZE || y >= CHUNK_SIZE || x < 0 || y < 0; }
     static u8 cellIdx(u8 x, u8 y) { return (y * CHUNK_SIZE) + x; }
-    s32 spaccy_textureIdx(s16 x, s16 y) { return 4 * ((y - cameraY) * textureWidth) + (x - cameraX); } // position relative to camera. is it in frame? where abouts?
+    s32 spaccy_textureIdx(s16 x, s16 y) {
+        return 4 * ((y - cameraY) * textureWidth) + (x - cameraX);
+    } // position relative to camera. is it in frame? where abouts?
     u32 textureIdx(u16 x, u16 y) { return 4 * ((y * textureWidth) + x); }
 
 
-    Chunk* getChunk(s32 x, s32 y);
+    Chunk& getChunk(s32 x, s32 y);
     void createChunk(s32 x, s32 y);
 
     template <typename T> // cheeky template
@@ -129,6 +132,6 @@ private:
 
     std::vector<Material> materials; // material data
     // std::vector<Chunk*> chunkChanges;
-    std::vector<Chunk> chunks; // for iterating over all chunks
-    // std::unordered_map<std::pair<s32,s32>, Chunk, boost::hash<std::pair<s32,s32>>> chunkMap;    // for indexing into a chunk
+    std::vector<Chunk> chunks;                                                                 // for iterating over all chunks
+    std::unordered_map<std::pair<s32, s32>, Chunk, boost::hash<std::pair<s32, s32>>> chunkMap; // for indexing into a chunk
 };

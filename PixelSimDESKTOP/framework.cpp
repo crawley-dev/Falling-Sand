@@ -1,6 +1,8 @@
 #pragma once
-#include "framework.h"
+// clang-format off
 #include "pch.h"
+#include "framework.h"
+// clang-format on
 
 Framework::Framework() {}
 Framework::~Framework() {}

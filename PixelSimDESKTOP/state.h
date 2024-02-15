@@ -118,10 +118,10 @@ struct Update {
 
 struct Scan {
     enum : u8 {
-        BOTTOM_UP_LEFT,
-        BOTTOM_UP_RIGHT,
-        TOP_DOWN_LEFT,
-        TOP_DOWN_RIGHT,
+        BOTTOM_UP_L,
+        BOTTOM_UP_R,
+        TOP_DOWN_L,
+        TOP_DOWN_R,
         SNAKE,
         GAME_OF_LIFE,
         COUNT,
