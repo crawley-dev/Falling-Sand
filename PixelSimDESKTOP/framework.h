@@ -22,15 +22,12 @@ public:
     void render();
     void clean();
 
-    inline bool
-    running() const {
-        return applicationRunning;
-    } // const means this function cannot modify any member variables
-
+    // Texture Handling
+    inline bool running() const { return applicationRunning; } // const means this function cannot modify any member variables
 
 private:
-    void loadImageRGB(TextureData &texture, std::string path);  // loads an image into a 3 byte per pixel RGB  array
-    void loadImageRGBA(TextureData &texture, std::string path); // loads an image into a 4 byte per pixel RGBA array
+    void loadImageRGB(TextureData& texture, std::string path);
+    void loadImageRGBA(TextureData& texture, std::string path); // png is somehow rgb not rgba..
 
     // File Load/Saves
     void saveToFile(TextureData &texture);
