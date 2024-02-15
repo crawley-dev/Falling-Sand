@@ -6,50 +6,54 @@
 //#include <SDL.h>
 //#include <SDL_opengl.h>
 //#include <SDL_image.h>
-#include "interface.h"
 #include "game.h"
+#include "interface.h"
 
 
 class Framework {
 public:
-    Framework();	// Constructor
-    ~Framework();	// Deconstructor
+    Framework();  // Constructor
+    ~Framework(); // Deconstructor
 
     // Application Cycle Abstraction
-    bool init(const char* title, int xpos, int ypos, int width, int height);
+    bool init(const char *title, int xpos, int ypos, int width, int height);
     void handleEvents();
     void update();
     void render();
     void clean();
 
-    inline bool running() const { return applicationRunning; } // const means this function cannot modify any member variables
+    inline bool
+    running() const {
+        return applicationRunning;
+    } // const means this function cannot modify any member variables
 
 
 private:
+    void loadImageRGB(TextureData &texture, std::string path);  // loads an image into a 3 byte per pixel RGB  array
+    void loadImageRGBA(TextureData &texture, std::string path); // loads an image into a 4 byte per pixel RGBA array
+
+    // File Load/Saves
+    void saveToFile(TextureData &texture);
+    void loadFromFile(TextureData &texture, std::string path);
+
     // Texture Handling
-    void loadImageRGB(TextureData& texture, std::string path);
-    void loadImageRGBA(TextureData& texture, std::string path); // png is somehow rgb not rgba..
-
-    void saveToFile(TextureData& texture);
-    void loadFromFile(TextureData& texture, std::string path);
-
-    void createTexture(TextureData& texture);
-    void updateTexture(TextureData& texture);
+    void createTexture(TextureData &texture);
+    void updateTexture(TextureData &texture);
     void reloadTextures();
-   
-    // Internal Functions
+
+    // game->mouseDraw with additional error handling.
     void mouseDraw();
-    
-   /*----------------------------------------------------------------
+
+    /*----------------------------------------------------------------
    ---- Variables ---------------------------------------------------
    ----------------------------------------------------------------*/
 
 
     bool applicationRunning = false;
 
-    AppState state;
-    Game* game = nullptr; // std::unique_ptr<Game>      
-    Interface* interface = nullptr;	// std::unique_ptr<Interface>  
-    SDL_Window* window = nullptr; // could use a unique ptr but would require a refactor, 
-    SDL_GLContext gl_context = nullptr; // thats too much effort for some memory management.
+    AppState state;                     // consolidated shared state into a structure.
+    Game *game               = nullptr; // std::unique_ptr<Game>
+    Interface *interface     = nullptr; // std::unique_ptr<Interface>
+    SDL_Window *window       = nullptr; // could use a unique ptr but would require a refactor,
+    SDL_GLContext gl_context = nullptr; // thats too much effort for some 'useless' memory safety.
 };
