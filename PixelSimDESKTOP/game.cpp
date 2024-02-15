@@ -54,8 +54,7 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
 }
 
 void Game::update(AppState &state, std::vector<u8> &textureData) {
-    if (state.runSim)
-        simulate(state);
+    if (state.runSim) simulate(state);
 
     state.textureChanges = textureChanges.size();
     state.cellChanges    = cells.size(); //chunks.size() * CHUNK_SIZE * CHUNK_SIZE;//cells.size();
@@ -64,8 +63,7 @@ void Game::update(AppState &state, std::vector<u8> &textureData) {
     if (sizeChanged) {
         updateEntireTextureData(textureData);
         sizeChanged = false;
-    } else
-        updateTextureData(textureData);
+    } else updateTextureData(textureData);
 }
 
 void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
@@ -76,10 +74,8 @@ void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) 
     newCells.reserve(newCellWidth * newCellHeight);
     for (s32 y = 0; y < newCellHeight; y++)
         for (s32 x = 0; x < newCellWidth; x++)
-            if (outOfBounds(x, y))
-                newCells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants - 1), 0);
-            else
-                newCells.push_back(cells[cellIdx(x, y)]);
+            if (outOfBounds(x, y)) newCells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants - 1), 0);
+            else newCells.push_back(cells[cellIdx(x, y)]);
 
     sizeChanged = true;
 
@@ -176,12 +172,9 @@ void Game::golUpdate() {
             adjAlive += (cells[cellIdx(x + 1, y + 1)].matID == MaterialID::GOL_ALIVE); // BR
 
             if (c.matID == MaterialID::GOL_ALIVE)
-                if (adjAlive != 2 && adjAlive != 3)
-                    updateCellLambda(x, y, MaterialID::EMPTY, c.variant);
-                else
-                    updateCellLambda(x, y, MaterialID::GOL_ALIVE, c.variant);
-            else if (c.matID == MaterialID::EMPTY && adjAlive == 3)
-                updateCellLambda(x, y, MaterialID::GOL_ALIVE, c.variant);
+                if (adjAlive != 2 && adjAlive != 3) updateCellLambda(x, y, MaterialID::EMPTY, c.variant);
+                else updateCellLambda(x, y, MaterialID::GOL_ALIVE, c.variant);
+            else if (c.matID == MaterialID::EMPTY && adjAlive == 3) updateCellLambda(x, y, MaterialID::GOL_ALIVE, c.variant);
         }
 
     for (auto &[cell, coords] : updatedCells) cells[cellIdx(coords.first, coords.second)] = cell;
@@ -194,8 +187,7 @@ void Game::golUpdate() {
 
 bool Game::updateCell(u16 x, u16 y) {
     Cell &c = cells[cellIdx(x, y)];
-    if (c.updated)
-        return true;
+    if (c.updated) return true;
 
     switch (c.matID) {
     case MaterialID::EMPTY: return false;
@@ -231,8 +223,7 @@ bool Game::updateSand(u16 x, u16 y) {
         if (querySwap(x, y, x + rand, y + yDispersion + 1)) {
             xDispersion = rand;
             movesLeft--;
-        } else
-            break;
+        } else break;
     }
 
     return trySwap(x, y, x + xDispersion, y + yDispersion);
@@ -257,20 +248,14 @@ bool Game::updateWater(u16 x, u16 y) {
 
         u8 dX = abs(xDispersion) + 1;
         if (getRand<u8>(1, 100) > 50) {
-            if (querySwap(x, y, x + dX, y + yDispersion))
-                xDispersion = dX;
-            else if (querySwap(x, y, x - dX, y + yDispersion))
-                xDispersion = -dX;
-            else
-                goto ESCAPE_WHILE_WATER;
+            if (querySwap(x, y, x + dX, y + yDispersion)) xDispersion = dX;
+            else if (querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
+            else goto ESCAPE_WHILE_WATER;
             movesLeft--;
         } else {
-            if (querySwap(x, y, x - dX, y + yDispersion))
-                xDispersion = -dX;
-            else if (querySwap(x, y, x + dX, y + yDispersion))
-                xDispersion = dX;
-            else
-                goto ESCAPE_WHILE_WATER;
+            if (querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
+            else if (querySwap(x, y, x + dX, y + yDispersion)) xDispersion = dX;
+            else goto ESCAPE_WHILE_WATER;
             movesLeft--;
         }
     }
@@ -293,20 +278,14 @@ bool Game::updateNaturalGas(u16 x, u16 y) {
 
         u8 dX = abs(xDispersion) + 1;
         if (getRand<u8>(1, 100) > 50) {
-            if (querySwapAbove(x, y, x + dX, y + yDispersion))
-                xDispersion = dX;
-            else if (querySwapAbove(x, y, x - dX, y + yDispersion))
-                xDispersion = -dX;
-            else
-                goto ESCAPE_WHILE_NATURAL_GAS;
+            if (querySwapAbove(x, y, x + dX, y + yDispersion)) xDispersion = dX;
+            else if (querySwapAbove(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
+            else goto ESCAPE_WHILE_NATURAL_GAS;
             movesLeft--;
         } else {
-            if (querySwapAbove(x, y, x - dX, y + yDispersion))
-                xDispersion = -dX;
-            else if (querySwapAbove(x, y, x + dX, y + yDispersion))
-                xDispersion = dX;
-            else
-                goto ESCAPE_WHILE_NATURAL_GAS;
+            if (querySwapAbove(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
+            else if (querySwapAbove(x, y, x + dX, y + yDispersion)) xDispersion = dX;
+            else goto ESCAPE_WHILE_NATURAL_GAS;
             movesLeft--;
         }
     }
@@ -316,60 +295,51 @@ ESCAPE_WHILE_NATURAL_GAS:
 }
 
 bool Game::trySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
-    if (outOfBounds(x1, y1) || outOfBounds(x2, y2))
-        return false;
+    if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
 
     Cell &c1 = cells[cellIdx(x1, y1)];
     Cell &c2 = cells[cellIdx(x2, y2)];
-    if (materials[c1.matID].density > materials[c2.matID].density)
-        return false;
+    if (materials[c1.matID].density > materials[c2.matID].density) return false;
 
     swapCells(x1, y1, x2, y2);
     return true;
 }
 
 bool Game::querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
-    if (outOfBounds(x1, y1) || outOfBounds(x2, y2))
-        return false;
+    if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
 
     Cell &c1 = cells[cellIdx(x1, y1)];
     Cell &c2 = cells[cellIdx(x2, y2)];
     //printf("c1: %d, c2: %d\n", c1.matID, c2.matID); // "c1: 4, c2: 0\n")
-    if (materials[c1.matID].density >= materials[c2.matID].density)
-        return false;
+    if (materials[c1.matID].density >= materials[c2.matID].density) return false;
 
     swapCells(x1, y1, x2, y2);
     return true;
 }
 
 bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
-    if (outOfBounds(x1, y1) || outOfBounds(x2, y2))
-        return false;
+    if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
 
     Cell &c1 = cells[cellIdx(x1, y1)];
     Cell &c2 = cells[cellIdx(x2, y2)];
-    if (materials[c1.matID].density <= materials[c2.matID].density)
-        return false;
+    if (materials[c1.matID].density <= materials[c2.matID].density) return false;
 
     swapCells(x1, y1, x2, y2);
     return true;
 }
 
 bool Game::querySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
-    if (outOfBounds(x1, y1) || outOfBounds(x2, y2))
-        return false;
+    if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
 
     Cell &c1 = cells[cellIdx(x1, y1)];
     Cell &c2 = cells[cellIdx(x2, y2)];
-    if (materials[c1.matID].density <= materials[c2.matID].density)
-        return false;
+    if (materials[c1.matID].density <= materials[c2.matID].density) return false;
 
     return true;
 }
 
 void Game::changeMaterial(u16 x, u16 y, u8 newMaterial) {
-    if (outOfBounds(x, y))
-        return; // not consistent control flow, but it works.
+    if (outOfBounds(x, y)) return; // not consistent control flow, but it works.
     Cell &c   = cells[cellIdx(x, y)];
     c.matID   = newMaterial;
     c.updated = true;
@@ -399,15 +369,13 @@ void Game::swapCells(u16 x1, u16 y1, u16 x2, u16 y2) {
 
 void Game::createDrawIndicators(u16 mx, u16 my, u16 size, u8 shape) {
     auto boundedPushBack = [&](u16 x, u16 y, u8 mat = 0) -> void { // need a 3rd param for consistency.
-        if (!outOfBounds(x, y))
-            drawIndicators.push_back(std::pair<u16, u16>(x, y));
+        if (!outOfBounds(x, y)) drawIndicators.push_back(std::pair<u16, u16>(x, y));
     };
 
     const u32 x = mx / scaleFactor;
     const u32 y = my / scaleFactor;
 
-    if (outOfBounds(x, y))
-        return;
+    if (outOfBounds(x, y)) return;
 
     switch (shape) {
     case Shape::CIRCLE:
@@ -422,8 +390,7 @@ void Game::mouseDraw(u16 mx, u16 my, u16 size, u8 drawChance, u8 material, u8 sh
     const u32 x = mx / scaleFactor;
     const u32 y = my / scaleFactor;
 
-    if (outOfBounds(x, y))
-        return;
+    if (outOfBounds(x, y)) return;
 
     auto changeMaterialLambda = [&](u16 x, u16 y, u8 material) -> void { changeMaterial(x, y, material); };
     switch (shape) {
@@ -445,8 +412,7 @@ void Game::drawCircle(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::f
         int tY = (i / rr) - size;
 
         if (tX * tX + tY * tY <= r2)
-            if (getRand<s64>(1, 100) <= drawChance)
-                foo(x + tX, y + tY, material);
+            if (getRand<s64>(1, 100) <= drawChance) foo(x + tX, y + tY, material);
     }
 }
 
@@ -471,39 +437,32 @@ void Game::drawCircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
         if (d > 0) {
             tY--;
             d = d + 4 * (tX - tY) + 10;
-        } else
-            d = d + 4 * tX + 6;
+        } else d = d + 4 * tX + 6;
         drawCircleSegments(x, y, tX, tY, material);
     }
 }
 
 void Game::drawLine(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) {
     for (s32 tX = -size; tX < size; tX++)
-        if (getRand<s64>(1, 100) <= drawChance)
-            foo(x + tX, y, material);
+        if (getRand<s64>(1, 100) <= drawChance) foo(x + tX, y, material);
 }
 
 void Game::drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) {
     for (s32 tY = -size / 2; tY < size / 2; tY++)
         for (s32 tX = -size / 2; tX < size / 2; tX++)
-            if (getRand<s64>(1, 100) <= drawChance)
-                foo(x + tX, y + tY, material);
+            if (getRand<s64>(1, 100) <= drawChance) foo(x + tX, y + tY, material);
 }
 
 void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) {
     // draws from centre, not top left.
     for (s32 tX = -size / 2; tX <= size / 2; tX++)
-        if (getRand<s64>(1, 100) <= drawChance)
-            foo(x + tX, y - size / 2, material);
+        if (getRand<s64>(1, 100) <= drawChance) foo(x + tX, y - size / 2, material);
     for (s32 tX = -size / 2; tX <= size / 2; tX++)
-        if (getRand<s64>(1, 100) <= drawChance)
-            foo(x + tX, y + size / 2, material);
+        if (getRand<s64>(1, 100) <= drawChance) foo(x + tX, y + size / 2, material);
     for (s32 tY = -size / 2; tY <= size / 2; tY++)
-        if (getRand<s64>(1, 100) <= drawChance)
-            foo(x - size / 2, y + tY, material);
+        if (getRand<s64>(1, 100) <= drawChance) foo(x - size / 2, y + tY, material);
     for (s32 tY = -size / 2; tY <= size / 2; tY++)
-        if (getRand<s64>(1, 100) <= drawChance)
-            foo(x + size / 2, y + tY, material);
+        if (getRand<s64>(1, 100) <= drawChance) foo(x + size / 2, y + tY, material);
 }
 
 /*--------------------------------------------------------------------------------------
