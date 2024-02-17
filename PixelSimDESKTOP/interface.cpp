@@ -204,25 +204,26 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         const int   TITLE_BAR_OFFSET_Y    = 28;
         const int   COLOUR_VARIANCE_RANGE = 20;
         const char* scanMode              = Scan::names[state.scanMode].data();
+        const u16   cellWidth             = texture.width / state.scaleFactor;
+        const u16   cellHeight            = texture.height / state.scaleFactor;
         state.mouseX                      = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
         state.mouseY                      = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
 
-
-        ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / frameRate, frameRate);
-        ImGui::Text("Application Framecount: %d\n", ImGui::GetFrameCount());
-        ImGui::Text("Game Framecount: %d\n", state.frame);
-        ImGui::Text("Scale Factor: %d\n", state.scaleFactor);
-        ImGui::Text("Textures Reloaded: %d Times\n", state.texReloadCount);
-        ImGui::Text("Displayed Texture: %s\n", TexID::names[loadedTex].data());
-        ImGui::Text("Texture Width: %d\n", texture.width);
-        ImGui::Text("Texture Height: %d\n", texture.height);
-        ImGui::Text("Cell Width: %d\n", texture.width / state.scaleFactor);
-        ImGui::Text("Cell Height: %d\n", texture.height / state.scaleFactor);
-        ImGui::Text("Texture Updates: %d\n", state.textureChanges);
-        ImGui::Text("Cell Updates: %d\n", state.cellChanges);
-        ImGui::Text("Mouse X: %d\n", state.mouseX);
-        ImGui::Text("Mouse Y: %d\n", state.mouseY);
-        ImGui::Text("Mouse Out of Bounds? %d\n", OutofBounds);
+        // clang-format off
+        ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)"  ,   1000.0f / frameRate, frameRate  );
+        ImGui::Text("Application Framecount: %d"                    ,   ImGui::GetFrameCount()          );
+        ImGui::Text("Game Framecount: %d"                           ,   state.frame                     );
+        ImGui::Text("Textures Reloaded: %d Times"                   ,   state.texReloadCount            );
+        ImGui::Text("Displayed Texture: %s"                         ,   TexID::names[loadedTex].data()  );
+        ImGui::Text("Texture Updates: %d"                           ,   state.textureChanges            );
+        ImGui::Text("Cell Updates: %d"                              ,   state.cellChanges               );
+        ImGui::Text("Scale Factor: %d"                              ,   state.scaleFactor               );
+        ImGui::Text("Texture Dimensions: (%d,%d)"                   ,   texture.width, texture.height   );
+        ImGui::Text("Simulation Dimensions: (%d,%d)"                ,   cellWidth, cellHeight           );
+        ImGui::Text("Camera Pos: (%d,%d)"                           ,   state.cameraX, state.cameraY    );
+        ImGui::Text("Mouse Pos: (%d,%d)"                            ,   state.mouseX, state.mouseY      );
+        ImGui::Text("Is Mouse Out of Bounds? %d"                    ,   OutofBounds                     );
+        // clang-format on  
 
         ImGui::TreePop();
     }

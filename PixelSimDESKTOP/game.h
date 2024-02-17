@@ -93,7 +93,10 @@ private:
     // void drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     // void drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
 
-    static bool outOfBounds(u8 x, u8 y) { return x >= CHUNK_SIZE || y >= CHUNK_SIZE || x < 0 || y < 0; }
+    bool outofCameraBounds(u8 x, u8 y) const {
+        return x >= (cellWidth + cameraX) || y >= (cellHeight + cameraY) || x < cameraX || y < cameraX;
+    }
+    static bool outOfChunkBounds(u8 x, u8 y) { return x >= CHUNK_SIZE || y >= CHUNK_SIZE || x < 0 || y < 0; }
     static u8   cellIdx(u8 x, u8 y) { return (y * CHUNK_SIZE) + x; }
     s32         spaccy_textureIdx(s16 x, s16 y) const {
         return 4 * ((y - cameraY) * textureWidth) + (x - cameraX);
@@ -101,8 +104,8 @@ private:
     u32 textureIdx(u16 x, u16 y) const { return 4 * ((y * textureWidth) + x); }
 
 
-    Chunk& getChunk(s32 x, s32 y);
-    void   createChunk(s32 x, s32 y);
+    //Chunk& getChunk(s32 x, s32 y);
+    //void createChunk(s32 x, s32 y);
 
     template <typename T> // cheeky template
     T getRand(T min = -1, T max = 1) {
@@ -124,13 +127,13 @@ private:
     u8  solidDispersion, fluidDispersion, gasDispersion;
     u8  scaleFactor;                 // cell 1x1 --> texture N x N
     s32 cameraX, cameraY;            // camera posistion in the world. from top left corner.
-    u32 cellWidth, cellHeight;       // size of render target in cell
-    u32 textureWidth, textureHeight; // size of render target.
+    s32 cellWidth, cellHeight;       // size of render target in cell
+    s32 textureWidth, textureHeight; // size of render target.
     u64 randSeed = 1234567890987654321;
 
     std::vector<Chunk*> chunkChanges;
     //std::vector<std::pair<u16, u16>>                                                 textureChanges;
-    std::vector<Material>                                                            materials; // material data
-    std::vector<Chunk>                                                               chunks;    // for iterating over all chunks
-    std::unordered_map<std::pair<s32, s32>, Chunk, boost::hash<std::pair<s32, s32>>> chunkMap;  // for indexing into a chunk
+    std::vector<Material>                                                             materials; // material data
+    std::vector<Chunk*>                                                               chunks;    // for iterating over all chunks
+    std::unordered_map<std::pair<s32, s32>, Chunk*, boost::hash<std::pair<s32, s32>>> chunkMap;  // for indexing into a chunk
 };

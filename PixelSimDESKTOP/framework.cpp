@@ -114,10 +114,10 @@ void Framework::update() {
 
     if (ImGui::GetFrameCount() % 2 == 0) {
         u8 multiplier = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) ? 3 : 1;
-        state.cameraY -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_W))); // use floats?
-        state.cameraX -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_A))); // use floats?
-        state.cameraY += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_S))); // use floats?
-        state.cameraX += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_D))); // use floats?
+        state.cameraY += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_W))); // use floats?
+        state.cameraX += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_A))); // use floats?
+        state.cameraY -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_S))); // use floats?
+        state.cameraX -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_D))); // use floats?
     }
     if (io.MouseDown[0]) mouseDraw();
 
@@ -139,7 +139,8 @@ void Framework::update() {
 
     game->update(state, texture.data);
 
-    for (TextureData& tex : state.textures) updateTexture(tex);
+    for (TextureData& tex : state.textures)
+        updateTexture(tex);
 
     interface->gameWindow(state);
 }
@@ -154,7 +155,8 @@ void Framework::render() {
 
     // Placed After ImGui::Render() to prevent ImGui HUD overwriting my textures.
     if (ImGui::GetFrameCount() == 2) {
-        for (TextureData texture : state.textures) createTexture(texture);
+        for (TextureData texture : state.textures)
+            createTexture(texture);
 
         TextureData& texture = state.textures[TexIndex::GAME];
         game->init(texture.width, texture.height, state.scaleFactor);
@@ -177,7 +179,8 @@ void Framework::clean() {
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    for (TextureData& tex : state.textures) glDeleteTextures(1, &tex.id);
+    for (TextureData& tex : state.textures)
+        glDeleteTextures(1, &tex.id);
 
     // free heap memory.
     delete game;
