@@ -31,6 +31,11 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         ImGui::Checkbox("Run Simulation", &state.runSim);
 
         if (ImGui::Button("Reset Sim")) state.resetSim = true;
+        ImGui::SameLine();
+        if (ImGui::Button("Reset Camera")) {
+            state.cameraX = 0;
+            state.cameraY = 0;
+        }
 
         if (ImGui::Button("Decrease Cell Scale")) {
             state.scaleFactor--;

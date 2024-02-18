@@ -107,17 +107,19 @@ void Framework::update() {
 
     if (ImGui::GetFrameCount() <= 2) return;
 
+
     ImGuiIO&     io      = ImGui::GetIO();
     TextureData& texture = state.textures[TexIndex::GAME];
+
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) state.runSim = !state.runSim;
 
     if (ImGui::GetFrameCount() % 2 == 0) {
         u8 multiplier = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) ? 3 : 1;
         state.cameraY += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_W))); // use floats?
-        state.cameraX += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_A))); // use floats?
+        state.cameraX -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_A))); // use floats?
         state.cameraY -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_S))); // use floats?
-        state.cameraX -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_D))); // use floats?
+        state.cameraX += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_D))); // use floats?
     }
     if (io.MouseDown[0]) mouseDraw();
 
@@ -137,7 +139,7 @@ void Framework::update() {
         state.reloadGame = false;
     }
 
-    game->update(state, texture.data);
+    if (texture.width != 0 && texture.height != 0) game->update(state, texture.data);
 
     for (TextureData& tex : state.textures)
         updateTexture(tex);
