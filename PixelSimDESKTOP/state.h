@@ -174,7 +174,7 @@ struct AppState {
     u8 drawShape             = Shape::SQUARE;
     u8 drawMaterial          = MaterialID::WATER;
     u8 drawChance            = 50;
-    u8 scaleFactor           = 10;
+    u8 scaleFactor           = 5;
     u8 fluidDispersionFactor = 4;
     u8 solidDispersionFactor = 2;
 

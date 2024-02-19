@@ -12,8 +12,6 @@ void Game::init(u16 width, u16 height, u8 scale) {
     cellWidth     = textureWidth / scaleFactor;
     cellHeight    = textureHeight / scaleFactor;
 
-    printf("textureWidth: %d, textureHeight: %d\n", textureWidth, textureHeight);
-
     solidDispersion = 2;
     fluidDispersion = 4;
     gasDispersion   = 6;
@@ -61,10 +59,14 @@ void Game::update(AppState& state, std::vector<u8>& textureData) {
 
     if (state.runSim) simulate(state);
     updateEntireTexture(textureData);
+    //if (sizeChanged)
+    //    updateEntireTexture(textureData);
+    //else
+    //    updateTexture(textureData);
 }
 
 void Game::reload(u16 width, u16 height, u8 scale) {
-    printf("reloaded\n width: %d\n  height: %d\n  scale: %d\n", width, height, scale);
+    printf("reloaded! width: %d  height: %d  scale: %d", width, height, scale);
     textureWidth  = width;
     textureHeight = height;
     scaleFactor   = scale;
@@ -97,19 +99,25 @@ void Game::simulate(AppState& state) {
     // iterate in chunks
     auto func123 = [](s32 length) -> u8 { return (length % CHUNK_SIZE == 0) ? 0 : 1; };
 
-    s16 startChunkX, startChunkY;
-    if (cameraX < 0 || cameraY < 0) {
-        startChunkX = cameraX / CHUNK_SIZE - 1;
-        startChunkY = cameraY / CHUNK_SIZE - 1;
-    } else {
-        startChunkX = cameraX / CHUNK_SIZE;
-        startChunkY = cameraY / CHUNK_SIZE;
-    }
-
+    auto chunkCoords = toChunkCoords(cameraX, cameraY);
+    s16  startChunkX = chunkCoords.first;
+    s16  startChunkY = chunkCoords.second;
 
     s16 iterChunksX = cellWidth / CHUNK_SIZE + func123(cellWidth);
     s16 iterChunksY = cellHeight / CHUNK_SIZE + func123(cellHeight);
-    printf("iterating Chunks: (%d,%d) --> (%d,%d)\n", startChunkX, startChunkX, iterChunksX, iterChunksY);
+    //printf("top left: (%d,%d)\n", startChunkX, startChunkY);
+
+    // scuffed chunk renderer..
+    s32 offX = abs(cameraX) % 16;
+    s32 offY = abs(cameraY) % 16;
+    drawLine(offX, 0, offX, textureHeight - 1);
+    drawLine(0, offY, textureWidth - 1, offY);
+    for (s32 x = 1; x < iterChunksX; x++) {
+        drawLine(offX + (x * CHUNK_SIZE) - 1, 0, offX + (x * CHUNK_SIZE) - 1, textureHeight - 1);
+    }
+    for (s32 y = 1; y < iterChunksY; y++) {
+        drawLine(0, offY + (y * CHUNK_SIZE) - 1, textureWidth - 1, offY + (y * CHUNK_SIZE) - 1);
+    }
 
     //for (s32 y = cameraY; y < cellHeight + cameraY; y += CHUNK_SIZE) {
     //    for (s32 x = cameraX; x < cellWidth + cameraX; x += CHUNK_SIZE) {
@@ -145,11 +153,86 @@ inline Chunk* Game::createChunk(s16 x, s16 y) {
 
 
 /*--------------------------------------------------------------------------------------
----- Texture Update Routines ----------------------------------------------------------
+---- Drawing Algorithms ----------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
 
-void Game::updateTexture(std::vector<u8>& textureData) {}
+//https://stackoverflow.com/questions/10060046/drawing-lines-with-bresenhams-line-algorithm
+void Game::drawLine(s32 x1, s32 y1, s32 x2, s32 y2) {
+    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
+    dx  = x2 - x1;
+    dy  = y2 - y1;
+    dx1 = fabs(dx);
+    dy1 = fabs(dy);
+    px  = 2 * dy1 - dx1;
+    py  = 2 * dx1 - dy1;
+    if (dy1 <= dx1) {
+        if (dx >= 0) {
+            x  = x1;
+            y  = y1;
+            xe = x2;
+        } else {
+            x  = x2;
+            y  = y2;
+            xe = x1;
+        }
+        textureChanges.push_back({{255, 30, 30, 255}, {x, y}});
+        //putpixel(x, y, c);
+        for (i = 0; x < xe; i++) {
+            x = x + 1;
+            if (px < 0) {
+                px = px + 2 * dy1;
+            } else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    y = y + 1;
+                } else {
+                    y = y - 1;
+                }
+                px = px + 2 * (dy1 - dx1);
+            }
+            textureChanges.push_back({{255, 30, 30, 255}, {x, y}});
+        }
+    } else {
+        if (dy >= 0) {
+            x  = x1;
+            y  = y1;
+            ye = y2;
+        } else {
+            x  = x2;
+            y  = y2;
+            ye = y1;
+        }
+        textureChanges.push_back({{255, 30, 30, 255}, {x, y}});
+        for (i = 0; y < ye; i++) {
+            y = y + 1;
+            if (py <= 0) {
+                py = py + 2 * dx1;
+            } else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    x = x + 1;
+                } else {
+                    x = x - 1;
+                }
+                py = py + 2 * (dx1 - dy1);
+            }
+            textureChanges.push_back({{255, 30, 30, 255}, {x, y}});
+        }
+    }
+}
+
+/*--------------------------------------------------------------------------------------
+---- Texture Update Routines ----------------------------------------------------------
+--------------------------------------------------------------------------------------*/
+
+void Game::updateTexture(std::vector<u8>& textureData) {
+    for (auto& [colour, coords] : textureChanges) { // ALL IN CELL COORDS
+        const s32 idx        = textureIdx(coords.first, coords.second);
+        textureData[idx + 0] = colour[0];
+        textureData[idx + 1] = colour[1];
+        textureData[idx + 2] = colour[2];
+        textureData[idx + 3] = colour[3];
+    }
+}
 
 void Game::updateEntireTexture(std::vector<u8>& textureData) {
     for (s32 y = 0; y < cellHeight; y++)
@@ -167,6 +250,50 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
                 }
         }
 
+
+    for (Chunk* chunk : chunks) {
+        const s32 worldX = chunk->x * CHUNK_SIZE - cameraX;
+        const s32 worldY = (chunk->y - 1) * CHUNK_SIZE + cameraY;
+        if (outOfBounds(worldX, worldY) && outOfBounds(worldX + CHUNK_SIZE - 1, worldY) &&
+            outOfBounds(worldX, worldY + CHUNK_SIZE - 1) && outOfBounds(worldX + CHUNK_SIZE - 1, worldY + CHUNK_SIZE - 1)) {
+            continue;
+        }
+
+        for (s32 y = 0; y < CHUNK_SIZE; y++)
+            for (s32 x = 0; x < CHUNK_SIZE; x++) {
+                if (outOfBounds(x + worldX, y + worldY)) continue;
+
+                const Cell&            c       = chunk->cells[cellIdx(x, y)];
+                const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
+
+                for (s32 tY = 0; tY < scaleFactor; tY++) {
+                    for (s32 tX = 0; tX < scaleFactor; tX++) {
+                        const u32 idx        = textureIdx(((x + worldX) * scaleFactor) + tX, ((y + worldY) * scaleFactor) + tY);
+                        textureData[idx + 0] = variant[0];
+                        textureData[idx + 1] = variant[1];
+                        textureData[idx + 2] = variant[2];
+                        textureData[idx + 3] = variant[3];
+                    }
+                }
+            }
+    }
+
+    for (auto& [colour, coords] : textureChanges) { // ALL IN CELL COORDS
+                                                    //for (s32 tY = 0; tY < scaleFactor; tY++) {
+                                                    //    for (s32 tX = 0; tX < scaleFactor; tX++) {
+        //        const s32 idx = textureIdx((coords.first * scaleFactor) + tX, (coords.second * scaleFactor) + tY);
+        const s32 idx        = textureIdx(coords.first, coords.second);
+        textureData[idx + 0] = colour[0];
+        textureData[idx + 1] = colour[1];
+        textureData[idx + 2] = colour[2];
+        textureData[idx + 3] = colour[3];
+        //    }
+        //}
+    }
+    textureChanges.clear();
+}
+
+/*
     for (auto& chunk : chunks) { // iter over each chunk
         // next stage:: calc how much of a chunk can be rendered & do up to that.
         // 1100 - (1096 + 8) = -4   << camera(0,0)
@@ -201,17 +328,4 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
                 }
             }
         }
-    }
-
-    // draw red dot at centre of world.
-    if (cameraX > 0 && cameraY > 0 || cameraX + cellWidth < 0 && cameraY + cellHeight < 0) { return; }
-    for (s32 tY = 0; tY < scaleFactor; tY++) {
-        for (s32 tX = 0; tX < scaleFactor; tX++) {
-            const u32 idx        = textureIdx((abs(cameraX) * scaleFactor) + tX, (abs(cameraY) * scaleFactor) + tY);
-            textureData[idx + 0] = 255;
-            textureData[idx + 1] = 20;
-            textureData[idx + 2] = 20;
-            textureData[idx + 3] = 255;
-        }
-    }
-}
+    }*/

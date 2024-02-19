@@ -90,14 +90,17 @@ private:
     // void drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     // void drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
 
+    //void drawLine(Chunk* src, u8 srcX, u8 srcY, Chunk* dest, u8 destX, u8 destY);
+    void drawLine(s32 x1, s32 y1, s32 x2, s32 y2);
+
     bool outofCameraBounds(u8 x, u8 y) const {
         return x >= (cellWidth + cameraX) || y >= (cellHeight + cameraY) || x < cameraX || y < cameraX;
     }
-    bool        outOfBounds(s32 x, s32 y) const { return x >= cellWidth || y >= cellHeight || x < 0 || y < 0; }
-    static bool outOfChunkBounds(u8 x, u8 y) { return x >= CHUNK_SIZE || y >= CHUNK_SIZE || x < 0 || y < 0; }
-    //static std::pair<s16, s16> toChunkCoords(s32 x, s32 y) { return {floor(float(x) / CHUNK_SIZE), floor(float(x) / CHUNK_SIZE)}; }
-    static u8 cellIdx(u8 x, u8 y) { return (y * CHUNK_SIZE) + x; }
-    u32       textureIdx(u16 x, u16 y) const { return 4 * ((y * textureWidth) + x); }
+    bool                       outOfBounds(s32 x, s32 y) const { return x >= cellWidth || y >= cellHeight || x < 0 || y < 0; }
+    static bool                outOfChunkBounds(u8 x, u8 y) { return x >= CHUNK_SIZE || y >= CHUNK_SIZE || x < 0 || y < 0; }
+    static std::pair<s16, s16> toChunkCoords(s32 x, s32 y) { return {floor(float(x) / CHUNK_SIZE), floor(float(y) / CHUNK_SIZE)}; }
+    static u8                  cellIdx(u8 x, u8 y) { return (y * CHUNK_SIZE) + x; }
+    u32                        textureIdx(u16 x, u16 y) const { return 4 * ((y * textureWidth) + x); }
 
 
     template <typename T> // cheeky template
@@ -124,10 +127,9 @@ private:
     s32 textureWidth, textureHeight; // size of render target.
     u64 randSeed = 1234567890987654321;
 
-    std::vector<Chunk*> chunkChanges;
-    //std::vector<std::pair<u16, u16>>                                                 textureChanges;
-    std::vector<Material>                                                             materials;     // material data
-    std::vector<Chunk*>                                                               updatedChunks; // to update
-    std::vector<Chunk*>                                                               chunks;        // holds all chunks, for deleting
-    std::unordered_map<std::pair<s16, s16>, Chunk*, boost::hash<std::pair<s16, s16>>> chunkMap;      // for indexing into a chunk
+    //std::vector<Chunk*>                                                               updatedChunks; // to update
+    std::vector<std::pair<std::vector<u8>, std::pair<s32, s32>>>                      textureChanges;
+    std::vector<Material>                                                             materials; // material data
+    std::vector<Chunk*>                                                               chunks;    // holds all chunks, for deleting
+    std::unordered_map<std::pair<s16, s16>, Chunk*, boost::hash<std::pair<s16, s16>>> chunkMap;  // for indexing into a chunk
 };
