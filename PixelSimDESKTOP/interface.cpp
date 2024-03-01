@@ -4,8 +4,10 @@
 #include "interface.h"
 // clang-format on
 
-Interface::Interface() {}
-Interface::~Interface() {}
+Interface::Interface() {
+}
+Interface::~Interface() {
+}
 
 void Interface::main() {
     io = ImGui::GetIO(); // keep IO upto date
@@ -215,7 +217,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         state.mouseY                      = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
 
         // clang-format off
-        ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)"  ,   1000.0f / frameRate, frameRate  );
+        ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)"  ,   1000.0f / io.Framerate, io.Framerate);
         ImGui::Text("Application Framecount: %d"                    ,   ImGui::GetFrameCount()          );
         ImGui::Text("Game Framecount: %d"                           ,   state.frame                     );
         ImGui::Text("Textures Reloaded: %d Times"                   ,   state.texReloadCount            );
@@ -238,7 +240,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
 
 void Interface::gameWindow(AppState& state) {
     ImGui::Begin("GameWindow");
-    frameRate = io.Framerate;
+    //frameRate = io.Framerate;
 
     loadedTex            = loadedTex % state.textures.size();
     TextureData& texture = state.textures[TexIndex::GAME];
@@ -266,6 +268,11 @@ void Interface::gameWindow(AppState& state) {
         ImGui::BeginChild("GameRender");
         ImVec2 textureRenderSize = ImVec2(texture.width, texture.height);
         ImGui::Image((ImTextureID)texture.id, textureRenderSize, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+        if (ImGui::BeginItemTooltip()) {
+            ImGui::Text("chunk: (%d,%d)\nhash:%d", state.mChunkX, state.mChunkY, state.hash);
+            ImGui::EndTooltip();
+        }
+
         ImGui::EndChild();
     }
     ImGui::End();

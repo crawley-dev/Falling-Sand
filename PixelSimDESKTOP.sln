@@ -5,6 +5,11 @@ VisualStudioVersion = 17.3.32901.215
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PixelSimDESKTOP", "PixelSimDESKTOP\PixelSimDESKTOP.vcxproj", "{CF633A37-F142-4E1A-99A2-DCD3E1609B62}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{030051FE-DCF3-4FCA-AFD2-2D260683F7A9}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64

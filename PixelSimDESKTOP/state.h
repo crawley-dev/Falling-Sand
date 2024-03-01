@@ -189,4 +189,8 @@ struct AppState {
 
     s32 cameraX = 0;
     s32 cameraY = 0;
+
+    s64 hash    = 0;
+    s64 mChunkX = 0;
+    s64 mChunkY = 0;
 };

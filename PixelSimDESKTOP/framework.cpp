@@ -4,8 +4,10 @@
 #include "framework.h"
 // clang-format on
 
-Framework::Framework() {}
-Framework::~Framework() {}
+Framework::Framework() {
+}
+Framework::~Framework() {
+}
 
 bool Framework::init(const char* title, int xpos, int ypos, int width, int height) {
     // Setup SDL
@@ -333,9 +335,11 @@ void Framework::loadImageRGBA(TextureData& texture, std::string path) {
 
 
 // C:/Users/Tom/source/repos/TheCookiess/PixelPhysV2/Resources/Saves
-void Framework::saveToFile(TextureData& texture) {}
+void Framework::saveToFile(TextureData& texture) {
+}
 
-void Framework::loadFromFile(TextureData& texture, std::string path) {}
+void Framework::loadFromFile(TextureData& texture, std::string path) {
+}
 
 void Framework::createTexture(TextureData& texture) {
     texture.data = std::vector<GLubyte>(texture.width * texture.height * 4, 255);

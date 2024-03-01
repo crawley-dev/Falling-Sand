@@ -13,15 +13,17 @@ public:
     Interface();
     ~Interface();
 
-    void main();
-    void boilerPlate();
-    void debugMenu(AppState& state);
-    void gameWindow(AppState& state);
-    inline void demoWindow() { if (showDemoWindow) ImGui::ShowDemoWindow(&showDemoWindow); }
+    void        main();
+    void        boilerPlate();
+    void        debugMenu(AppState& state);
+    void        gameWindow(AppState& state);
+    inline void demoWindow() {
+        if (showDemoWindow) ImGui::ShowDemoWindow(&showDemoWindow);
+    }
 
 private:
     bool showDemoWindow = true;
-    int frameRate = 0;
-    int loadedTex = 0;
-    ImGuiIO& io = ImGui::GetIO();
+    //int frameRate = 0;
+    int      loadedTex = 0;
+    ImGuiIO& io        = ImGui::GetIO();
 };
