@@ -159,6 +159,40 @@ struct TextureData {
     TextureData() = default;
 };
 
+//struct HoverData {};
+
+template <typename T>
+struct Coord {
+    T x, y;
+
+    Coord<T> operator+(const Coord& c) {
+        return Coord<T>(x + c.x, y + c.y);
+    }
+
+    Coord<T> operator-(const Coord& c) {
+        return Coord<T>(x - c.x, y - c.y);
+    }
+
+    Coord<T> operator*(const Coord& c) {
+        return Coord<T>(x * c.x, y * c.y);
+    }
+
+    // <T> ??
+    Coord<T> operator/(const Coord& c) {
+        return Coord<T>(x / c.x, y / c.y);
+    }
+
+    Coord(T _x, T _y) {
+        x = _x;
+        y = _y;
+    }
+    Coord(T _n) {
+        x = _n;
+        y = _n;
+    }
+    Coord() = default;
+};
+
 struct AppState {
     std::vector<TextureData> textures;
     std::string              imagePath;
@@ -191,6 +225,10 @@ struct AppState {
     s32 cameraY = 0;
 
     s64 hash    = 0;
-    s64 mChunkX = 0;
-    s64 mChunkY = 0;
+    s16 mChunkX = 0;
+    s16 mChunkY = 0;
+    s32 mX      = 0;
+    s32 mY      = 0;
+    s32 cX      = 0;
+    s32 cY      = 0;
 };

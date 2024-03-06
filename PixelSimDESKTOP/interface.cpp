@@ -218,18 +218,18 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
 
         // clang-format off
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)"  ,   1000.0f / io.Framerate, io.Framerate);
-        ImGui::Text("Application Framecount: %d"                    ,   ImGui::GetFrameCount()          );
-        ImGui::Text("Game Framecount: %d"                           ,   state.frame                     );
-        ImGui::Text("Textures Reloaded: %d Times"                   ,   state.texReloadCount            );
-        ImGui::Text("Displayed Texture: %s"                         ,   TexID::names[loadedTex].data()  );
-        ImGui::Text("Texture Updates: %d"                           ,   state.textureChanges            );
-        ImGui::Text("Cell Updates: %d"                              ,   state.cellChanges               );
-        ImGui::Text("Scale Factor: %d"                              ,   state.scaleFactor               );
-        ImGui::Text("Texture Dimensions: (%d,%d)"                   ,   texture.width, texture.height   );
-        ImGui::Text("Simulation Dimensions: (%d,%d)"                ,   cellWidth, cellHeight           );
-        ImGui::Text("Camera Pos: (%d,%d)"                           ,   state.cameraX, state.cameraY    );
-        ImGui::Text("Mouse Pos: (%d,%d)"                            ,   state.mouseX, state.mouseY      );
-        ImGui::Text("Is Mouse Out of Bounds? %d"                    ,   OutofBounds                     );
+        ImGui::Text("Application Framecount: %d"                    ,   ImGui::GetFrameCount()              );
+        ImGui::Text("Game Framecount: %d"                           ,   state.frame                         );
+        ImGui::Text("Textures Reloaded: %d Times"                   ,   state.texReloadCount                );
+        ImGui::Text("Displayed Texture: %s"                         ,   TexID::names[loadedTex].data()      );
+        ImGui::Text("Texture Updates: %d"                           ,   state.textureChanges                );
+        ImGui::Text("Cell Updates: %d"                              ,   state.cellChanges                   );
+        ImGui::Text("Scale Factor: %d"                              ,   state.scaleFactor                   );
+        ImGui::Text("Texture Dimensions: (%d,%d)"                   ,   texture.width, texture.height       );
+        ImGui::Text("Simulation Dimensions: (%d,%d)"                ,   cellWidth, cellHeight               );
+        ImGui::Text("Camera Pos: (%d,%d)"                           ,   state.cameraX, state.cameraY        );
+        ImGui::Text("Mouse Pos: (%d,%d)"                            ,   state.mouseX, state.mouseY          );
+        ImGui::Text("Is Mouse Out of Bounds? %d"                    ,   OutofBounds                         );
         // clang-format on  
 
         ImGui::TreePop();
@@ -240,7 +240,6 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
 
 void Interface::gameWindow(AppState& state) {
     ImGui::Begin("GameWindow");
-    //frameRate = io.Framerate;
 
     loadedTex            = loadedTex % state.textures.size();
     TextureData& texture = state.textures[TexIndex::GAME];
@@ -269,7 +268,11 @@ void Interface::gameWindow(AppState& state) {
         ImVec2 textureRenderSize = ImVec2(texture.width, texture.height);
         ImGui::Image((ImTextureID)texture.id, textureRenderSize, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
         if (ImGui::BeginItemTooltip()) {
-            ImGui::Text("chunk: (%d,%d)\nhash:%d", state.mChunkX, state.mChunkY, state.hash);
+            // clang-format on
+            ImGui::Text("hash: %d", state.hash);
+            ImGui::Text("world: (%d,%d)", state.mX, state.mY);
+            ImGui::Text("chunk: (%d,%d)", state.mChunkX, state.mChunkY);
+            ImGui::Text("cell:  (%d,%d)", state.cX, state.cY);
             ImGui::EndTooltip();
         }
 
