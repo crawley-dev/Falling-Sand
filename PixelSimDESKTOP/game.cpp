@@ -175,12 +175,12 @@ void Game::golUpdate() {
             adjAlive += (cells[cellIdx(x + 0, y + 1)].matID == MaterialID::GOL_ALIVE); // BM
             adjAlive += (cells[cellIdx(x + 1, y + 1)].matID == MaterialID::GOL_ALIVE); // BR
 
-            if (c.matID == MaterialID::GOL_ALIVE)
-                if (adjAlive != 2 && adjAlive != 3) updateCellLambda(x, y, MaterialID::EMPTY, c.variant);
-                else updateCellLambda(x, y, MaterialID::GOL_ALIVE, c.variant);
-            else if (c.matID == MaterialID::EMPTY && adjAlive == 3) updateCellLambda(x, y, MaterialID::GOL_ALIVE, c.variant);
+            if (c.matID == MaterialID::GOL_ALIVE && adjAlive != 2 && adjAlive != 3) {
+                updateCellLambda(x, y, MaterialID::EMPTY, c.variant);
+            } else if (c.matID == MaterialID::EMPTY && adjAlive == 3) { // resurrect cell!
+                updateCellLambda(x, y, MaterialID::GOL_ALIVE, c.variant);
+            }
         }
-
     for (auto &[cell, coords] : updatedCells) cells[cellIdx(coords.first, coords.second)] = cell;
 }
 
