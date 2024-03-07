@@ -106,13 +106,13 @@ private:
     bool outOfCellBounds(s32 x, s32 y) const;     // relative to ??
 
 
-    // generic-alise this?
-    std::pair<s16, s16> worldToChunk(s32 x, s32 y) const;                 // world -> chunk
-    std::pair<s32, s32> viewportToWorld(s32 x, s32 y) const;              // viewport x,y -> world space.. (accounts for camera)
-    std::pair<s32, s32> mouseToWorld(s32 x, s32 y) const;                 // mouse x,y -> world space.. (reverse accounts for camera)
-    std::pair<s32, s32> chunkToWorld(s16 cX, s16 cY, u8 lX, u8 lY) const; // chunk space -> world space
-    std::pair<u8, u8>   worldToCell(s32 x, s32 y) const;
-    std::pair<u8, u8>   chunkToCell(s32 x, s32 y, s16 cX, s16 cY) const;
+    // generic-alise this? // std::pair<T,T> replaced
+    Coord<s16> worldToChunk(s32 x, s32 y) const;                 // world -> chunk
+    Coord<s32> viewportToWorld(s32 x, s32 y) const;              // viewport x,y -> world space.. (accounts for camera)
+    Coord<s32> mouseToWorld(s32 x, s32 y) const;                 // mouse x,y -> world space.. (reverse accounts for camera)
+    Coord<s32> chunkToWorld(s16 cX, s16 cY, u8 lX, u8 lY) const; // chunk space -> world space
+    Coord<u8>  worldToCell(s32 x, s32 y) const;
+    Coord<u8>  chunkToCell(s32 x, s32 y, s16 cX, s16 cY) const;
 
     u8  cellIdx(u8 x, u8 y) const;      // gets index into chunk->cells
     u32 textureIdx(u16 x, u16 y) const; // gets index into textureData << accepts viewport coords.
@@ -127,12 +127,15 @@ private:
 
     bool sizeChanged;
 
-    u8  solidDispersion, fluidDispersion, gasDispersion;
-    u8  scaleFactor;                    // cell 1x1 --> texture N x N
-    s32 cameraX, cameraY;               // camera posistion in the world. from top left corner.
-    s32 cellWidth, cellHeight;          // size of render target in cell
-    s32 textureWidth, textureHeight;    // size of render target.
-    u64 randSeed = 1234567890987654321; // set random seed
+    u8 solidDispersion, fluidDispersion, gasDispersion;
+    u8 scaleFactor; // cell 1x1 --> texture N x N
+    //s32 cameraX, cameraY;               // camera posistion in the world. from top left corner.
+    //s32 cellWidth, cellHeight;          // size of render target in cell
+    //s32 textureWidth, textureHeight;    // size of render target.
+    Coord<s32> camera;
+    Coord<s32> cellSize;
+    Coord<s32> textureSize;
+    u64        randSeed = 1234567890987654321; // set random seed
 
     std::vector<std::pair<std::vector<u8>, std::pair<s32, s32>>>                      textureChanges; // render buffer changes.
     std::vector<Chunk*>                                                               updatedChunks;  // to update

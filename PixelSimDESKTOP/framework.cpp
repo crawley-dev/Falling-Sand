@@ -112,7 +112,18 @@ void Framework::update() {
     ImGuiIO&     io      = ImGui::GetIO();
     TextureData& texture = state.textures[TexIndex::GAME];
 
+
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) state.runSim = !state.runSim;
+
+    if (ImGui::GetFrameCount() % 2 == 0) {
+        u8 multiplier = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) ? 3 : 1;
+        state.camera.y += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_W)));
+        state.camera.x -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_A)));
+        state.camera.y -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_S)));
+        state.camera.x += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_D)));
+    }
+
+
     if (io.MouseDown[0]) mouseDraw();
     if (state.resetSim) {
         game->reset();
@@ -235,6 +246,25 @@ void Framework::loadImageRGB(TextureData& texture, std::string& path) {
         }
     }
 
+    // if texture is larger than the game area:
+    // scale it down, either x2 or --> game area bounds..
+    /*if (image->w * image->h * 4 > gameTexture.data.size()) { // doesn't account for long ass images in either w or h..
+        SDL_Surface* temp = NULL;
+        SDL_Rect destinationRect;
+        destinationRect.x = 0;
+        destinationRect.y = 0;
+        destinationRect.w = gameTexture.width;
+        destinationRect.h = gameTexture.height;
+        SDL_LowerBlitScaled(image, NULL, temp, &destinationRect);
+        *image = *temp; // changes data, not the ptr.
+        SDL_FreeSurface(temp);
+    }*/
+
+    /* stack overflow to the rescue!! https://stackoverflow.com/questions/40850196/sdl2-resize-a-surface
+    if (image->w > GET_GAME_WIDTH || image->h > GET_GAME_HEIGHT) {
+         !! big data manipulation wizard to the rescue !!
+    }*/
+
     // have to (un)lock surface to stop SDL2 breaking
     SDL_LockSurface(image);
     u8* pixel = (u8*)image->pixels;
@@ -262,6 +292,15 @@ void Framework::loadImageRGB(TextureData& texture, std::string& path) {
 
     SDL_FreeSurface(image);
     updateTexture(texture);
+
+    // downscaling texture if necessary
+    //TextureData& gameTexture = data.textures[GAME_TEXTURE_ID];
+    //while (texture.data.size() > gameTexture.data.size()) {
+    //    glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+    //    glBindTexture(GL_TEXTURE_2D, texture.id);
+    //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 2); // downscale x2
+    //    glGenerateMipMap()
+    //}
 }
 
 void Framework::loadImageRGBA(TextureData& texture, std::string& path) {

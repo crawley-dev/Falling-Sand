@@ -26,7 +26,6 @@ void Interface::boilerPlate() {
 void Interface::debugMenu(AppState& state) { // pair of empty brackets {} defines a separate scope, required for each separator.
     ImGui::Begin("Debug Menu");
 
-
     ImGui::SetNextItemOpen(true);
     if (ImGui::TreeNode("Simulation Settings")) {
         ImGui::SeparatorText("Simulation Settings");

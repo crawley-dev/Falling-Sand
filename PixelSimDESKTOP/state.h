@@ -177,9 +177,32 @@ struct Coord {
         return Coord<T>(x * c.x, y * c.y);
     }
 
-    // <T> ??
     Coord<T> operator/(const Coord& c) {
         return Coord<T>(x / c.x, y / c.y);
+    }
+
+    Coord<T>& operator+=(const Coord<T>& c) {
+        x += c.x;
+        y += c.y;
+        return *this;
+    }
+
+    Coord<T>& operator-=(const Coord<T>& c) {
+        x -= c.x;
+        y -= c.y;
+        return *this;
+    }
+
+    Coord<T>& operator*=(const T& scalar) {
+        x *= scalar;
+        y *= scalar;
+        return *this;
+    }
+
+    Coord<T>& operator/=(const T& scalar) {
+        x /= scalar;
+        y /= scalar;
+        return *this;
     }
 
     Coord(T _x, T _y) {
@@ -219,7 +242,7 @@ struct AppState {
     u32 textureChanges = 0;
     u32 cellChanges    = 0;
 
-    Coord<s32> camera;
+    Coord<s32> camera = Coord<s32>(0, 0);
 
     s64        print_hash  = 0;
     Coord<s32> print_chunk = Coord<s32>(0, 0);

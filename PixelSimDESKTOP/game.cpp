@@ -15,10 +15,10 @@ Game::~Game() {
 void Game::init(u16 width, u16 height, u8 scale) {
     sizeChanged   = true;
     scaleFactor   = scale;
-    textureWidth  = width;
-    textureHeight = height;
-    cellWidth     = textureWidth / scaleFactor;
-    cellHeight    = textureHeight / scaleFactor;
+    textureSize.x = width;
+    textureSize.y = height;
+    cellSize.x    = textureSize.x / scaleFactor;
+    cellSize.y    = textureSize.y / scaleFactor;
 
     solidDispersion = 2;
     fluidDispersion = 4;
@@ -57,8 +57,7 @@ void Game::init(u16 width, u16 height, u8 scale) {
 }
 
 void Game::update(AppState& state, std::vector<u8>& textureData) {
-    cameraX = state.camera.x;
-    cameraY = state.camera.y;
+    camera = state.camera;
 
     if (state.runSim) simulate(state);
     updateEntireTexture(textureData);
@@ -68,12 +67,14 @@ void Game::update(AppState& state, std::vector<u8>& textureData) {
 
 void Game::reload(u16 width, u16 height, u8 scale) {
     printf("reloaded! width: %d  height: %d  scale: %d\n", width, height, scale);
-    textureWidth  = width;
-    textureHeight = height;
-    scaleFactor   = scale;
-    cellHeight    = textureHeight / scaleFactor;
-    cellWidth     = textureWidth / scaleFactor;
-    sizeChanged   = true;
+    //textureSize.x  = width;
+    //textureSize.y = height;
+    //cellSize.y  = textureSize.y / scaleFactor;
+    //cellSize.x   = textureSize.x / scaleFactor;
+    textureSize = {width, height};
+    scaleFactor = scale;
+    cellSize    = textureSize / scaleFactor;
+    sizeChanged = true;
 }
 
 void Game::reset() {
@@ -92,7 +93,7 @@ void Game::mouseDraw(AppState& state, s32 x, s32 y, u16 size, u8 drawChance, u8 
     x = x / scaleFactor;
     y = y / scaleFactor;
 
-    printf("%d,%d\n\n", x, y);
+    //printf("%d,%d\n\n", x, y);
 
     if (outOfViewportBounds(x, y)) return;
     auto [mX, mY] = mouseToWorld(x, y);
@@ -108,7 +109,7 @@ void Game::mouseDraw(AppState& state, s32 x, s32 y, u16 size, u8 drawChance, u8 
 /*
 First Implementation :
     - get the chunk at the camera position
-    - calculate how many chunks are visible in x & y ((textureWidth /
+    - calculate how many chunks are visible in x & y ((textureSize.x /
 scaleFactor) / CHUNK_SIZE)
     - loop through from camera Chunk to Final Chunk
         - get chunk from map
@@ -120,9 +121,9 @@ void Game::simulate(AppState& state) {
 
     auto func123 = [](s32 length) -> u8 { return (length % CHUNK_SIZE == 0) ? 0 : 1; };
 
-    auto [startChunkX, startChunkY] = worldToChunk(cameraX, cameraY);
-    s16 iterChunksX                 = cellWidth / CHUNK_SIZE + func123(cellWidth);
-    s16 iterChunksY                 = cellHeight / CHUNK_SIZE + func123(cellHeight);
+    auto [startChunkX, startChunkY] = worldToChunk(camera.x, camera.y);
+    s16 iterChunksX                 = cellSize.x / CHUNK_SIZE + func123(cellSize.x);
+    s16 iterChunksY                 = cellSize.y / CHUNK_SIZE + func123(cellSize.y);
 
     //printf("(%d,%d) -> (%d,%d)\n", startChunkX, startChunkY, startChunkX + iterChunksX, startChunkX + iterChunksY);
     //printf("\r                                                    \r"); // return to start of line, print spaces, return again
@@ -159,6 +160,7 @@ void Game::simulate(AppState& state) {
 
     state.print_hash  = boost::hash<std::pair<s16, s16>>()(std::make_pair(mChunkX, mChunkY));
     state.print_mouse = {mouseCell.x, mouseCell.y};
+    state.print_world = {wX, wY};
     state.print_chunk = {mChunkX, mChunkY};
     state.print_cell  = {cX, cY};
 }
@@ -314,8 +316,8 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
     // beyond ~5 chunks in vertical, it doesn't render anything new
     // might be an outOfViewportBounds error?
 
-    for (u32 y = 0; y < textureHeight; y++)
-        for (u32 x = 0; x < textureWidth; x++) {
+    for (u32 y = 0; y < textureSize.y; y++)
+        for (u32 x = 0; x < textureSize.x; x++) {
             const u32 idx        = textureIdx(x, y);
             textureData[idx + 0] = 255;
             textureData[idx + 1] = 255;
@@ -393,11 +395,11 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
 // whoever wrote this, certificable spac
 
 bool Game::outOfCellBounds(s32 x, s32 y) const {
-    return x >= cellWidth || y >= cellHeight || x < 0 || y < 0;
+    return x >= cellSize.x || y >= cellSize.y || x < 0 || y < 0;
 }
 
 bool Game::outOfViewportBounds(s32 x, s32 y) const {
-    return x >= cellWidth + cameraX || y >= cellHeight + cameraY || x < cameraX || y < cameraY;
+    return x >= cellSize.x + camera.x || y >= cellSize.y + camera.y || x < camera.x || y < camera.y;
 }
 
 bool Game::outOfChunkBounds(u8 x, u8 y) const {
@@ -405,41 +407,42 @@ bool Game::outOfChunkBounds(u8 x, u8 y) const {
 }
 
 bool Game::outOfTextureBounds(u32 x, u32 y) const {
-    return x >= textureWidth || y >= textureHeight || x < 0 || y < 0;
+    return x >= textureSize.x || y >= textureSize.y || x < 0 || y < 0;
 }
 
-std::pair<s16, s16> Game::worldToChunk(s32 x, s32 y) const {
-    return {floor(float(x) / CHUNK_SIZE), floor(float(y) / CHUNK_SIZE)};
+Coord<s16> Game::worldToChunk(s32 x, s32 y) const {
+    return Coord<s16>(floor(float(x) / CHUNK_SIZE), floor(float(y) / CHUNK_SIZE));
 }
 
-std::pair<s32, s32> Game::chunkToWorld(s16 cX, s16 cY, u8 lX, u8 lY) const {
-    return {(cX * CHUNK_SIZE) + lX, (cY * CHUNK_SIZE) + lY};
+Coord<s32> Game::chunkToWorld(s16 cX, s16 cY, u8 lX, u8 lY) const {
+    return Coord<s32>((cX * CHUNK_SIZE) + lX, (cY * CHUNK_SIZE) + lY);
 }
 
-std::pair<s32, s32> Game::viewportToWorld(s32 x, s32 y) const {
-    return {x - cameraX, y + cameraY};
+Coord<s32> Game::viewportToWorld(s32 x, s32 y) const {
+    return Coord<s32>(x - camera.x, y + camera.y);
 }
 
-std::pair<s32, s32> Game::mouseToWorld(s32 x, s32 y) const {
-    return {x + cameraX, y - cameraY};
+Coord<s32> Game::mouseToWorld(s32 x, s32 y) const {
+    return Coord<s32>(x + camera.x, y - camera.y);
 }
 
 
-std::pair<u8, u8> Game::worldToCell(s32 x, s32 y) const {
+Coord<u8> Game::worldToCell(s32 x, s32 y) const {
     auto [chunkX, chunkY] = worldToChunk(x, y);
-    return {x - (chunkX * CHUNK_SIZE), y - (chunkY * CHUNK_SIZE)};
+    return Coord<u8>(x - (chunkX * CHUNK_SIZE), y - (chunkY * CHUNK_SIZE));
 }
 
-std::pair<u8, u8> Game::chunkToCell(s32 x, s32 y, s16 cX, s16 cY) const {
-    return {x - (cX * CHUNK_SIZE), y - (cY * CHUNK_SIZE)};
+Coord<u8> Game::chunkToCell(s32 x, s32 y, s16 cX, s16 cY) const {
+    return Coord<u8>(x - (cX * CHUNK_SIZE), y - (cY * CHUNK_SIZE));
 }
+
 
 u8 Game::cellIdx(u8 x, u8 y) const {
     return (y * CHUNK_SIZE) + x;
 }
 
 u32 Game::textureIdx(u16 x, u16 y) const {
-    return 4 * ((y * textureWidth) + x);
+    return 4 * ((y * textureSize.x) + x);
 }
 
 template <typename T> // cheeky template
@@ -460,13 +463,13 @@ u64 Game::splitMix64_NextRand() {
         // next stage:: calc how much of a chunk can be rendered & do up to that.
         // 1100 - (1096 + 8) = -4   << camera(0,0)
         // 1100 - (-16 + 8) = 1108  << camera(0,0)
-        //const s32 startY = chunk->y + cameraY;
-        //const s32 startX = chunk->x + cameraX;
+        //const s32 startY = chunk->y + camera.y;
+        //const s32 startX = chunk->x + camera.x;
         //u8 xOffset{0}, yOffset{0};
-        //if ((startX + CHUNK_SIZE) < 0 || (startX + CHUNK_SIZE) >= cellWidth)
+        //if ((startX + CHUNK_SIZE) < 0 || (startX + CHUNK_SIZE) >= cellSize.x)
 
-        const s32 startX = chunk->x * CHUNK_SIZE - cameraX;
-        const s32 startY = chunk->y * CHUNK_SIZE + cameraY; // fuck textures.
+        const s32 startX = chunk->x * CHUNK_SIZE - camera.x;
+        const s32 startY = chunk->y * CHUNK_SIZE + camera.y; // fuck textures.
         if (outOfViewportBounds(startX, startY) && outOfViewportBounds(startX + CHUNK_SIZE, startY) && outOfViewportBounds(startX, startY + CHUNK_SIZE) &&
             outOfViewportBounds(startX + CHUNK_SIZE, startY + CHUNK_SIZE))
             continue;
