@@ -1,9 +1,4 @@
 <a name="readme-top"></a>
-
-#### Inspired By: Noita's Falling sand, Sandspiel & The Powder Toy
-
-#### Created With: SDL2, OpenGL & ImGui.
-
 <!-- PROJECT SHIELDS -->
 <!--
 *** I'm using markdown "reference style" links for readability.
@@ -18,10 +13,6 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
-
-## Roadmap:
-
-##### Importance Hierarchy: ↓
 
 <!-- PROJECT LOGO -->
 <br />
@@ -54,9 +45,6 @@
   </p>
 </div>
 
-### Saving // Loading game state:
-
-- Save:
 
 <!-- TABLE OF CONTENTS -->
 <div style="text-align: center;">
@@ -85,11 +73,6 @@
   </ol>
 </details>
 </div>
-
-- Load:
-  - read all interfaceData (known length in bytes)
-  - read cell state, don't need width & height to parse.. but will get
-  - ... load all this shite into correct objects & we good.
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
@@ -120,6 +103,8 @@
 
 ### Prerequisites
 * Boost
+* SDL2
+* OpenGL
 
 
 ### Installation
