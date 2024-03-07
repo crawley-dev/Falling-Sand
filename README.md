@@ -22,20 +22,21 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/TheCookies/PixelPhysV2">
+  <a href="https://github.com/TheCookies/Falling-Sand">
 <!--     <img src="images/logo.png" alt="Logo" width="80" height="80"> -->
   </a>
 
 <h3 align="center">A Cellular Automata Physics Simulation.</h3>
-  <p align="center">
-    <div style="text-align: center; padding: 0px;">
-    <div style="text-align: left; display: inline-block; padding-right: 10px;">
+  <p align="left">
+    <div style="text-align: left; padding: 0px;">
+      <div style="text-align: left; display: inline-block; padding-right: 10px;">
         <h4>Includes:</h4>   
-        <ul>
-            <li>Falling Sand Simulation</li>
-            <li>Conway's Game of Life</li>
-        </ul>
-    </div>
+        <p>
+            - Falling Sand Simulation
+            <br />
+            - Conway's Game of Life
+        </p>
+      </div>
     </div>
     <!--<br />-->
     <!--<a href="https://github.com/github_username/repo_name"><strong>Explore the docs »</strong></a>-->
@@ -43,9 +44,9 @@
     <br />
     <!--<a href="https://github.com/github_username/repo_name">View Demo</a>-->
     <!--·-->
-    <a href="https://github.com/TheCookiess/PixelPhysV2/issues">Report Bug</a>
+    <a href="https://github.com/TheCookiess/Falling-Sand/issues">Report Bug</a>
     ·
-    <a href="https://github.com/TheCookiess/PixelPhysV2/issues">Request Feature</a>
+    <a href="https://github.com/TheCookiess/Falling-Sand/issues">Request Feature</a>
   </p>
 </div>
 
@@ -82,12 +83,14 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-
-A C++ 'Falling Sand' simulation with Conway's Game of Life.
-<br />
-Inspired By: Noita's Falling sand, Sandspiel & The Powder Toy
-<br /> 
-Current Active Branch of Development: chunked-world
+<p>
+  <i> Current Active Branch of Development: </i> 
+  <b> chunked-world </b>
+  <br /> <br />
+  A C++ 'Falling Sand' simulation with Conway's Game of Life.
+  <br /> 
+  Inspired By: Noita's Falling sand, Sandspiel & The Powder Toy
+</p>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -186,16 +189,16 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/TheCookiess/PixelPhysV2.svg?style=for-the-badge
-[contributors-url]: https://github.com/TheCookiess/PixelPhysV2/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/TheCookiess/PixelPhysV2.svg?style=for-the-badge
-[forks-url]: https://github.com/TheCookiess/PixelPhysV2/network/members
-[stars-shield]: https://img.shields.io/github/stars/TheCookiess/PixelPhysV2.svg?style=for-the-badge
-[stars-url]: https://github.com/TheCookiess/PixelPhysV2/stargazers
-[issues-shield]: https://img.shields.io/github/issues/TheCookiess/PixelPhysV2.svg?style=for-the-badge
-[issues-url]: https://github.com/TheCookiess/PixelPhysV2/issues
-[license-shield]: https://img.shields.io/github/license/TheCookiess/PixelPhysV2.svg?style=for-the-badge
-[license-url]: https://github.com/github_username/repo_name/blob/master/LICENSE.txt
+[contributors-shield]: https://img.shields.io/github/contributors/TheCookiess/Falling-Sand.svg?style=for-the-badge
+[contributors-url]: https://github.com/TheCookiess/Falling-Sand/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/TheCookiess/Falling-Sand.svg?style=for-the-badge
+[forks-url]: https://github.com/TheCookiess/Falling-Sand/network/members
+[stars-shield]: https://img.shields.io/github/stars/TheCookiess/Falling-Sand.svg?style=for-the-badge
+[stars-url]: https://github.com/TheCookiess/Falling-Sand/stargazers
+[issues-shield]: https://img.shields.io/github/issues/TheCookiess/Falling-Sand.svg?style=for-the-badge
+[issues-url]: https://github.com/TheCookiess/Falling-Sand/issues
+[license-shield]: https://img.shields.io/github/license/TheCookiess/Falling-Sand.svg?style=for-the-badge
+[license-url]: https://github.com/TheCookiess/Falling-Sand/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/tom-crawley-30910b273/
 [product-screenshot]: images/screenshot.png 
