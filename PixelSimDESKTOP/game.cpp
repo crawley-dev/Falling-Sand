@@ -132,15 +132,15 @@ void Game::l_bottomUpUpdate() {
         for (s32 x = 0; x < cellWidth; x++) {
             updateCell(x, y);
         }
-	resetSim = false;
 }
+
 void Game::r_bottomUpUpdate() {
     for (s32 y = cellHeight - 1; y >= 0; y--)
         for (s32 x = cellWidth - 1; x >= 0; x--) {
             updateCell(x, y);
         }
 }
-	//mouseDraw(texW/2, 5, texW, 95, 1, 1, 0);
+
 void Game::snakeUpdate() {
     for (s32 y = cellHeight - 1; y >= 0; y--)
         if ((cellHeight - y) % 2 == 0) // -->
@@ -182,7 +182,6 @@ void Game::golUpdate() {
             }
         }
     for (auto &[cell, coords] : updatedCells) cells[cellIdx(coords.first, coords.second)] = cell;
-	}
 }
 
 
@@ -365,6 +364,7 @@ void Game::swapCells(u16 x1, u16 y1, u16 x2, u16 y2) {
     textureChanges.push_back(std::pair<u16, u16>(x2, y2));
 }
 
+
 /*--------------------------------------------------------------------------------------
 ---- Mouse Functions -------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
@@ -386,7 +386,6 @@ void Game::createDrawIndicators(u16 mx, u16 my, u16 size, u8 shape) {
     case Shape::SQUARE:
     case Shape::SQUARE_OUTLINE: drawSquareOutline(x, y, size, 0, 100, boundedPushBack); break;
     }
-	cells.push_back(Cell(flag, texIdx, x, y, varyPixelColour(range, PixelTypeID)));
 }
 
 void Game::mouseDraw(u16 mx, u16 my, u16 size, u8 drawChance, u8 material, u8 shape) {
@@ -418,6 +417,7 @@ void Game::drawCircle(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::f
             if (getRand<s64>(1, 100) <= drawChance) foo(x + tX, y + tY, material);
     }
 }
+
 void Game::drawCircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) {
     auto drawCircleSegments = [&](u16 xc, u16 yc, u16 x, u16 y, u8 material) -> void {
         foo(xc + x, yc + y, material);
@@ -447,7 +447,6 @@ void Game::drawCircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
 void Game::drawLine(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) {
     for (s32 tX = -size; tX < size; tX++)
         if (getRand<s64>(1, 100) <= drawChance) foo(x + tX, y, material);
-		}
 }
 
 void Game::drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) {
@@ -455,6 +454,7 @@ void Game::drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::f
         for (s32 tX = -size / 2; tX < size / 2; tX++)
             if (getRand<s64>(1, 100) <= drawChance) foo(x + tX, y + tY, material);
 }
+
 void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) {
     // draws from centre, not top left.
     for (s32 tX = -size / 2; tX <= size / 2; tX++)
@@ -466,22 +466,22 @@ void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
     for (s32 tY = -size / 2; tY <= size / 2; tY++)
         if (getRand<s64>(1, 100) <= drawChance) foo(x + size / 2, y + tY, material);
 }
-	const int y = my / cellScale;
 
 /*--------------------------------------------------------------------------------------
 ---- Updating Texture ------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
+
 // Iterates over textureChanges list, updates relevant textureData with cell data.
 void Game::updateTextureData(std::vector<u8> &textureData) {
     for (const auto &[x, y] : textureChanges) {
         Cell                  &c       = cells[cellIdx(x, y)];                   // grab cell with changes
         const std::vector<u8> &variant = materials[c.matID].variants[c.variant]; // grab cell's colour variant
-		int rr = radius << 1;
+
         const u8 red   = variant[0]; // might be slowing code down?
         const u8 green = variant[1]; // might be slowing code down?
         const u8 blue  = variant[2]; // might be slowing code down?
         const u8 alpha = variant[3]; // might be slowing code down?
-			int ty = (i / rr) - radius;
+
         for (s32 tY = 0; tY < scaleFactor; tY++)
             for (s32 tX = 0; tX < scaleFactor; tX++) {                                                // iterates over each pixel in the cell
                 const s32 texIdx        = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY); // index into 1d array
@@ -505,19 +505,19 @@ void Game::updateTextureData(std::vector<u8> &textureData) {
             }
     }
     drawIndicators.clear();
-	}
 }
+
 void Game::updateEntireTextureData(std::vector<u8> &textureData) {
     for (s32 y = 0; y < cellHeight; y++) {
         for (s32 x = 0; x < cellWidth; x++) {
             Cell                  &c       = cells[cellIdx(x, y)];
             const std::vector<u8> &variant = materials[c.matID].variants[c.variant];
-	if (outOfBounds(x, y)) return;
 
             const u8 red   = variant[0];
             const u8 green = variant[1];
             const u8 blue  = variant[2];
             const u8 alpha = variant[3];
+
             for (s32 tY = 0; tY < scaleFactor; tY++)
                 for (s32 tX = 0; tX < scaleFactor; tX++) {
                     const s32 idx        = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
@@ -529,7 +529,6 @@ void Game::updateEntireTextureData(std::vector<u8> &textureData) {
             c.updated = false;
         }
     }
-	else c.type = varyPixelColour(range, CellTypeID);
 }
 
 
@@ -546,6 +545,7 @@ void Game::loadImage(std::vector<u8> &textureData, std::vector<u8> &imageTexture
     } else if (imageHeight > textureHeight || imageHeight <= 0) {
         printf("Image Height: %d is not within bounds.", imageHeight);
     }
+
     u16 scaledWidth  = imageWidth / (scaleFactor);  // texture --> cell scale
     u16 scaledHeight = imageHeight / (scaleFactor); // texture --> cell scale
 
@@ -565,7 +565,6 @@ void Game::loadImage(std::vector<u8> &textureData, std::vector<u8> &imageTexture
                     }
                 }
             }
-}
 
             const u8 red   = closest[0];
             const u8 green = closest[1];
@@ -602,6 +601,7 @@ void Game::loadImage(std::vector<GLubyte>& imageTextureData, u16 imageWidth, u16
         printf("Image Height too large! by: %d", scaledHeight - cellHeight);
         scaledHeight = cellHeight;
     }
+
     materials.push_back(Material(sand.r, sand.g, sand.b, sand.a, sand.density)); // create new material for image
     const u16 imgMatIdx = materials.size() - 1; // if there are more than 65536 materials, it deserves to die.
     Material& imgMat = materials[imgMatIdx];
@@ -623,7 +623,7 @@ void Game::loadImage(std::vector<GLubyte>& imageTextureData, u16 imageWidth, u16
         }
 }
 */
-		c.type.b = 0;
+
 /*
 // slightly more challenging, can't set exact RGBA values, unless I create a new variant ? 
 // create a new Material 'Image{ID}' ?
@@ -680,10 +680,3 @@ void Game::loadImage(std::vector<GLubyte> imageTextureData, u16 imageWidth, u16 
     printf("Initialised Image, Variant size of: %d \n", imgMat.variants.size());
 }
 */
-{
-	Cell& c = *it;
-	if (runSim) cellUpdate(c);
-	updatePixel(c.x, c.y, c.type.r, c.type.g, c.type.b, c.type.a);
-	c.flag = false; // whats the point of set true then straight to false ??
-}
-#endif
