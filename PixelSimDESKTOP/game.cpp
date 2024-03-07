@@ -24,7 +24,7 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
     materials[MaterialID::SAND]        = Material(245, 215, 176, 255, 3, 1600);
     materials[MaterialID::WATER]       = Material(20, 20, 255, 125, 5, 997);
     materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 0, 65535); // max u16 value
-    materials[MaterialID::NATURAL_GAS] = Material(20, 20, 50, 100, 8, 10000);
+    materials[MaterialID::NATURAL_GAS] = Material(20, 20, 50, 100, 8, 20);
     materials[MaterialID::FIRE]        = Material(255, 165, 0, 200, 8, 10);
     materials[MaterialID::GOL_ALIVE]   = Material(0, 255, 30, 255, 0, 65535);
 
