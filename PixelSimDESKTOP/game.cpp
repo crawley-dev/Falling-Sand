@@ -301,10 +301,10 @@ ESCAPE_WHILE_NATURAL_GAS:
 bool Game::trySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
     if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
 
-    Cell &c1 = cells[cellIdx(x1, y1)];
-    Cell &c2 = cells[cellIdx(x2, y2)];
-    if (materials[c1.matID].density >= materials[c2.matID].density) return false;
-
+    Cell         &c1           = cells[cellIdx(x1, y1)];
+    Cell         &c2           = cells[cellIdx(x2, y2)];
+    constexpr u16 densityLimit = 50000;
+    if (materials[c1.matID].density >= materials[c2.matID].density && materials[c2.matID].density < densityLimit) return false;
     swapCells(x1, y1, x2, y2);
     return true;
 }
@@ -312,9 +312,10 @@ bool Game::trySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
 bool Game::querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
     if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
 
-    Cell &c1 = cells[cellIdx(x1, y1)];
-    Cell &c2 = cells[cellIdx(x2, y2)];
-    if (materials[c1.matID].density >= materials[c2.matID].density) return false;
+    Cell         &c1           = cells[cellIdx(x1, y1)];
+    Cell         &c2           = cells[cellIdx(x2, y2)];
+    constexpr u16 densityLimit = 50000;
+    if (materials[c1.matID].density >= materials[c2.matID].density && materials[c2.matID].density < densityLimit) return false;
 
     return true;
 }
