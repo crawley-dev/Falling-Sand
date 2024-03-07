@@ -24,7 +24,7 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
     materials[MaterialID::SAND]        = Material(245, 215, 176, 255, 3, 1600);
     materials[MaterialID::WATER]       = Material(20, 20, 255, 125, 5, 997);
     materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 0, 65535); // max u16 value
-    materials[MaterialID::NATURAL_GAS] = Material(20, 20, 50, 100, 8, 10000);
+    materials[MaterialID::NATURAL_GAS] = Material(20, 20, 50, 100, 8, 20);
     materials[MaterialID::FIRE]        = Material(255, 165, 0, 200, 8, 10);
     materials[MaterialID::GOL_ALIVE]   = Material(0, 255, 30, 255, 0, 65535);
 
@@ -303,7 +303,7 @@ bool Game::trySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
 
     Cell &c1 = cells[cellIdx(x1, y1)];
     Cell &c2 = cells[cellIdx(x2, y2)];
-    if (materials[c1.matID].density > materials[c2.matID].density) return false;
+    if (materials[c1.matID].density >= materials[c2.matID].density) return false;
 
     swapCells(x1, y1, x2, y2);
     return true;
@@ -314,7 +314,6 @@ bool Game::querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
 
     Cell &c1 = cells[cellIdx(x1, y1)];
     Cell &c2 = cells[cellIdx(x2, y2)];
-    //printf("c1: %d, c2: %d\n", c1.matID, c2.matID); // "c1: 4, c2: 0\n")
     if (materials[c1.matID].density >= materials[c2.matID].density) return false;
 
     return true;
