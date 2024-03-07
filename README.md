@@ -83,11 +83,11 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
-
 A C++ 'Falling Sand' simulation with Conway's Game of Life.
 <br />
 Inspired By: Noita's Falling sand, Sandspiel & The Powder Toy
+<br /> 
+Current Active Branch of Development: chunked-world
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
