@@ -199,7 +199,7 @@ void Framework::clean() {
 
 //.bmp loading slanted? weird..
 // TODO: Investigate SDL_ConvertSurfaceFormat
-void Framework::loadImageRGB(TextureData& texture, std::string path) {
+void Framework::loadImageRGB(TextureData& texture, std::string& path) {
     TextureData& gameTexture = state.textures[TexIndex::GAME];
 
     SDL_Surface* image = IMG_Load(path.c_str());
@@ -276,7 +276,7 @@ void Framework::loadImageRGB(TextureData& texture, std::string path) {
     //}
 }
 
-void Framework::loadImageRGBA(TextureData& texture, std::string path) {
+void Framework::loadImageRGBA(TextureData& texture, std::string& path) {
     //TextureData& texture = data.textures[TexIndex::BACKGROUND];
     SDL_Surface* image = IMG_Load(path.c_str());
     if (image == NULL) {
@@ -338,7 +338,7 @@ void Framework::loadImageRGBA(TextureData& texture, std::string path) {
 void Framework::saveToFile(TextureData& texture) {
 }
 
-void Framework::loadFromFile(TextureData& texture, std::string path) {
+void Framework::loadFromFile(TextureData& texture, std::string& path) {
 }
 
 void Framework::createTexture(TextureData& texture) {
@@ -392,5 +392,5 @@ void Framework::mouseDraw() {
     }
 
     // Mouse pos updated in interface->debugMenu() each frame. called before mouseDraw event so correct.
-    game->mouseDraw(state, state.mouseX, state.mouseY, state.drawSize, state.drawChance, state.drawMaterial, state.drawShape);
+    game->mouseDraw(state, state.mouse.x, state.mouse.y, state.drawSize, state.drawChance, state.drawMaterial, state.drawShape);
 }

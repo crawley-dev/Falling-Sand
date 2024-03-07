@@ -17,11 +17,11 @@ public:
     void clean();
 
     // Texture Handling
-    void loadImageRGB(TextureData& texture, std::string path);
-    void loadImageRGBA(TextureData& texture, std::string path); // png is somehow rgb not rgba..
+    void loadImageRGB(TextureData& texture, std::string& path);
+    void loadImageRGBA(TextureData& texture, std::string& path); // png is somehow rgb not rgba..
 
     void saveToFile(TextureData& texture);
-    void loadFromFile(TextureData& texture, std::string path);
+    void loadFromFile(TextureData& texture, std::string& path);
 
     void createTexture(TextureData& texture);
     void updateTexture(TextureData& texture);
@@ -29,7 +29,9 @@ public:
 
     // Internal Functions
     void        mouseDraw();
-    inline bool running() const { return applicationRunning; } // const means this function cannot modify any member variables
+    inline bool running() const {
+        return applicationRunning;
+    } // const means this function cannot modify any member variables
 
 private:
     bool applicationRunning = false;

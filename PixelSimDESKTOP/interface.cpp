@@ -269,10 +269,12 @@ void Interface::gameWindow(AppState& state) {
         ImGui::Image((ImTextureID)texture.id, textureRenderSize, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
         if (ImGui::BeginItemTooltip()) {
             // clang-format on
-            ImGui::Text("hash: %d", state.hash);
-            ImGui::Text("world: (%d,%d)", state.mX, state.mY);
-            ImGui::Text("chunk: (%d,%d)", state.mChunkX, state.mChunkY);
-            ImGui::Text("cell:  (%d,%d)", state.cX, state.cY);
+            ImGui::Text("hash: %d", state.print_hash);
+            ImGui::Text("camera (%d,%d)", state.camera.x, state.camera.y);
+            ImGui::Text("mouse: (%d,%d)", state.print_mouse.x, state.print_mouse.y);
+            ImGui::Text("world: (%d,%d)", state.print_world.x, state.print_world.y);
+            ImGui::Text("chunk: (%d,%d)", state.print_chunk.x, state.print_chunk.y);
+            ImGui::Text("cell:  (%d,%d)", state.print_cell.x, state.print_cell.y);
             ImGui::EndTooltip();
         }
 
