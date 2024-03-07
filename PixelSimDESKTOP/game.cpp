@@ -315,7 +315,8 @@ bool Game::querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
     Cell &c1 = cells[cellIdx(x1, y1)];
     Cell &c2 = cells[cellIdx(x2, y2)];
     //printf("c1: %d, c2: %d\n", c1.matID, c2.matID); // "c1: 4, c2: 0\n")
-    if (materials[c1.matID].density >= materials[c2.matID].density) return false;
+    constexpr u16 densityLimit = 50000;
+    if (materials[c1.matID].density >= materials[c2.matID].density && materials[c2.matID].density < densityLimit) return false;
 
     return true;
 }
