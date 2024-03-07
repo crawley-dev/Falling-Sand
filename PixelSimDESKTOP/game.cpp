@@ -140,9 +140,9 @@ void Game::simulate(AppState& state) {
         }
 
     if (mouseChunk->cells.size() > CHUNK_SIZE * CHUNK_SIZE || mouseChunk->cells.size() < 0) { mouseChunk = getChunk(0, 0); }
-    for (auto& cell : mouseChunk->cells) {
-        cell.matID = MaterialID::EMPTY;
-    }
+    //for (auto& cell : mouseChunk->cells) {
+    //    cell.matID = MaterialID::EMPTY;
+    //}
 
     if (outOfTextureBounds(state.mouse.x, state.mouse.y)) { state.mouse = Coord<u16>(0, 0); }
 
@@ -155,7 +155,7 @@ void Game::simulate(AppState& state) {
     //for (auto& cell : mouseChunk->cells) {
     //    cell.matID = MaterialID::GOL_ALIVE;
     //}
-    changeMaterial(wX, wY, MaterialID::SAND);
+    //changeMaterial(wX, wY, MaterialID::SAND);
 
     state.print_hash  = boost::hash<std::pair<s16, s16>>()(std::make_pair(mChunkX, mChunkY));
     state.print_mouse = {mouseCell.x, mouseCell.y};

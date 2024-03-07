@@ -35,8 +35,8 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         if (ImGui::Button("Reset Sim")) state.resetSim = true;
         ImGui::SameLine();
         if (ImGui::Button("Reset Camera")) {
-            state.cameraX = 0;
-            state.cameraY = 0;
+            state.camera.x = 0;
+            state.camera.y = 0;
         }
 
         if (ImGui::Button("Decrease Cell Scale")) {
@@ -204,7 +204,8 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         ImGui::SeparatorText("Debug Values");
         bool         OutofBounds = false;
         TextureData& texture     = state.textures[loadedTex];
-        if (state.mouseX > texture.width || state.mouseX < 0 || state.mouseY > texture.height || state.mouseY < 0) OutofBounds = true;
+        if (state.mouse.x > texture.width || state.mouse.x < 0 || state.mouse.y > texture.height || state.mouse.y < 0)
+            OutofBounds = true;
 
         ImVec2      windowPos             = ImGui::GetMainViewport()->Pos;
         const int   TITLE_BAR_OFFSET_X    = 8;
@@ -213,8 +214,8 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         const char* scanMode              = Scan::names[state.scanMode].data();
         const u16   cellWidth             = texture.width / state.scaleFactor;
         const u16   cellHeight            = texture.height / state.scaleFactor;
-        state.mouseX                      = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
-        state.mouseY                      = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
+        state.mouse.x                     = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
+        state.mouse.y                     = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
 
         // clang-format off
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)"  ,   1000.0f / io.Framerate, io.Framerate);
@@ -227,8 +228,8 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         ImGui::Text("Scale Factor: %d"                              ,   state.scaleFactor                   );
         ImGui::Text("Texture Dimensions: (%d,%d)"                   ,   texture.width, texture.height       );
         ImGui::Text("Simulation Dimensions: (%d,%d)"                ,   cellWidth, cellHeight               );
-        ImGui::Text("Camera Pos: (%d,%d)"                           ,   state.cameraX, state.cameraY        );
-        ImGui::Text("Mouse Pos: (%d,%d)"                            ,   state.mouseX, state.mouseY          );
+        ImGui::Text("Camera Pos: (%d,%d)"                           ,   state.camera.x, state.camera.y      );
+        ImGui::Text("Mouse Pos: (%d,%d)"                            ,   state.mouse.x, state.mouse.y        );
         ImGui::Text("Is Mouse Out of Bounds? %d"                    ,   OutofBounds                         );
         // clang-format on  
 

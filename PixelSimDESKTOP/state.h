@@ -211,7 +211,7 @@ struct AppState {
     u8 fluidDispersionFactor = 4;
     u8 solidDispersionFactor = 2;
 
-    Coord<u16> mouse;
+    Coord<u16> mouse    = Coord<u16>(0, 0);
     u16        drawSize = 10;
 
     u32 frame          = 0;
