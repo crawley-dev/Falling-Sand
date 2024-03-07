@@ -180,6 +180,9 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 ## Acknowledgements
 
 * [Github Readme Template](https://github.com/othneildrew/Best-README-Template/)
+* [Img Shields](https://shields.io)
+* [GitHub Pages](https://pages.github.com)
+
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
