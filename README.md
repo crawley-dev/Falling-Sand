@@ -27,7 +27,7 @@
   </a>
 
 <h3 align="center">A Cellular Automata Physics Simulation.</h3>
-  <p align="left">
+  <p align="center">
     <div style="text-align: left; padding: 0px;">
       <div style="text-align: left; display: inline-block; padding-right: 10px;">
         <h4>Includes:</h4>   
@@ -56,7 +56,7 @@
 <div style="text-align: center;">
 <details>
   <summary>Table of Contents</summary>
-  <ol style="text-align: left; display: inline-block;">
+  <ol style="text-align: center; display: inline-block;">
     <li>
       <a href="#about-the-project">About The Project</a>
       <ul>
