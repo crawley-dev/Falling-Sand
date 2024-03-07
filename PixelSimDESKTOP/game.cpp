@@ -57,16 +57,12 @@ void Game::init(u16 width, u16 height, u8 scale) {
 }
 
 void Game::update(AppState& state, std::vector<u8>& textureData) {
-    cameraX = state.cameraX;
-    cameraY = state.cameraY;
-
-    //drawLine(0, textureHeight / 2, textureWidth - 1, textureHeight / 2);
-    //drawLine(textureWidth / 2, 0, textureWidth / 2, textureHeight - 1);
-
+    cameraX = state.camera.x;
+    cameraY = state.camera.y;
 
     if (state.runSim) simulate(state);
     updateEntireTexture(textureData);
-    //updatedChunks.clear();
+
     textureChanges.clear();
 }
 
@@ -92,15 +88,17 @@ void Game::loadImage(std::vector<u8>& textureData, u16 width, u16 height) {
 }
 
 void Game::mouseDraw(AppState& state, s32 x, s32 y, u16 size, u8 drawChance, u8 material, u8 shape) {
+    printf("%d,%d\n", x, y);
     x = x / scaleFactor;
     y = y / scaleFactor;
+
+    printf("%d,%d\n\n", x, y);
+
     if (outOfViewportBounds(x, y)) return;
     auto [mX, mY] = mouseToWorld(x, y);
 
-    //auto lambdaUltima = [&](s32 x, s32 y) -> void { drawCircle(); }
-    auto lambda = [&](s32 x, s32 y) -> void { changeMaterial(x, y, material); };
+    auto lambda = [&](s32 _x, s32 _y) -> void { changeMaterial(_x, _y, material); };
     drawCircle(mX, mY, size, material, drawChance, lambda);
-    //drawLine(prevX, prevY, mX, mY, lambda);
 }
 
 /*--------------------------------------------------------------------------------------
@@ -118,7 +116,6 @@ scaleFactor) / CHUNK_SIZE)
 */
 
 void Game::simulate(AppState& state) {
-    // iterate in chunks
     static Chunk* mouseChunk = getChunk(0, 0);
 
     auto func123 = [](s32 length) -> u8 { return (length % CHUNK_SIZE == 0) ? 0 : 1; };
@@ -147,35 +144,25 @@ void Game::simulate(AppState& state) {
     //    cell.matID = MaterialID::EMPTY;
     //}
 
-    if (outOfTextureBounds(state.mouseX, state.mouseY)) {
-        state.mouseX = 0;
-        state.mouseY = 0;
-    }
+    if (outOfTextureBounds(state.mouse.x, state.mouse.y)) { state.mouse = Coord<u16>(0, 0); }
 
-    Coord mouseCell               = Coord<u16>(state.mouseX, state.mouseY) / Coord<u16>(scaleFactor);
-    const auto [mX, mY]           = mouseToWorld(mouseCell.x, mouseCell.y);
-    const auto [mChunkX, mChunkY] = worldToChunk(mX, mY);
-    const auto [cX, cY]           = chunkToCell(mX, mY, mChunkX, mChunkY);
-    //const auto [cX, cY]           = worldToCell(mX, mY);
+    Coord mouseCell               = Coord<u16>(state.mouse.x, state.mouse.y) / Coord<u16>(scaleFactor);
+    const auto [wX, wY]           = mouseToWorld(mouseCell.x, mouseCell.y);
+    const auto [mChunkX, mChunkY] = worldToChunk(wX, wY);
+    const auto [cX, cY]           = chunkToCell(wX, wY, mChunkX, mChunkY);
 
     mouseChunk = getChunk(mChunkX, mChunkY);
     //for (auto& cell : mouseChunk->cells) {
     //    cell.matID = MaterialID::GOL_ALIVE;
     //}
-    //changeMaterial(mX, mY, MaterialID::SAND);
+    //changeMaterial(wX, wY, MaterialID::SAND);
 
-    state.hash    = boost::hash<std::pair<s16, s16>>()(std::make_pair(mChunkX, mChunkY));
-    state.mX      = mX;
-    state.mY      = mY;
-    state.mChunkX = mChunkX;
-    state.mChunkY = mChunkY;
-    state.cX      = cX;
-    state.cY      = cY;
+    state.print_hash  = boost::hash<std::pair<s16, s16>>()(std::make_pair(mChunkX, mChunkY));
+    state.print_mouse = {mouseCell.x, mouseCell.y};
+    state.print_chunk = {mChunkX, mChunkY};
+    state.print_cell  = {cX, cY};
 }
 
-// looks up a chunk in the 'Chunk Map'
-//      - if exists: get chunk from map.
-//      - else: create new chunk
 Chunk* Game::getChunk(s16 x, s16 y) {
     if (chunkMap.contains({x, y})) return chunkMap[{x, y}];
     return createChunk(x, y);
@@ -183,8 +170,6 @@ Chunk* Game::getChunk(s16 x, s16 y) {
 
 Chunk* Game::createChunk(s16 x, s16 y, u8 material) {
     Chunk* chunk = new Chunk(x, y, material);
-    //chunk->cells.resize(CHUNK_SIZE * CHUNK_SIZE,
-    //                    Cell(getRand<u8>(0, MaterialID::COUNT - 1), getRand<u8>(0, VARIANT_COUNT - 1))); // very slow ?
     chunk->cells.resize(CHUNK_SIZE * CHUNK_SIZE, Cell(MaterialID::EMPTY, getRand<u8>(0, VARIANT_COUNT - 1)));
     chunkMap[{x, y}] = chunk;
     chunks.push_back(chunk);
@@ -195,7 +180,10 @@ Chunk* Game::createChunk(s16 x, s16 y, u8 material) {
 
 // shoud be very slow ..
 void Game::changeMaterial(s32 x, s32 y, u8 newMaterial) {
-    if (outOfViewportBounds(x, y)) return;
+    if (outOfViewportBounds(x, y)) {
+        printf("nuh uh %d,%d\n", x, y);
+        return;
+    }
 
     auto [chunkX, chunkY] = worldToChunk(x, y);
     auto [cellX, cellY]   = chunkToCell(x, y, chunkX, chunkY);
@@ -214,17 +202,16 @@ void Game::changeMaterial(s32 x, s32 y, u8 newMaterial) {
 ---- Drawing Algorithms ----------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-
 // Bresenham's Line Algorithm
 // currently pushes changes to textureBuffer.
 // currently very slow, try optimised version on this stackoverflow below..
 //https://stackoverflow.com/questions/10060046/drawing-lines-with-bresenhams-line-algorithm
-void Game::drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(u16, u16)> foo) {
+void Game::drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)>& foo) {
     int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
     dx  = x2 - x1;
     dy  = y2 - y1;
-    dx1 = fabs(dx);
-    dy1 = fabs(dy);
+    dx1 = fabs(dx); // floating point abs???
+    dy1 = fabs(dy); // floating point abs???
     px  = 2 * dy1 - dx1;
     py  = 2 * dx1 - dy1;
     if (dy1 <= dx1) {
@@ -287,7 +274,7 @@ void Game::drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(u16, u16)
     }
 }
 
-void Game::drawCircle(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16)> foo) {
+void Game::drawCircle(s32 x, s32 y, u16 size, u8 material, u8 drawChance, std::function<void(s32, s32)> foo) {
     int r2   = size * size;
     int area = r2 << 2;
     int rr   = size << 1;
@@ -347,7 +334,7 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
 
         for (s32 y = 0; y < CHUNK_SIZE; y++)
             for (s32 x = 0; x < CHUNK_SIZE; x++) {
-                if (outOfViewportBounds(x + texX, y + texY)) continue; // performance aint even that bad : )
+                if (outOfCellBounds(x + texX, y + texY)) continue; // performance aint even that bad : )
 
                 const Cell&            c       = chunk->cells[cellIdx(x, y)];
                 const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
@@ -401,8 +388,16 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
 ---- Simple, Inlined Algorithms --------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-bool Game::outOfViewportBounds(s32 x, s32 y) const {
+// this function shall for ever be confusiing as shit
+// doesn't actually take into account the camera position. thats your job.
+// whoever wrote this, certificable spac
+
+bool Game::outOfCellBounds(s32 x, s32 y) const {
     return x >= cellWidth || y >= cellHeight || x < 0 || y < 0;
+}
+
+bool Game::outOfViewportBounds(s32 x, s32 y) const {
+    return x >= cellWidth + cameraX || y >= cellHeight + cameraY || x < cameraX || y < cameraY;
 }
 
 bool Game::outOfChunkBounds(u8 x, u8 y) const {

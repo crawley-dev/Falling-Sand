@@ -109,39 +109,28 @@ void Framework::update() {
 
     if (ImGui::GetFrameCount() <= 2) return;
 
-
     ImGuiIO&     io      = ImGui::GetIO();
     TextureData& texture = state.textures[TexIndex::GAME];
 
-
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) state.runSim = !state.runSim;
-
-    if (ImGui::GetFrameCount() % 2 == 0) {
-        u8 multiplier = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) ? 3 : 1;
-        state.cameraY += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_W))); // use floats?
-        state.cameraX -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_A))); // use floats?
-        state.cameraY -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_S))); // use floats?
-        state.cameraX += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_D))); // use floats?
-    }
     if (io.MouseDown[0]) mouseDraw();
-
     if (state.resetSim) {
         game->reset();
         state.resetSim = false;
     }
-    if (state.loadImage) {
-        TextureData& img = state.textures[TexIndex::BACKGROUND];
-        loadImageRGB(img, state.imagePath);
-        game->loadImage(img.data, img.width, img.height);
-        state.loadImage = false;
-    }
+    //if (state.loadImage) {
+    //    TextureData& img = state.textures[TexIndex::BACKGROUND];
+    //    loadImageRGB(img, state.imagePath);
+    //    game->loadImage(texture.data, img.data, img.width, img.height);
+    //    state.loadImage = false;
+    //}
     if (state.reloadGame) {
         reloadTextures();
         game->reload(texture.width, texture.height, state.scaleFactor);
         state.reloadGame = false;
     }
 
-    if (texture.width != 0 && texture.height != 0) game->update(state, texture.data);
+    game->update(state, texture.data);
 
     for (TextureData& tex : state.textures)
         updateTexture(tex);
@@ -197,9 +186,37 @@ void Framework::clean() {
     std::cout << Message::names[Message::FRAMEWORK_DEAD] << std::endl;
 }
 
+// if texture is larger than the game area:
+// scale it down, either x2 or --> game area bounds..
+/*if (image->w * image->h * 4 > gameTexture.data.size()) { // doesn't account for long ass images in either w or h..
+        SDL_Surface* temp = NULL;
+        SDL_Rect destinationRect;
+        destinationRect.x = 0;
+        destinationRect.y = 0;
+        destinationRect.w = gameTexture.width;
+        destinationRect.h = gameTexture.height;
+        SDL_LowerBlitScaled(image, NULL, temp, &destinationRect);
+        *image = *temp; // changes data, not the ptr.
+        SDL_FreeSurface(temp);
+    }*/
+
+/* stack overflow to the rescue!! https://stackoverflow.com/questions/40850196/sdl2-resize-a-surface
+    if (image->w > GET_GAME_WIDTH || image->h > GET_GAME_HEIGHT) {
+         !! big data manipulation wizard to the rescue !!
+    }*/
+
+// downscaling texture if necessary
+//TextureData& gameTexture = data.textures[GAME_TEXTURE_ID];
+//while (texture.data.size() > gameTexture.data.size()) {
+//    glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+//    glBindTexture(GL_TEXTURE_2D, texture.id);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 2); // downscale x2
+//    glGenerateMipMap()
+//}
+
 //.bmp loading slanted? weird..
 // TODO: Investigate SDL_ConvertSurfaceFormat
-void Framework::loadImageRGB(TextureData& texture, std::string path) {
+void Framework::loadImageRGB(TextureData& texture, std::string& path) {
     TextureData& gameTexture = state.textures[TexIndex::GAME];
 
     SDL_Surface* image = IMG_Load(path.c_str());
@@ -217,26 +234,6 @@ void Framework::loadImageRGB(TextureData& texture, std::string path) {
             return;
         }
     }
-
-    // if texture is larger than the game area:
-    // scale it down, either x2 or --> game area bounds..
-    /*if (image->w * image->h * 4 > gameTexture.data.size()) { // doesn't account for long ass images in either w or h..
-        SDL_Surface* temp = NULL;
-        SDL_Rect destinationRect;
-        destinationRect.x = 0;
-        destinationRect.y = 0;
-        destinationRect.w = gameTexture.width;
-        destinationRect.h = gameTexture.height;
-        SDL_LowerBlitScaled(image, NULL, temp, &destinationRect);
-        *image = *temp; // changes data, not the ptr.
-        SDL_FreeSurface(temp);
-    }*/
-
-    /* stack overflow to the rescue!! https://stackoverflow.com/questions/40850196/sdl2-resize-a-surface
-    if (image->w > GET_GAME_WIDTH || image->h > GET_GAME_HEIGHT) {
-         !! big data manipulation wizard to the rescue !!
-    }*/
-
 
     // have to (un)lock surface to stop SDL2 breaking
     SDL_LockSurface(image);
@@ -265,19 +262,9 @@ void Framework::loadImageRGB(TextureData& texture, std::string path) {
 
     SDL_FreeSurface(image);
     updateTexture(texture);
-
-    // downscaling texture if necessary
-    //TextureData& gameTexture = data.textures[GAME_TEXTURE_ID];
-    //while (texture.data.size() > gameTexture.data.size()) {
-    //    glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
-    //    glBindTexture(GL_TEXTURE_2D, texture.id);
-    //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 2); // downscale x2
-    //    glGenerateMipMap()
-    //}
 }
 
-void Framework::loadImageRGBA(TextureData& texture, std::string path) {
-    //TextureData& texture = data.textures[TexIndex::BACKGROUND];
+void Framework::loadImageRGBA(TextureData& texture, std::string& path) {
     SDL_Surface* image = IMG_Load(path.c_str());
     if (image == NULL) {
         printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
@@ -338,9 +325,11 @@ void Framework::loadImageRGBA(TextureData& texture, std::string path) {
 void Framework::saveToFile(TextureData& texture) {
 }
 
-void Framework::loadFromFile(TextureData& texture, std::string path) {
+void Framework::loadFromFile(TextureData& texture, std::string& path) {
 }
 
+// Calls the openGL api to register a texture with its internal state,
+// then sets the texture parameters for the current texture target.
 void Framework::createTexture(TextureData& texture) {
     texture.data = std::vector<GLubyte>(texture.width * texture.height * 4, 255);
 
@@ -360,6 +349,7 @@ void Framework::createTexture(TextureData& texture) {
                     GL_CLAMP_TO_EDGE); // GL_TEXTURE_WARP_S or T == sets wrapping behaviour of texture beyond regular size
 }
 
+// for each texture in the state, delete the texture and create an identical one.
 void Framework::reloadTextures() {
     for (TextureData& texture : state.textures) {
         glDeleteTextures(1, &texture.id);
@@ -368,6 +358,7 @@ void Framework::reloadTextures() {
     state.texReloadCount++;
 }
 
+// Calls the openGL api to update the internal state's pointer to the texture data.
 void Framework::updateTexture(TextureData& texture) {
     glBindTexture(GL_TEXTURE_2D, texture.id);
     glTexSubImage2D(GL_TEXTURE_2D,
@@ -381,16 +372,19 @@ void Framework::updateTexture(TextureData& texture) {
                     texture.data.data()); // data.data, weird..
 }
 
+// Passes the mouse position to the game class for drawing.
+// With extra "bounds", preventing game->mouseDraw() from being called every frame, reduced to every 5 frames.
+// this is useful as the game->mouseDraw() function is quite expensive to process, especially with large draw sizes and complex shapes.
 void Framework::mouseDraw() {
     ImGuiIO& io = ImGui::GetIO();
 
     static int    lastFrameCall    = 0;
-    constexpr int minFramesTilDraw = 100;
+    constexpr int minFramesTilDraw = 5;
     if (ImGui::GetFrameCount() - lastFrameCall > minFramesTilDraw) {
         lastFrameCall = ImGui::GetFrameCount();
         return;
     }
 
     // Mouse pos updated in interface->debugMenu() each frame. called before mouseDraw event so correct.
-    game->mouseDraw(state, state.mouseX, state.mouseY, state.drawSize, state.drawChance, state.drawMaterial, state.drawShape);
+    game->mouseDraw(state, state.mouse.x, state.mouse.y, state.drawSize, state.drawChance, state.drawMaterial, state.drawShape);
 }

@@ -80,8 +80,8 @@ private:
     //void changeMaterial(u16 x, u16 y, u8 newMaterial);
     void changeMaterial(s32 x, s32 y, u8 newMaterial);
 
-    inline Chunk* getChunk(s16 x, s16 y);
-    inline Chunk* createChunk(s16 x, s16 y, u8 material = 0);
+    Chunk* getChunk(s16 x, s16 y);
+    Chunk* createChunk(s16 x, s16 y, u8 material = 0);
 
     // void updateChunk(Chunk &c);
     // bool updateCell(Cell& c, u16 x, u16 y); // ref necessary?
@@ -92,17 +92,18 @@ private:
     void updateEntireTexture(std::vector<u8>& textureData);
     void updateTexture(std::vector<u8>& textureData);
 
-    void drawCircle(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16)> foo);
+    void drawCircle(s32 x, s32 y, u16 size, u8 material, u8 drawChance, std::function<void(s32, s32)> foo);
     // void drawCircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     // void drawLine(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     // void drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     // void drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
-    void drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(u16, u16)> foo);
+    void drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)>& foo);
 
 
     bool outOfChunkBounds(u8 x, u8 y) const;      // relative to CHUNK_SIZE constexpr value
     bool outOfTextureBounds(u32 x, u32 y) const;  // relative to textureWidth
     bool outOfViewportBounds(s32 x, s32 y) const; // relative to viewport position (camera)
+    bool outOfCellBounds(s32 x, s32 y) const;     // relative to ??
 
 
     // generic-alise this?
@@ -127,11 +128,11 @@ private:
     bool sizeChanged;
 
     u8  solidDispersion, fluidDispersion, gasDispersion;
-    u8  scaleFactor;                 // cell 1x1 --> texture N x N
-    s32 cameraX, cameraY;            // camera posistion in the world. from top left corner.
-    s32 cellWidth, cellHeight;       // size of render target in cell
-    s32 textureWidth, textureHeight; // size of render target.
-    u64 randSeed = 1234567890987654321;
+    u8  scaleFactor;                    // cell 1x1 --> texture N x N
+    s32 cameraX, cameraY;               // camera posistion in the world. from top left corner.
+    s32 cellWidth, cellHeight;          // size of render target in cell
+    s32 textureWidth, textureHeight;    // size of render target.
+    u64 randSeed = 1234567890987654321; // set random seed
 
     std::vector<std::pair<std::vector<u8>, std::pair<s32, s32>>>                      textureChanges; // render buffer changes.
     std::vector<Chunk*>                                                               updatedChunks;  // to update

@@ -197,7 +197,6 @@ struct AppState {
     std::vector<TextureData> textures;
     std::string              imagePath;
 
-    // Efficient Flag: u64 flags = 0;
     bool runSim     = false;
     bool resetSim   = false;
     bool reloadGame = false;
@@ -212,23 +211,19 @@ struct AppState {
     u8 fluidDispersionFactor = 4;
     u8 solidDispersionFactor = 2;
 
-    u16 mouseX   = 0;
-    u16 mouseY   = 0;
-    u16 drawSize = 10;
+    Coord<u16> mouse    = Coord<u16>(0, 0);
+    u16        drawSize = 10;
 
     u32 frame          = 0;
     u32 texReloadCount = 0;
     u32 textureChanges = 0;
     u32 cellChanges    = 0;
 
-    s32 cameraX = 0;
-    s32 cameraY = 0;
+    Coord<s32> camera;
 
-    s64 hash    = 0;
-    s16 mChunkX = 0;
-    s16 mChunkY = 0;
-    s32 mX      = 0;
-    s32 mY      = 0;
-    s32 cX      = 0;
-    s32 cY      = 0;
+    s64        print_hash  = 0;
+    Coord<s32> print_chunk = Coord<s32>(0, 0);
+    Coord<s32> print_mouse = Coord<s32>(0, 0);
+    Coord<s32> print_world = Coord<s32>(0, 0);
+    Coord<s32> print_cell  = Coord<s32>(0, 0);
 };
