@@ -76,6 +76,9 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
+
+![demo-screenshot]
+
 <p>
   <i> Current Active Branch of Development: </i> 
   <b> chunked-world </b>
@@ -185,6 +188,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[demo-screenshot]: Resources/Pictures/falling-sand-demo.png
 [contributors-shield]: https://img.shields.io/github/contributors/TheCookiess/Falling-Sand.svg?style=for-the-badge
 [contributors-url]: https://github.com/TheCookiess/Falling-Sand/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/TheCookiess/Falling-Sand.svg?style=for-the-badge
