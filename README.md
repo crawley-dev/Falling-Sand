@@ -184,8 +184,6 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 * [Img Shields](https://shields.io)
 * [GitHub Pages](https://pages.github.com)
 
-### Sleeping Chunks optimisation:
-
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [demo-screenshot]: Resources/Pictures/falling-sand-demo.png
