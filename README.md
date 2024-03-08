@@ -113,9 +113,10 @@
 ### Installation
 <!-- talk about installing boost at some point... -->
 
-1. Open 'PixelSimDesktop.sln
-2. Change 'Build Mode' from Debug --> Release
-3. Click 'Local Windows Debugger'
+1. Place pre-requisite libraries ./libraries
+2. Open 'PixelSimDesktop.sln
+3. Change 'Build Mode' from Debug --> Release
+4. Click 'Local Windows Debugger'
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
