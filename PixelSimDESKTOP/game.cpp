@@ -18,15 +18,17 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
     cellWidth     = newTextureWidth / scaleFactor;
     cellHeight    = newTextureHeight / scaleFactor;
 
+    // clang-format off
     materials.clear();
-    materials.resize(MaterialID::COUNT);                                    //Material(R  , G  , B  , A  , Dispersion, Density)
-    materials[MaterialID::EMPTY]       = Material(50, 50, 50, 255, 0, 500); // find a better solution in the future than somewhat heavy air..
-    materials[MaterialID::SAND]        = Material(245, 215, 176, 255, 3, 1600);
-    materials[MaterialID::WATER]       = Material(20, 20, 255, 125, 5, 997);
-    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 0, 65535); // max u16 value
-    materials[MaterialID::NATURAL_GAS] = Material(20, 20, 50, 100, 8, 20);
-    materials[MaterialID::FIRE]        = Material(255, 165, 0, 200, 8, 10);
-    materials[MaterialID::GOL_ALIVE]   = Material(0, 255, 30, 255, 0, 65535);
+    materials.resize(MaterialID::COUNT);                                                //Material(R  , G  , B  , A  , Dispersion, Density)
+    materials[MaterialID::EMPTY]       = Material( 50,  50,  50, 255, 0,   500,  true);       // find a better solution in the future than somewhat heavy air..
+    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 0, 65535, false); // max u16 value
+    materials[MaterialID::SAND]        = Material(245, 215, 176, 255, 3,  1600,  true);
+    materials[MaterialID::WATER]       = Material( 20,  20, 255, 125, 5,   997,  true);
+    materials[MaterialID::NATURAL_GAS] = Material( 20,  20,  50, 100, 8,    20,  true);
+    materials[MaterialID::FIRE]        = Material(255, 165,   0, 200, 8,    10,  true);
+    materials[MaterialID::GOL_ALIVE]   = Material(  0, 255,  30, 255, 0, 65535,  true);
+    // clang-format on
 
     // generate 'nVariant' number of colour variations per material. for spice..
     nVariants              = 20;
@@ -295,7 +297,9 @@ bool Game::updateNaturalGas(u16 x, u16 y) {
     }
 
 ESCAPE_WHILE_NATURAL_GAS:
-    return trySwapAbove(x, y, x + xDispersion, y + yDispersion);
+    //return trySwapAbove(x, y, x + xDispersion, y + yDispersion);
+    swapCells(x, y, x + xDispersion, y + yDispersion);
+    return true;
 }
 
 bool Game::trySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
@@ -303,7 +307,12 @@ bool Game::trySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
 
     Cell &c1 = cells[cellIdx(x1, y1)];
     Cell &c2 = cells[cellIdx(x2, y2)];
+    //if (materials[c1.matID].density >= materials[c2.matID].density || !materials[c1.matID].movable || !materials[c2.matID].movable) return false;
     if (materials[c1.matID].density >= materials[c2.matID].density) return false;
+    if (!materials[c1.matID].movable || !materials[c2.matID].movable) return false;
+
+    //if (materials[c2.matID].movable) return false;
+    //if (c2.matID == MaterialID::CONCRETE) return false;
 
     swapCells(x1, y1, x2, y2);
     return true;
@@ -314,7 +323,13 @@ bool Game::querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
 
     Cell &c1 = cells[cellIdx(x1, y1)];
     Cell &c2 = cells[cellIdx(x2, y2)];
+    //if (materials[c1.matID].density >= materials[c2.matID].density || !materials[c1.matID].movable || !materials[c2.matID].movable) return false;
     if (materials[c1.matID].density >= materials[c2.matID].density) return false;
+    if (!materials[c1.matID].movable || !materials[c2.matID].movable) {
+        return false;
+    }
+    //if (materials[MaterialID::CONCRETE].movable) return false;
+    //if (c2.matID == MaterialID::CONCRETE) return false;
 
     return true;
 }
@@ -335,8 +350,8 @@ bool Game::querySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
 
     Cell &c1 = cells[cellIdx(x1, y1)];
     Cell &c2 = cells[cellIdx(x2, y2)];
-    if (materials[c1.matID].density <= materials[c2.matID].density) return false;
 
+    if (materials[c1.matID].density <= materials[c2.matID].density) return false;
     return true;
 }
 
