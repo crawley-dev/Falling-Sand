@@ -35,6 +35,7 @@ public:
 
 private:
     bool applicationRunning = false;
+    bool gameInitialised    = false;
 
     AppState      state;
     Game*         game       = nullptr; // std::unique_ptr<Game>

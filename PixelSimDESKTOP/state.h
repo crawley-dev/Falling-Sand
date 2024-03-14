@@ -244,9 +244,9 @@ struct AppState {
 
     Coord<s32> camera = Coord<s32>(0, 0);
 
-    s64        print_hash  = 0;
-    Coord<s32> print_chunk = Coord<s32>(0, 0);
-    Coord<s32> print_mouse = Coord<s32>(0, 0);
-    Coord<s32> print_world = Coord<s32>(0, 0);
-    Coord<s32> print_cell  = Coord<s32>(0, 0);
+    Coord<s32> print_mouse    = Coord<s32>(0, 0);
+    Coord<s32> print_world    = Coord<s32>(0, 0);
+    Coord<s32> print_viewport = Coord<s32>(0, 0);
+    Coord<s32> print_chunk    = Coord<s32>(0, 0);
+    Coord<s32> print_cell     = Coord<s32>(0, 0);
 };

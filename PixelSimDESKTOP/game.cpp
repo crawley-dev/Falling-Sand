@@ -63,6 +63,7 @@ void Game::update(AppState& state, std::vector<u8>& textureData) {
     updateEntireTexture(textureData);
 
     textureChanges.clear();
+    state.camera = camera;
 }
 
 void Game::reload(u16 width, u16 height, u8 scale) {
@@ -88,18 +89,15 @@ void Game::reset() {
 void Game::loadImage(std::vector<u8>& textureData, u16 width, u16 height) {
 }
 
-void Game::mouseDraw(AppState& state, s32 x, s32 y, u16 size, u8 drawChance, u8 material, u8 shape) {
-    printf("%d,%d\n", x, y);
-    x = x / scaleFactor;
-    y = y / scaleFactor;
+void Game::mouseDraw(AppState& state, u16 mX, u16 mY, u16 size, u8 drawChance, u8 material, u8 shape) {
+    mX /= scaleFactor;
+    mY /= scaleFactor;
 
-    //printf("%d,%d\n\n", x, y);
-
-    if (outOfViewportBounds(x, y)) return;
-    auto [mX, mY] = mouseToWorld(x, y);
+    if (outOfViewportBounds(mX, mY)) return;
+    auto [x, y] = viewportToWorld(mX, mY);
 
     auto lambda = [&](s32 _x, s32 _y) -> void { changeMaterial(_x, _y, material); };
-    drawCircle(mX, mY, size, material, drawChance, lambda);
+    drawCircle(x, y, size, material, drawChance, lambda);
 }
 
 /*--------------------------------------------------------------------------------------
@@ -128,17 +126,13 @@ void Game::simulate(AppState& state) {
     //printf("(%d,%d) -> (%d,%d)\n", startChunkX, startChunkY, startChunkX + iterChunksX, startChunkX + iterChunksY);
     //printf("\r                                                    \r"); // return to start of line, print spaces, return again
 
-    for (s16 y = startChunkY; y < startChunkY + iterChunksY; y++)
-        for (s16 x = startChunkX; x < startChunkX + iterChunksX; x++) {
-            Chunk* chunk = getChunk(x, y);
-
-            //updatedChunks.push_back(chunk);
-            //for (u8 cY = 0; cY < CHUNK_SIZE; cY++) {
-            //    for (u8 cX = 0; cX < CHUNK_SIZE; cX++) {
-            //        // update cell
-            //    }
-            //}
-        }
+    //for (s16 y = startChunkY; y < startChunkY + iterChunksY; y++)
+    //    for (s16 x = startChunkX; x < startChunkX + iterChunksX; x++) {
+    //        Chunk* chunk = getChunk(x, y);
+    //        for (Cell& c : chunk->cells) {
+    //            c.matID = MaterialID::EMPTY;
+    //        }
+    //    }
 
     if (mouseChunk->cells.size() > CHUNK_SIZE * CHUNK_SIZE || mouseChunk->cells.size() < 0) { mouseChunk = getChunk(0, 0); }
     //for (auto& cell : mouseChunk->cells) {
@@ -147,10 +141,11 @@ void Game::simulate(AppState& state) {
 
     if (outOfTextureBounds(state.mouse.x, state.mouse.y)) { state.mouse = Coord<u16>(0, 0); }
 
-    Coord mouseCell               = Coord<u16>(state.mouse.x, state.mouse.y) / Coord<u16>(scaleFactor);
-    const auto [wX, wY]           = mouseToWorld(mouseCell.x, mouseCell.y);
-    const auto [mChunkX, mChunkY] = worldToChunk(wX, wY);
-    const auto [cX, cY]           = chunkToCell(wX, wY, mChunkX, mChunkY);
+    Coord mouse             = Coord<u16>(state.mouse.x, state.mouse.y) / Coord<u16>(scaleFactor);
+    auto [wX, wY]           = viewportToWorld(mouse.x, mouse.y);
+    auto [mChunkX, mChunkY] = worldToChunk(wX, wY);
+    auto [cX, cY]           = chunkToCell(wX, wY, mChunkX, mChunkY);
+    auto [vX, vY]           = worldToViewport(mouse.x, mouse.y);
 
     mouseChunk = getChunk(mChunkX, mChunkY);
     //for (auto& cell : mouseChunk->cells) {
@@ -158,11 +153,11 @@ void Game::simulate(AppState& state) {
     //}
     //changeMaterial(wX, wY, MaterialID::SAND);
 
-    state.print_hash  = boost::hash<std::pair<s16, s16>>()(std::make_pair(mChunkX, mChunkY));
-    state.print_mouse = {mouseCell.x, mouseCell.y};
-    state.print_world = {wX, wY};
-    state.print_chunk = {mChunkX, mChunkY};
-    state.print_cell  = {cX, cY};
+    state.print_mouse    = {mouse.x, mouse.y};
+    state.print_viewport = {vX, vY};
+    state.print_world    = {wX, wY};
+    state.print_chunk    = {mChunkX, mChunkY};
+    state.print_cell     = {cX, cY};
 }
 
 Chunk* Game::getChunk(s16 x, s16 y) {
@@ -182,16 +177,22 @@ Chunk* Game::createChunk(s16 x, s16 y, u8 material) {
 
 // shoud be very slow ..
 void Game::changeMaterial(s32 x, s32 y, u8 newMaterial) {
-    if (outOfViewportBounds(x, y)) {
-        printf("nuh uh %d,%d\n", x, y);
-        return;
-    }
+    //if (outOfViewportBounds(x, y)) {
+    //    printf("nuh uh %d,%d\n", x, y);
+    //    return;
+    //}
 
     auto [chunkX, chunkY] = worldToChunk(x, y);
     auto [cellX, cellY]   = chunkToCell(x, y, chunkX, chunkY);
     Chunk* chunk          = getChunk(chunkX, chunkY);
-    Cell&  c              = chunk->cells[cellIdx(cellX, cellY)];
-    c.matID               = newMaterial;
+
+    if (chunkX < -200 || chunkX > 200 || chunkY < -200 || chunkX > 200 || cellX >= CHUNK_SIZE || cellX < 0 || cellY >= CHUNK_SIZE ||
+        cellY < 0) {
+        printf("chunk: (%d,%d) (%d,%d)", chunkX, chunkY, cellX, cellY);
+    }
+
+    Cell& c = chunk->cells[cellIdx(cellX, cellY)];
+    c.matID = newMaterial;
 }
 
 /*--------------------------------------------------------------------------------------
@@ -208,7 +209,7 @@ void Game::changeMaterial(s32 x, s32 y, u8 newMaterial) {
 // currently pushes changes to textureBuffer.
 // currently very slow, try optimised version on this stackoverflow below..
 //https://stackoverflow.com/questions/10060046/drawing-lines-with-bresenhams-line-algorithm
-void Game::drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)>& foo) {
+void Game::drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)> foo) {
     int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
     dx  = x2 - x1;
     dy  = y2 - y1;
@@ -297,7 +298,7 @@ void Game::drawCircle(s32 x, s32 y, u16 size, u8 material, u8 drawChance, std::f
 
 void Game::updateTexture(std::vector<u8>& textureData) {
     for (auto& [colour, coords] : textureChanges) { // ALL IN CELL COORDS
-        const s32 idx        = textureIdx(coords.first, coords.second);
+        s32 idx              = textureIdx(coords.x, coords.y);
         textureData[idx + 0] = colour[0];
         textureData[idx + 1] = colour[1];
         textureData[idx + 2] = colour[2];
@@ -316,90 +317,165 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
     // beyond ~5 chunks in vertical, it doesn't render anything new
     // might be an outOfViewportBounds error?
 
-    for (u32 y = 0; y < textureSize.y; y++)
+    for (u32 y = 0; y < textureSize.y; y++) // black background ??
         for (u32 x = 0; x < textureSize.x; x++) {
-            const u32 idx        = textureIdx(x, y);
+            u32 idx              = textureIdx(x, y);
             textureData[idx + 0] = 255;
             textureData[idx + 1] = 255;
             textureData[idx + 2] = 255;
             textureData[idx + 3] = 255;
         }
 
-    for (Chunk* chunk : chunks) {
-        const auto [worldX, worldY] = chunkToWorld(chunk->x, chunk->y, 0, 0);
-        const auto [texX, texY]     = viewportToWorld(worldX, worldY); // accounts for camera position entirely.
 
-        //if (outOfViewportBounds(worldX, worldY) && outOfViewportBounds(worldX + CHUNK_SIZE - 1, worldY) &&
-        //    outOfViewportBounds(worldX, worldY + CHUNK_SIZE - 1) && outOfViewportBounds(worldX + CHUNK_SIZE - 1, worldY + CHUNK_SIZE - 1)) {
-        //    continue;
-        //}
+    // lots of "excess" calculations but it works!!
+    for (s32 y = 0; y < cellSize.y; y++) {
+        for (s32 x = 0; x < cellSize.x; x++) {
+            auto [worldX, worldY] = viewportToWorld(x, y);
+            auto [chunkX, chunkY] = worldToChunk(worldX, worldY);
+            auto [cellX, cellY]   = worldToCell(worldX, worldY);
+            Chunk* chunk          = getChunk(chunkX, chunkY);
 
-        for (s32 y = 0; y < CHUNK_SIZE; y++)
-            for (s32 x = 0; x < CHUNK_SIZE; x++) {
-                if (outOfCellBounds(x + texX, y + texY)) continue; // performance aint even that bad : )
+            Cell&            cell    = chunk->cells[cellIdx(cellX, cellY)];
+            std::vector<u8>& variant = materials[cell.matID].variants[cell.variant];
 
-                const Cell&            c       = chunk->cells[cellIdx(x, y)];
-                const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
-
-                for (s32 tY = 0; tY < scaleFactor; tY++) {
-                    for (s32 tX = 0; tX < scaleFactor; tX++) {
-                        const u32 idx        = textureIdx(((x + texX) * scaleFactor) + tX, ((y + texY) * scaleFactor) + tY);
-                        textureData[idx + 0] = variant[0];
-                        textureData[idx + 1] = variant[1];
-                        textureData[idx + 2] = variant[2];
-                        textureData[idx + 3] = variant[3];
-                    }
+            //loops aren't performant for small scaleFactor values for (u8 dY = 0; dY < scaleFactor; dY++) {
+            for (u8 dY = 0; dY < scaleFactor; dY++)
+                for (u8 dX = 0; dX < scaleFactor; dX++) {
+                    u32 idx              = textureIdx((x * scaleFactor) + dX, (y * scaleFactor) + dY);
+                    textureData[idx + 0] = variant[0];
+                    textureData[idx + 1] = variant[1];
+                    textureData[idx + 2] = variant[2];
+                    textureData[idx + 3] = variant[3];
                 }
+        }
+    }
+
+    //dwa123(textureData);
+
+    // dead code, just bad
+    //for (Chunk* chunk : chunks) {
+    //    const auto [worldX, worldY] = chunkToWorld(chunk->x, chunk->y, 0, 0);
+    //    const auto [texX, texY]     = worldToViewport(worldX, worldY);
+    //if (outOfViewportBounds(worldX, worldY) && outOfViewportBounds(worldX + CHUNK_SIZE - 1, worldY) &&
+    //    outOfViewportBounds(worldX, worldY + CHUNK_SIZE - 1) && outOfViewportBounds(worldX + CHUNK_SIZE - 1, worldY + CHUNK_SIZE - 1)) {
+    //    continue;
+    //}
+
+    //    for (s32 y = 0; y < CHUNK_SIZE; y++)
+    //        for (s32 x = 0; x < CHUNK_SIZE; x++) {
+    //            if (outOfCellBounds(x + texX, y + texY)) continue; // performance aint even that bad : )
+
+    //            const Cell&            c       = chunk->cells[cellIdx(x, y)];
+    //            const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
+
+    //            for (s32 tY = 0; tY < scaleFactor; tY++) {
+    //                for (s32 tX = 0; tX < scaleFactor; tX++) {
+    //                    const u32 idx        = textureIdx(((x + texX) * scaleFactor) + tX, ((y + texY) * scaleFactor) + tY);
+    //                    textureData[idx + 0] = variant[0];
+    //                    textureData[idx + 1] = variant[1];
+    //                    textureData[idx + 2] = variant[2];
+    //                    textureData[idx + 3] = variant[3];
+    //                }
+    //            }
+    //        }
+    //}
+
+    //for (auto& [colour, coords] : textureChanges) { // ALL IN CELL COORDS
+    //    const s32 idx        = textureIdx(coords.x, coords.y);
+    //    textureData[idx + 0] = colour[0];
+    //    textureData[idx + 1] = colour[1];
+    //    textureData[idx + 2] = colour[2];
+    //    textureData[idx + 3] = colour[3];
+    //}
+}
+
+
+// ideally a more optimal solution.
+// not working currently.
+void Game::dwa123(std::vector<u8>& textureData) {
+    auto func123 = [](s32 length) -> u8 { return (length % CHUNK_SIZE == 0) ? 0 : 1; };
+
+    auto [startChunkX, startChunkY] = worldToChunk(camera.x, camera.y);
+    s16 iterChunksX                 = cellSize.x / CHUNK_SIZE + func123(cellSize.x);
+    s16 iterChunksY                 = cellSize.y / CHUNK_SIZE + func123(cellSize.y);
+
+
+    // loop chunks in viewport
+    //
+    for (s16 chunkY = startChunkY; chunkY < iterChunksY; chunkY++)
+        for (s16 chunkX = startChunkX; chunkX < iterChunksX; chunkX++) {
+            //Chunk* chunk = getChunk(chunkX, chunkY);
+            if (!chunkMap.contains({chunkX, chunkY})) continue;
+            Chunk* chunk = chunkMap[{chunkX, chunkY}];
+
+            // change start position of iteration if left most // top most chunk
+            // change end position of iteration if right most // bottom most chunk
+            u8 startX{0}, startY{0}, endX{CHUNK_SIZE}, endY{CHUNK_SIZE};
+            if (chunkY == 0) { // start is equal to how far into the chunk the camera is
+                // ...
+            } else if (chunkY == iterChunksY - 1) { // end is equal to (chnk + 15) - camera
+                // ...
+            }
+
+            if (chunkX == 0) {
+                // ...
+            } else if (chunkX == iterChunksX - 1) {
+                // ...
             }
 
 
-        for (auto& [colour, coords] : textureChanges) { // ALL IN CELL COORDS
-            const s32 idx        = textureIdx(coords.first, coords.second);
-            textureData[idx + 0] = colour[0];
-            textureData[idx + 1] = colour[1];
-            textureData[idx + 2] = colour[2];
-            textureData[idx + 3] = colour[3];
+            for (u8 clY = startY; clY < endY; clY++)
+                for (u8 clX = startX; clX < endX; clX++) {
+
+                    auto [wX, wY] = chunkToWorld(chunkX, chunkY, clX, clY);
+                    auto [vX, vY] = worldToViewport(wX, wY);
+                    //s32 vX =
+
+                    if (outOfCellBounds(vX, vY)) { continue; }
+
+                    //if (outOfViewportBounds(wX, wY)) {
+                    //    printf("oob viewport\n");
+                    //    printf("world:    %d,%d\nviewport: %d,%d\n\n", wX, wY, vX, vY);
+                    //    continue;
+                    //} else if (outOfCellBounds(vX, vY)) {
+                    //    printf("oob cell\n");
+                    //    printf("world:    %d,%d\nviewport: %d,%d\n\n", wX, wY, vX, vY);
+                    //    continue;
+                    //}
+                    //if (outOfViewportBounds(wX, wY)) continue;
+
+                    Cell&            cell    = chunk->cells[cellIdx(clX, clY)];
+                    std::vector<u8>& variant = materials[cell.matID].variants[cell.variant];
+
+                    //loops aren't performant for small scaleFactor values for (u8 dY = 0; dY < scaleFactor; dY++) {
+                    for (u8 dY = 0; dY < scaleFactor; dY++)
+                        for (u8 dX = 0; dX < scaleFactor; dX++) {
+                            u32 idx              = textureIdx((vX * scaleFactor) + dX, (vY * scaleFactor) + dY);
+                            textureData[idx + 0] = variant[0];
+                            textureData[idx + 1] = variant[1];
+                            textureData[idx + 2] = variant[2];
+                            textureData[idx + 3] = variant[3];
+                        }
+                }
         }
-
-        /*
-        // TL --> TR
-        for (s32 tY = 0; tY < scaleFactor; tY++)
-            for (s32 tX = 0; tX < scaleFactor; tX++)
-                for (u8 i = 0; i < CHUNK_SIZE; i++) { // draws
-                    if (!outOfViewportBounds(texX + i, texY)) {
-                        const u32 idx        = textureIdx((i + texX) * scaleFactor + tX, texY * scaleFactor + tY);
-                        textureData[idx + 0] = 255;
-                        textureData[idx + 1] = 30;
-                        textureData[idx + 2] = 30;
-                        textureData[idx + 3] = 255;
-                    }
-
-                    if (!outOfViewportBounds(texX, texY + i)) {
-                        const u32 idx        = textureIdx(texX * scaleFactor + tX, (texY + i) * scaleFactor + tY);
-                        textureData[idx + 0] = 255;
-                        textureData[idx + 1] = 30;
-                        textureData[idx + 2] = 30;
-                        textureData[idx + 3] = 255;
-                    }
-                }*/
-    }
 }
-
 
 /*--------------------------------------------------------------------------------------
 ---- Simple, Inlined Algorithms --------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
+
 // this function shall for ever be confusiing as shit
 // doesn't actually take into account the camera position. thats your job.
 // whoever wrote this, certificable spac
-
 bool Game::outOfCellBounds(s32 x, s32 y) const {
     return x >= cellSize.x || y >= cellSize.y || x < 0 || y < 0;
 }
 
-bool Game::outOfViewportBounds(s32 x, s32 y) const {
-    return x >= cellSize.x + camera.x || y >= cellSize.y + camera.y || x < camera.x || y < camera.y;
+bool Game::outOfViewportBounds(s32 x, s32 y) const { // is correct?
+    Coord<u16> viewport = worldToViewport(x, y);
+    return viewport.x >= cellSize.x || viewport.y >= cellSize.y || viewport.x < 0 || viewport.y < 0;
+    //return x >= cellSize.x + camera.x || y >= cellSize.y + camera.y || x < camera.x || y < camera.y;
 }
 
 bool Game::outOfChunkBounds(u8 x, u8 y) const {
@@ -414,28 +490,28 @@ Coord<s16> Game::worldToChunk(s32 x, s32 y) const {
     return Coord<s16>(floor(float(x) / CHUNK_SIZE), floor(float(y) / CHUNK_SIZE));
 }
 
-Coord<s32> Game::chunkToWorld(s16 cX, s16 cY, u8 lX, u8 lY) const {
-    return Coord<s32>((cX * CHUNK_SIZE) + lX, (cY * CHUNK_SIZE) + lY);
+Coord<s32> Game::chunkToWorld(s16 x, s16 y, u8 clX, u8 clY) const {
+    return Coord<s32>((x * CHUNK_SIZE) + clX, (y * CHUNK_SIZE) + clY);
 }
 
-Coord<s32> Game::viewportToWorld(s32 x, s32 y) const {
-    return Coord<s32>(x - camera.x, y + camera.y);
+// 'meant' to zero out world coordinates to the viewport, i.e camera = (0,0) on texture.
+Coord<u16> Game::worldToViewport(s32 x, s32 y) const {
+    //return Coord<u16>(x + camera.x, y + camera.y);
+    return Coord<u16>(x - camera.x, y + camera.y);
 }
 
-Coord<s32> Game::mouseToWorld(s32 x, s32 y) const {
+Coord<s32> Game::viewportToWorld(u16 x, u16 y) const {
     return Coord<s32>(x + camera.x, y - camera.y);
 }
-
 
 Coord<u8> Game::worldToCell(s32 x, s32 y) const {
     auto [chunkX, chunkY] = worldToChunk(x, y);
     return Coord<u8>(x - (chunkX * CHUNK_SIZE), y - (chunkY * CHUNK_SIZE));
 }
 
-Coord<u8> Game::chunkToCell(s32 x, s32 y, s16 cX, s16 cY) const {
-    return Coord<u8>(x - (cX * CHUNK_SIZE), y - (cY * CHUNK_SIZE));
+Coord<u8> Game::chunkToCell(s16 x, s16 y, u8 clX, u8 clY) const {
+    return Coord<u8>(x - (clX * CHUNK_SIZE), y - (clY * CHUNK_SIZE));
 }
-
 
 u8 Game::cellIdx(u8 x, u8 y) const {
     return (y * CHUNK_SIZE) + x;
@@ -459,6 +535,34 @@ u64 Game::splitMix64_NextRand() {
 
 
 /*
+ 
+  //s32  lineY  = textureSize.y / 2;
+    //s32  endX   = (textureSize.x > 0) ? textureSize.x - 1 : textureSize.x;
+    //auto lambda = [&](s32 _x, s32 _y) -> void { textureChanges.push_back({{20, 255, 20, 255}, {_x, _y}}); };
+    //drawLine(0, lineY, endX, lineY, lambda);
+
+
+        // TL --> TR
+//        for (s32 tY = 0; tY < scaleFactor; tY++)
+//            for (s32 tX = 0; tX < scaleFactor; tX++)
+//                for (u8 i = 0; i < CHUNK_SIZE; i++) { // draws
+//                    if (!outOfViewportBounds(texX + i, texY)) {
+//                        const u32 idx        = textureIdx((i + texX) * scaleFactor + tX, texY * scaleFactor + tY);
+//                        textureData[idx + 0] = 255;
+//                        textureData[idx + 1] = 30;
+//                        textureData[idx + 2] = 30;
+//                        textureData[idx + 3] = 255;
+//                    }
+//
+//                    if (!outOfViewportBounds(texX, texY + i)) {
+//                        const u32 idx        = textureIdx(texX * scaleFactor + tX, (texY + i) * scaleFactor + tY);
+//                        textureData[idx + 0] = 255;
+//                        textureData[idx + 1] = 30;
+//                        textureData[idx + 2] = 30;
+//                        textureData[idx + 3] = 255;
+//                    }
+* 
+* 
     for (auto& chunk : chunks) { // iter over each chunk
         // next stage:: calc how much of a chunk can be rendered & do up to that.
         // 1100 - (1096 + 8) = -4   << camera(0,0)

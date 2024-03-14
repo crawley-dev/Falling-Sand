@@ -243,9 +243,8 @@ void Interface::gameWindow(AppState& state) {
 
     loadedTex            = loadedTex % state.textures.size();
     TextureData& texture = state.textures[TexIndex::GAME];
-    // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow",
-    //       Not the SDL2 generated win32 window
 
+    // has to happen here to get proper ImGui::GetWindowSize() response
     constexpr int xOffset = 10;
     constexpr int yOffset = 40;
     int           windowX = (int)ImGui::GetWindowSize().x;
@@ -257,11 +256,13 @@ void Interface::gameWindow(AppState& state) {
         state.reloadGame = true;
         texture.width    = (int)ImGui::GetWindowSize().x - xOffset;
         texture.height   = (int)ImGui::GetWindowSize().y - yOffset;
-        if (texture.width % 2 != 0) ++texture.width;   // i don't remember what this does
-        if (texture.height % 2 != 0) ++texture.height; // i don't remember what this does
+        if (texture.width % 2 != 0) texture.width++;
+        if (texture.height % 2 != 0) texture.height++;
         ImGui::SetWindowSize(ImVec2(texture.width, texture.height));
-    } else
+    } else {
         state.reloadGame = false;
+    }
+
 
     {
         ImGui::BeginChild("GameRender");
@@ -269,12 +270,12 @@ void Interface::gameWindow(AppState& state) {
         ImGui::Image((ImTextureID)texture.id, textureRenderSize, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
         if (ImGui::BeginItemTooltip()) {
             // clang-format on
-            ImGui::Text("hash: %d", state.print_hash);
-            ImGui::Text("camera (%d,%d)", state.camera.x, state.camera.y);
-            ImGui::Text("mouse: (%d,%d)", state.print_mouse.x, state.print_mouse.y);
-            ImGui::Text("world: (%d,%d)", state.print_world.x, state.print_world.y);
-            ImGui::Text("chunk: (%d,%d)", state.print_chunk.x, state.print_chunk.y);
-            ImGui::Text("cell:  (%d,%d)", state.print_cell.x, state.print_cell.y);
+            ImGui::Text("camera:   (%d,%d)", state.camera.x, state.camera.y);
+            ImGui::Text("mouse:    (%d,%d)", state.print_mouse.x, state.print_mouse.y);
+            ImGui::Text("viewport: (%d,%d)", state.print_viewport.x, state.print_viewport.y);
+            ImGui::Text("world:    (%d,%d)", state.print_world.x, state.print_world.y);
+            ImGui::Text("chunk:    (%d,%d)", state.print_chunk.x, state.print_chunk.y);
+            ImGui::Text("cell:     (%d,%d)", state.print_cell.x, state.print_cell.y);
             ImGui::EndTooltip();
         }
 

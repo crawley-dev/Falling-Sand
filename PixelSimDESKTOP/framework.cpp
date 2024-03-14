@@ -107,7 +107,8 @@ void Framework::update() {
     interface->main();
     interface->debugMenu(state);
 
-    if (ImGui::GetFrameCount() <= 2) return;
+    s32 dwa = ImGui::GetFrameCount();
+    if (!gameInitialised) return;
 
     ImGuiIO&     io      = ImGui::GetIO();
     TextureData& texture = state.textures[TexIndex::GAME];
@@ -122,7 +123,6 @@ void Framework::update() {
         state.camera.y -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_S)));
         state.camera.x += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_D)));
     }
-
 
     if (io.MouseDown[0]) mouseDraw();
     if (state.resetSim) {
@@ -164,6 +164,8 @@ void Framework::render() {
 
         TextureData& texture = state.textures[TexIndex::GAME];
         game->init(texture.width, texture.height, state.scaleFactor);
+
+        gameInitialised = true;
     }
 
     // Handles Multiple Viewports && Swaps between 2 texture buffers for smoother rendering

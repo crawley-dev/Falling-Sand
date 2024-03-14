@@ -65,11 +65,12 @@ public:
     void reset();
 
     // will draw 1x1 cell for now. to avoid crossing chunk boundaries.
-    void mouseDraw(AppState& state, s32 x, s32 y, u16 size, u8 drawChance, u8 material, u8 shape);
+    void mouseDraw(AppState& state, u16 x, u16 y, u16 size, u8 drawChance, u8 material, u8 shape);
     void loadImage(std::vector<u8>& textureData, u16 width, u16 height);
 
 private:
     void simulate(AppState& state);
+    void dwa123(std::vector<u8>& textureData);
 
     // 1 loop, change variables based on left or right
     //void l_bottomUpUpdate(Chunk& chunk);
@@ -97,7 +98,7 @@ private:
     // void drawLine(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     // void drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     // void drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
-    void drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)>& foo);
+    void drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)> foo);
 
 
     bool outOfChunkBounds(u8 x, u8 y) const;      // relative to CHUNK_SIZE constexpr value
@@ -107,12 +108,12 @@ private:
 
 
     // generic-alise this? // std::pair<T,T> replaced
-    Coord<s16> worldToChunk(s32 x, s32 y) const;                 // world -> chunk
-    Coord<s32> viewportToWorld(s32 x, s32 y) const;              // viewport x,y -> world space.. (accounts for camera)
-    Coord<s32> mouseToWorld(s32 x, s32 y) const;                 // mouse x,y -> world space.. (reverse accounts for camera)
-    Coord<s32> chunkToWorld(s16 cX, s16 cY, u8 lX, u8 lY) const; // chunk space -> world space
+    Coord<s16> worldToChunk(s32 x, s32 y) const;                   // world -> chunk
+    Coord<u16> worldToViewport(s32 x, s32 y) const;                // viewport x,y -> world space.. (accounts for camera)
+    Coord<s32> viewportToWorld(u16 x, u16 y) const;                // mouse x,y -> world space.. (reverse accounts for camera)
+    Coord<s32> chunkToWorld(s16 cX, s16 cY, u8 clX, u8 clY) const; // chunk space -> world space
     Coord<u8>  worldToCell(s32 x, s32 y) const;
-    Coord<u8>  chunkToCell(s32 x, s32 y, s16 cX, s16 cY) const;
+    Coord<u8>  chunkToCell(s16 x, s16 y, u8 clX, u8 clY) const;
 
     u8  cellIdx(u8 x, u8 y) const;      // gets index into chunk->cells
     u32 textureIdx(u16 x, u16 y) const; // gets index into textureData << accepts viewport coords.
@@ -127,19 +128,18 @@ private:
 
     bool sizeChanged;
 
-    u8 solidDispersion, fluidDispersion, gasDispersion;
-    u8 scaleFactor; // cell 1x1 --> texture N x N
-    //s32 cameraX, cameraY;               // camera posistion in the world. from top left corner.
-    //s32 cellWidth, cellHeight;          // size of render target in cell
-    //s32 textureWidth, textureHeight;    // size of render target.
+    u8         solidDispersion, fluidDispersion, gasDispersion;
+    u8         scaleFactor; // cell 1x1 --> texture N x N
     Coord<s32> camera;
     Coord<s32> cellSize;
     Coord<s32> textureSize;
     u64        randSeed = 1234567890987654321; // set random seed
 
-    std::vector<std::pair<std::vector<u8>, std::pair<s32, s32>>>                      textureChanges; // render buffer changes.
-    std::vector<Chunk*>                                                               updatedChunks;  // to update
-    std::vector<Material>                                                             materials;      // material data
-    std::vector<Chunk*>                                                               chunks;         // holds all chunks, for deleting
-    std::unordered_map<std::pair<s16, s16>, Chunk*, boost::hash<std::pair<s16, s16>>> chunkMap;       // for indexing into a chunk
+    //std::vector<std::pair<std::vector<u8>, std::pair<s32, s32>>>    textureChanges; // render buffer changes.
+    std::vector<std::pair<std::vector<u8>, Coord<s32>>> textureChanges;
+    std::vector<Chunk*>                                 updatedChunks; // to update
+    std::vector<Material>                               materials;     // material data
+    std::vector<Chunk*>                                 chunks;        // holds all chunks, for deleting
+    //std::unordered_map<Coord<s16>, Chunk*, boost::hash<Coord<s16>>> chunkMap;
+    std::unordered_map<std::pair<s16, s16>, Chunk*, boost::hash<std::pair<s16, s16>>> chunkMap; // for indexing into a chunk
 };
