@@ -182,7 +182,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         ImGui::Text("Draw Size  ");
         ImGui::SameLine();
         ImGui::InputInt("draw_size_inputint", &drawSize, 1, 10);
-        state.drawSize      = std::clamp(state.drawSize, (u16)1, (u16)1000);
+        state.drawSize      = std::clamp(drawSize, 1, 1000);
         u8 drawSizeModifier = ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) ? 10 : 1;
         state.drawSize += (int)io.MouseWheel * drawSizeModifier;
 
@@ -190,7 +190,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         ImGui::Text("Draw Chance");
         ImGui::SameLine();
         ImGui::InputInt("draw_chance_inputint", &drawChance, 1, 10);
-        state.drawChance = std::clamp(state.drawChance, (u8)1, (u8)100);
+        state.drawChance = std::clamp(drawChance, 1, 100);
         // ImGui::InputInt("Cell Colour Variance", (int)state.drawColourVariance, 1, 10);
         //state.drawColourVariance = std::clamp(state.drawColourVariance, 1, 255);
         // ^^ might revive this, re-generate random variant for a cell?

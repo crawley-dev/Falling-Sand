@@ -93,11 +93,29 @@ void Game::mouseDraw(AppState& state, u16 mX, u16 mY, u16 size, u8 drawChance, u
     mX /= scaleFactor;
     mY /= scaleFactor;
 
-    if (outOfViewportBounds(mX, mY)) return;
-    auto [x, y] = viewportToWorld(mX, mY);
 
-    auto lambda = [&](s32 _x, s32 _y) -> void { changeMaterial(_x, _y, material); };
-    drawCircle(x, y, size, material, drawChance, lambda);
+    if (outOfViewportBounds(mX, mY)) {
+        Coord<s16> viewport = worldToViewport(mX, mY);
+        printf("oob: %d,%d | %d,%d\n", mX, mY, viewport.x, viewport.y);
+        return;
+    };
+    auto [wX, wY] = viewportToWorld(mX, mY);
+    printf("%d,%d\n", wX, wY);
+
+    auto [chunkX, chunkY] = worldToChunk(wX, wY);
+    auto [cellX, cellY]   = chunkToCell(chunkX, chunkY, 0, 0);
+    Chunk* chunk          = getChunk(chunkX, chunkY);
+    for (Cell& c : chunk->cells) {
+        c.matID = MaterialID::CONCRETE;
+    }
+
+    //for (s32 tY = -size / 2; tY < size / 2; tY++)
+    //    for (s32 tX = -size / 2; tX < size / 2; tX++) {
+    //changeMaterial(x + tX, y + tY, MaterialID::CONCRETE);
+    //}
+
+    //auto lambda = [&](s32 _x, s32 _y) -> void { changeMaterial(_x, _y, material); };
+    //drawSquare(x, y, size, material, drawChance, lambda);
 }
 
 /*--------------------------------------------------------------------------------------
@@ -123,23 +141,14 @@ void Game::simulate(AppState& state) {
     s16 iterChunksX                 = cellSize.x / CHUNK_SIZE + func123(cellSize.x);
     s16 iterChunksY                 = cellSize.y / CHUNK_SIZE + func123(cellSize.y);
 
-    //printf("(%d,%d) -> (%d,%d)\n", startChunkX, startChunkY, startChunkX + iterChunksX, startChunkX + iterChunksY);
-    //printf("\r                                                    \r"); // return to start of line, print spaces, return again
-
-    //for (s16 y = startChunkY; y < startChunkY + iterChunksY; y++)
-    //    for (s16 x = startChunkX; x < startChunkX + iterChunksX; x++) {
-    //        Chunk* chunk = getChunk(x, y);
-    //        for (Cell& c : chunk->cells) {
-    //            c.matID = MaterialID::EMPTY;
-    //        }
-    //    }
+    for (s16 y = startChunkY; y < startChunkY + iterChunksY; y++)
+        for (s16 x = startChunkX; x < startChunkX + iterChunksX; x++) {
+            Chunk* chunk = getChunk(x, y);
+        }
 
     if (mouseChunk->cells.size() > CHUNK_SIZE * CHUNK_SIZE || mouseChunk->cells.size() < 0) { mouseChunk = getChunk(0, 0); }
-    //for (auto& cell : mouseChunk->cells) {
-    //    cell.matID = MaterialID::EMPTY;
-    //}
-
     if (outOfTextureBounds(state.mouse.x, state.mouse.y)) { state.mouse = Coord<u16>(0, 0); }
+
 
     Coord mouse             = Coord<u16>(state.mouse.x, state.mouse.y) / Coord<u16>(scaleFactor);
     auto [wX, wY]           = viewportToWorld(mouse.x, mouse.y);
@@ -147,6 +156,9 @@ void Game::simulate(AppState& state) {
     auto [cX, cY]           = chunkToCell(wX, wY, mChunkX, mChunkY);
     auto [vX, vY]           = worldToViewport(mouse.x, mouse.y);
 
+    //for (auto& cell : mouseChunk->cells) {
+    //    cell.matID = MaterialID::EMPTY;
+    //}
     mouseChunk = getChunk(mChunkX, mChunkY);
     //for (auto& cell : mouseChunk->cells) {
     //    cell.matID = MaterialID::GOL_ALIVE;
@@ -160,36 +172,30 @@ void Game::simulate(AppState& state) {
     state.print_cell     = {cX, cY};
 }
 
+// if a chunk exists, grab it. else create one in its place.
 Chunk* Game::getChunk(s16 x, s16 y) {
     if (chunkMap.contains({x, y})) return chunkMap[{x, y}];
     return createChunk(x, y);
 }
 
+// 'new' specifies heap allocation
 Chunk* Game::createChunk(s16 x, s16 y, u8 material) {
-    Chunk* chunk = new Chunk(x, y, material);
-    chunk->cells.resize(CHUNK_SIZE * CHUNK_SIZE, Cell(MaterialID::EMPTY, getRand<u8>(0, VARIANT_COUNT - 1)));
+    Chunk* chunk     = new Chunk(x, y, material);
     chunkMap[{x, y}] = chunk;
     chunks.push_back(chunk);
-
-    printf("creating chunk: (%d,%d) | size: %d\n", x, y, chunks.size());
     return chunk;
 }
 
 // shoud be very slow ..
 void Game::changeMaterial(s32 x, s32 y, u8 newMaterial) {
-    //if (outOfViewportBounds(x, y)) {
-    //    printf("nuh uh %d,%d\n", x, y);
-    //    return;
-    //}
-
     auto [chunkX, chunkY] = worldToChunk(x, y);
     auto [cellX, cellY]   = chunkToCell(x, y, chunkX, chunkY);
     Chunk* chunk          = getChunk(chunkX, chunkY);
 
-    if (chunkX < -200 || chunkX > 200 || chunkY < -200 || chunkX > 200 || cellX >= CHUNK_SIZE || cellX < 0 || cellY >= CHUNK_SIZE ||
-        cellY < 0) {
-        printf("chunk: (%d,%d) (%d,%d)", chunkX, chunkY, cellX, cellY);
-    }
+    //if (chunkX < -200 || chunkX > 200 || chunkY < -200 || chunkX > 200 || cellX >= CHUNK_SIZE || cellX < 0 || cellY >= CHUNK_SIZE ||
+    //    cellY < 0) {
+    //    printf("chunk: (%d,%d) (%d,%d)", chunkX, chunkY, cellX, cellY);
+    //}
 
     Cell& c = chunk->cells[cellIdx(cellX, cellY)];
     c.matID = newMaterial;
@@ -291,6 +297,12 @@ void Game::drawCircle(s32 x, s32 y, u16 size, u8 material, u8 drawChance, std::f
     }
 }
 
+void Game::drawSquare(s32 x, s32 y, u16 size, u8 material, u8 drawChance, std::function<void(s32, s32)> foo) {
+    for (s32 tY = -size / 2; tY < size / 2; tY++)
+        for (s32 tX = -size / 2; tX < size / 2; tX++)
+            if (getRand<s64>(1, 100) <= drawChance) foo(x + tX, y + tY);
+}
+
 
 /*--------------------------------------------------------------------------------------
 ---- Texture Update Routines ----------------------------------------------------------
@@ -360,14 +372,14 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
     //    outOfViewportBounds(worldX, worldY + CHUNK_SIZE - 1) && outOfViewportBounds(worldX + CHUNK_SIZE - 1, worldY + CHUNK_SIZE - 1)) {
     //    continue;
     //}
-
+    //
     //    for (s32 y = 0; y < CHUNK_SIZE; y++)
     //        for (s32 x = 0; x < CHUNK_SIZE; x++) {
     //            if (outOfCellBounds(x + texX, y + texY)) continue; // performance aint even that bad : )
-
+    //
     //            const Cell&            c       = chunk->cells[cellIdx(x, y)];
     //            const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
-
+    //
     //            for (s32 tY = 0; tY < scaleFactor; tY++) {
     //                for (s32 tX = 0; tX < scaleFactor; tX++) {
     //                    const u32 idx        = textureIdx(((x + texX) * scaleFactor) + tX, ((y + texY) * scaleFactor) + tY);
@@ -473,7 +485,7 @@ bool Game::outOfCellBounds(s32 x, s32 y) const {
 }
 
 bool Game::outOfViewportBounds(s32 x, s32 y) const { // is correct?
-    Coord<u16> viewport = worldToViewport(x, y);
+    Coord<s16> viewport = worldToViewport(x, y);
     return viewport.x >= cellSize.x || viewport.y >= cellSize.y || viewport.x < 0 || viewport.y < 0;
     //return x >= cellSize.x + camera.x || y >= cellSize.y + camera.y || x < camera.x || y < camera.y;
 }
@@ -495,13 +507,15 @@ Coord<s32> Game::chunkToWorld(s16 x, s16 y, u8 clX, u8 clY) const {
 }
 
 // 'meant' to zero out world coordinates to the viewport, i.e camera = (0,0) on texture.
-Coord<u16> Game::worldToViewport(s32 x, s32 y) const {
-    //return Coord<u16>(x + camera.x, y + camera.y);
-    return Coord<u16>(x - camera.x, y + camera.y);
+Coord<s16> Game::worldToViewport(s32 x, s32 y) const {
+    s32 camX = (camera.x < 0) ? camera.x : camera.x * -1;
+    s32 camY = (camera.y < 0) ? camera.y : camera.y * -1;
+    return Coord<s16>(x - camera.x, y - camera.y);
 }
 
-Coord<s32> Game::viewportToWorld(u16 x, u16 y) const {
-    return Coord<s32>(x + camera.x, y - camera.y);
+Coord<s32> Game::viewportToWorld(s16 x, s16 y) const {
+    //return Coord<s32>(x + camera.x, y - camera.y);
+    return Coord<s32>(x + camera.x, y + camera.y);
 }
 
 Coord<u8> Game::worldToCell(s32 x, s32 y) const {
@@ -532,6 +546,54 @@ u64 Game::splitMix64_NextRand() {
     z     = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
     return z ^ (z >> 31);
 }
+
+
+class TaskQueue {
+public:
+    TaskQueue(u8 numThreads) : stop(false) {
+        for (u8 i = 0; i < numThreads; i++) {
+            threads.emplace_back([this] {
+                while (true) {
+                    std::function<void()> task;
+                    {
+                        std::unique_lock<std::mutex> lock(mutex);
+                        condition.wait(lock, [this] { return stop || !tasks.empty(); });
+                        if (stop && tasks.empty()) return;
+                        task = std::move(tasks.front());
+                        tasks.pop();
+                    }
+                    task();
+                }
+            });
+        }
+    }
+
+    template <typename T>
+    void enqueueTask(T task) {
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            tasks.emplace(std::move(task));
+        }
+        condition.notify_one();
+    }
+
+    ~TaskQueue() {
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            stop = true;
+        }
+        condition.notify_all();
+        for (std::thread& worker : threads)
+            worker.join();
+    }
+
+private:
+    std::vector<std::thread>          threads;
+    std::queue<std::function<void()>> tasks;
+    std::mutex                        mutex;
+    std::condition_variable           condition;
+    bool                              stop;
+};
 
 
 /*

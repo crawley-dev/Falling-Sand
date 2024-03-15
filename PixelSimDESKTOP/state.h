@@ -165,6 +165,16 @@ template <typename T>
 struct Coord {
     T x, y;
 
+    Coord(T _x, T _y) {
+        x = _x;
+        y = _y;
+    }
+    Coord(T _n) {
+        x = _n;
+        y = _n;
+    }
+    Coord() = default;
+
     Coord<T> operator+(const Coord& c) {
         return Coord<T>(x + c.x, y + c.y);
     }
@@ -204,16 +214,6 @@ struct Coord {
         y /= scalar;
         return *this;
     }
-
-    Coord(T _x, T _y) {
-        x = _x;
-        y = _y;
-    }
-    Coord(T _n) {
-        x = _n;
-        y = _n;
-    }
-    Coord() = default;
 };
 
 struct AppState {

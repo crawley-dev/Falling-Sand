@@ -9,31 +9,33 @@ constexpr u8 VARIATION     = 12;
 // type aliasing to better define coordinate space
 using cellSpace     = u8;
 using viewportSpace = u16;
-using chunkSpace    = s32;
+using chunkSpace    = s16;
+using worldSpace    = s32;
 
 struct Cell {
     u8 matID;
     u8 variant;
 
-    Cell(u8 MATERIAL, u8 COLOUR_VARIANT) {
-        matID   = MATERIAL;
-        variant = COLOUR_VARIANT;
+    Cell(u8 _materialID, u8 _colourVariant) {
+        matID   = _materialID;
+        variant = _colourVariant;
     }
     Cell() = default;
 };
+//bool updated;    // still need a bool for the chunk itself sadge.. （*゜ー゜*）
+// maybe i don't need it! if cellUpdates == 0, no cells need updating therefore skip!
 
 struct Chunk {
-    s32 x, y;        // chunk position in the world
-    u64 cellUpdates; // each cell in a chunk has a bit in this flag.
-    //bool updated;    // still need a bool for the chunk itself sadge.. （*゜ー゜*）
-    // maybe i don't need it! if cellUpdates == 0, no cells need updating therefore skip!
+    s16               x, y;        // chunk position in the world
+    u64               cellUpdates; // each cell in a chunk has a bit in this integer.
     std::vector<Cell> cells;
 
-    Chunk(s32 X, s32 Y, u8 material) {
-        x           = X;
-        y           = Y;
+    Chunk(s16 _x, s16 _y, u8 _material) {
+        x           = _x;
+        y           = _y;
         cellUpdates = 0; // |= 1 << cellidx
         cells       = std::vector<Cell>();
+        cells.resize(CHUNK_SIZE * CHUNK_SIZE, Cell(MaterialID::EMPTY, 0));
     }
     Chunk() = default;
 };
@@ -43,13 +45,13 @@ struct Material {
     u16                          density;
     std::vector<std::vector<u8>> variants;
 
-    Material(u8 RED, u8 GREEN, u8 BLUE, u8 ALPHA, u16 DENSITY) {
-        r        = RED;
-        g        = GREEN;
-        b        = BLUE;
-        a        = ALPHA;
-        density  = DENSITY;
-        variants = {{RED, GREEN, BLUE, ALPHA}};
+    Material(u8 _red, u8 _green, u8 _blue, u8 _alpha, u16 _density) {
+        r        = _red;
+        g        = _green;
+        b        = _blue;
+        a        = _alpha;
+        density  = _density;
+        variants = {{_red, _green, _blue, _alpha}};
     }
     Material() = default;
 };
@@ -84,7 +86,7 @@ private:
     Chunk* getChunk(s16 x, s16 y);
     Chunk* createChunk(s16 x, s16 y, u8 material = 0);
 
-    // void updateChunk(Chunk &c);
+    //void updateChunk(Chunk* c);
     // bool updateCell(Cell& c, u16 x, u16 y); // ref necessary?
     // void updateSand(Cell &c);       // ref necessary?
     // void updateWater(Cell &c);      // ref necessary?
@@ -99,7 +101,7 @@ private:
     // void drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     // void drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     void drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)> foo);
-
+    void drawSquare(s32 x1, s32 y1, u16 size, u8 material, u8 drawChance, std::function<void(s32, s32)> foo);
 
     bool outOfChunkBounds(u8 x, u8 y) const;      // relative to CHUNK_SIZE constexpr value
     bool outOfTextureBounds(u32 x, u32 y) const;  // relative to textureWidth
@@ -109,8 +111,8 @@ private:
 
     // generic-alise this? // std::pair<T,T> replaced
     Coord<s16> worldToChunk(s32 x, s32 y) const;                   // world -> chunk
-    Coord<u16> worldToViewport(s32 x, s32 y) const;                // viewport x,y -> world space.. (accounts for camera)
-    Coord<s32> viewportToWorld(u16 x, u16 y) const;                // mouse x,y -> world space.. (reverse accounts for camera)
+    Coord<s16> worldToViewport(s32 x, s32 y) const;                // viewport x,y -> world space.. (accounts for camera)
+    Coord<s32> viewportToWorld(s16 x, s16 y) const;                // mouse x,y -> world space.. (reverse accounts for camera)
     Coord<s32> chunkToWorld(s16 cX, s16 cY, u8 clX, u8 clY) const; // chunk space -> world space
     Coord<u8>  worldToCell(s32 x, s32 y) const;
     Coord<u8>  chunkToCell(s16 x, s16 y, u8 clX, u8 clY) const;

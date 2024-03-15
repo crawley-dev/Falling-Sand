@@ -118,9 +118,9 @@ void Framework::update() {
 
     if (ImGui::GetFrameCount() % 2 == 0) {
         u8 multiplier = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) ? 3 : 1;
-        state.camera.y += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_W)));
+        state.camera.y -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_W)));
         state.camera.x -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_A)));
-        state.camera.y -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_S)));
+        state.camera.y += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_S)));
         state.camera.x += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_D)));
     }
 
