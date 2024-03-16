@@ -122,6 +122,11 @@ void Framework::update() {
         state.camera.x -= (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_A)));
         state.camera.y += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_S)));
         state.camera.x += (multiplier * ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_D)));
+
+        state.camera.y -= (multiplier * ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)));
+        state.camera.x -= (multiplier * ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)));
+        state.camera.y += (multiplier * ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)));
+        state.camera.x += (multiplier * ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)));
     }
 
     if (io.MouseDown[0]) mouseDraw();

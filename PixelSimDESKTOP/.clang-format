@@ -5,10 +5,10 @@ AlignAfterOpenBracket: Align
 AlignConsecutiveMacros: false
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
-# AlignConsecutiveShortCaseStatements:
-#    Enabled: true
-#    AcrossEmptyLines: true
-#    AcrossComments: true
+AlignConsecutiveShortCaseStatements:
+    Enabled: true
+    AcrossEmptyLines: true
+    AcrossComments: true
 AlignEscapedNewlines: Right
 AlignTrailingComments: true
 # AlignArrayOfStructures: true

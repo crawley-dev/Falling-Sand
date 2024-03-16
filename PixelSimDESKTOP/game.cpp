@@ -25,14 +25,16 @@ void Game::init(u16 width, u16 height, u8 scale) {
     gasDispersion   = 6;
 
     // Init materials
+    // clang-format off
     materials.clear();
-    materials.resize(MaterialID::COUNT); // just so i can [] access, clear code.
-    materials[MaterialID::EMPTY]       = Material(50, 50, 50, 255, 0);
-    materials[MaterialID::SAND]        = Material(245, 215, 176, 255, 1600);
-    materials[MaterialID::WATER]       = Material(20, 20, 255, 125, 997);
-    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 2000);
-    materials[MaterialID::NATURAL_GAS] = Material(20, 20, 50, 100, 2000);
-    materials[MaterialID::GOL_ALIVE]   = Material(0, 255, 30, 255, 0);
+    materials.resize(MaterialID::COUNT);
+    materials[MaterialID::EMPTY]       = Material( 50,  50,  50, 255,   500, MOVABLE               ); // flags do nothing for now.
+    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 65535, 0                     ); // need to keep EMPTY.density less than solids, greater than gases..
+    materials[MaterialID::SAND]        = Material(245, 215, 176, 255,  1600, MOVABLE | BELOW       );
+    materials[MaterialID::WATER]       = Material( 20,  20, 255, 125,   997, MOVABLE | BELOW | SIDE);
+    materials[MaterialID::NATURAL_GAS] = Material( 20,  20,  50, 100,    20, MOVABLE | ABOVE | SIDE);
+    materials[MaterialID::GOL_ALIVE]   = Material(  0, 255,  30, 255, 65535, 0                     );
+    // clang-format on
 
     // create material colour variations
     for (Material& mat : materials) {
@@ -68,10 +70,6 @@ void Game::update(AppState& state, std::vector<u8>& textureData) {
 
 void Game::reload(u16 width, u16 height, u8 scale) {
     printf("reloaded! width: %d  height: %d  scale: %d\n", width, height, scale);
-    //textureSize.x  = width;
-    //textureSize.y = height;
-    //cellSize.y  = textureSize.y / scaleFactor;
-    //cellSize.x   = textureSize.x / scaleFactor;
     textureSize = {width, height};
     scaleFactor = scale;
     cellSize    = textureSize / scaleFactor;
@@ -93,97 +91,225 @@ void Game::mouseDraw(AppState& state, u16 mX, u16 mY, u16 size, u8 drawChance, u
     mX /= scaleFactor;
     mY /= scaleFactor;
 
-
-    if (outOfViewportBounds(mX, mY)) {
-        Coord<s16> viewport = worldToViewport(mX, mY);
-        printf("oob: %d,%d | %d,%d\n", mX, mY, viewport.x, viewport.y);
-        return;
-    };
+    if (outOfCellBounds(mX, mY)) { return; };
     auto [wX, wY] = viewportToWorld(mX, mY);
-    printf("%d,%d\n", wX, wY);
 
-    auto [chunkX, chunkY] = worldToChunk(wX, wY);
-    auto [cellX, cellY]   = chunkToCell(chunkX, chunkY, 0, 0);
-    Chunk* chunk          = getChunk(chunkX, chunkY);
-    for (Cell& c : chunk->cells) {
-        c.matID = MaterialID::CONCRETE;
-    }
-
-    //for (s32 tY = -size / 2; tY < size / 2; tY++)
-    //    for (s32 tX = -size / 2; tX < size / 2; tX++) {
-    //changeMaterial(x + tX, y + tY, MaterialID::CONCRETE);
-    //}
-
-    //auto lambda = [&](s32 _x, s32 _y) -> void { changeMaterial(_x, _y, material); };
-    //drawSquare(x, y, size, material, drawChance, lambda);
+    auto lambda = [&](s32 _x, s32 _y) -> void { changeMaterial(_x, _y, material); };
+    drawCircle(wX, wY, size, material, drawChance, lambda);
 }
 
 /*--------------------------------------------------------------------------------------
 ---- Simulation Update Routines --------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-/*
-First Implementation :
-    - get the chunk at the camera position
-    - calculate how many chunks are visible in x & y ((textureSize.x /
-scaleFactor) / CHUNK_SIZE)
-    - loop through from camera Chunk to Final Chunk
-        - get chunk from map
-        - update chunk's cells bot -> top
-*/
-
 void Game::simulate(AppState& state) {
     static Chunk* mouseChunk = getChunk(0, 0);
 
-    auto func123 = [](s32 length) -> u8 { return (length % CHUNK_SIZE == 0) ? 0 : 1; };
-
     auto [startChunkX, startChunkY] = worldToChunk(camera.x, camera.y);
-    s16 iterChunksX                 = cellSize.x / CHUNK_SIZE + func123(cellSize.x);
-    s16 iterChunksY                 = cellSize.y / CHUNK_SIZE + func123(cellSize.y);
+    s16 iterChunksX                 = cellSize.x / CHUNK_SIZE + chunkOffset(cellSize.x);
+    s16 iterChunksY                 = cellSize.y / CHUNK_SIZE + chunkOffset(cellSize.y);
 
     for (s16 y = startChunkY; y < startChunkY + iterChunksY; y++)
         for (s16 x = startChunkX; x < startChunkX + iterChunksX; x++) {
             Chunk* chunk = getChunk(x, y);
+            updateChunk(chunk, state.scanMode == Scan::BOTTOM_UP_L);
         }
 
+
     if (mouseChunk->cells.size() > CHUNK_SIZE * CHUNK_SIZE || mouseChunk->cells.size() < 0) { mouseChunk = getChunk(0, 0); }
-    if (outOfTextureBounds(state.mouse.x, state.mouse.y)) { state.mouse = Coord<u16>(0, 0); }
+    if (outOfTextureBounds(state.mouse.x, state.mouse.y)) { state.mouse = Vec2<u16>(0, 0); }
 
-
-    Coord mouse             = Coord<u16>(state.mouse.x, state.mouse.y) / Coord<u16>(scaleFactor);
+    Vec2 mouse              = Vec2<u16>(state.mouse.x, state.mouse.y) / Vec2<u16>(scaleFactor);
     auto [wX, wY]           = viewportToWorld(mouse.x, mouse.y);
     auto [mChunkX, mChunkY] = worldToChunk(wX, wY);
     auto [cX, cY]           = chunkToCell(wX, wY, mChunkX, mChunkY);
-    auto [vX, vY]           = worldToViewport(mouse.x, mouse.y);
+    mouseChunk              = getChunk(mChunkX, mChunkY);
 
-    //for (auto& cell : mouseChunk->cells) {
-    //    cell.matID = MaterialID::EMPTY;
-    //}
-    mouseChunk = getChunk(mChunkX, mChunkY);
-    //for (auto& cell : mouseChunk->cells) {
-    //    cell.matID = MaterialID::GOL_ALIVE;
-    //}
-    //changeMaterial(wX, wY, MaterialID::SAND);
+    state.print_mouse = {mouse.x, mouse.y};
+    state.print_world = {wX, wY};
+    state.print_chunk = {mChunkX, mChunkY};
+    state.print_cell  = {cX, cY};
 
-    state.print_mouse    = {mouse.x, mouse.y};
-    state.print_viewport = {vX, vY};
-    state.print_world    = {wX, wY};
-    state.print_chunk    = {mChunkX, mChunkY};
-    state.print_cell     = {cX, cY};
+    if (state.scanMode == Scan::BOTTOM_UP_L || state.scanMode == Scan::BOTTOM_UP_R) { state.scanMode = (state.scanMode += 1) % 2; }
+    state.frame++;
 }
 
-// if a chunk exists, grab it. else create one in its place.
 Chunk* Game::getChunk(s16 x, s16 y) {
     if (chunkMap.contains({x, y})) return chunkMap[{x, y}];
     return createChunk(x, y);
 }
 
-// 'new' specifies heap allocation
+Chunk* Game::getChunk(Vec2<s16> Vec2) {
+    if (chunkMap.contains({Vec2.x, Vec2.y})) return chunkMap[{Vec2.x, Vec2.y}];
+    return createChunk(Vec2.x, Vec2.y);
+}
+
 Chunk* Game::createChunk(s16 x, s16 y, u8 material) {
     Chunk* chunk     = new Chunk(x, y, material);
     chunkMap[{x, y}] = chunk;
     chunks.push_back(chunk);
     return chunk;
+}
+
+
+/*--------------------------------------------------------------------------------------
+---- Updating Cells --------------------------------------------------------------------
+--------------------------------------------------------------------------------------*/
+
+void Game::updateChunk(Chunk* chunk, bool updateLeft) {
+    //u8 startX{CHUNK_SIZE - 1}, startY{CHUNK_SIZE - 1}, endX{0}, endY{0};
+
+    //if (updateLeft) {
+    //    startX = startY = 0;
+    //    endX = endY = CHUNK_SIZE;
+    //}
+    auto [wX, wY] = chunkToWorld(chunk->x, chunk->y, 0, 0);
+
+
+    //for (u8 y = CHUNK_SIZE - 1; y > 0; y--) {
+    //    for (u8 x = CHUNK_SIZE - 1; x > 0; x--) {
+    for (u8 y = 0; y < CHUNK_SIZE; y++) {
+        for (u8 x = 0; x < CHUNK_SIZE; x++) {
+            Cell& c = chunk->cells[cellIdx(x, y)];
+            updateCell(c, wX + x, wY + y);
+        }
+    }
+}
+
+void Game::updateCell(Cell& c, s32 x, s32 y) {
+    if (c.updated) return;
+
+    switch (c.matID) {
+    case MaterialID::EMPTY:       return;
+    case MaterialID::CONCRETE:    return;
+    case MaterialID::SAND:        return updateSand(c, x, y);
+    case MaterialID::WATER:       return updateWater(c, x, y);
+    case MaterialID::NATURAL_GAS: return updateNaturalGas(c, x, y);
+    }
+}
+
+void Game::updateSand(Cell& c, s32 x, s32 y) {
+    s8 yDispersion = 0;
+    s8 xDispersion = 0;
+    s8 movesLeft   = solidDispersion;
+
+    while (movesLeft > 0) {
+        if (querySwap(x, y, x + xDispersion, y + yDispersion + 1)) { // check cell below
+            yDispersion++;
+            movesLeft--;
+            continue;
+        }
+
+        s8 rand = getRand<s8>(-1, 1);
+        if (querySwap(x, y, x + rand, y + yDispersion + 1)) {
+            xDispersion = rand;
+            movesLeft--;
+        } else {
+            break;
+        }
+    }
+
+    swapCells(x, y, x + xDispersion, y + yDispersion);
+}
+
+void Game::updateWater(Cell& c, s32 x, s32 y) {
+    s8 yDispersion = 0;
+    s8 xDispersion = 0;
+    s8 movesLeft   = fluidDispersion;
+
+    while (movesLeft > 0) {
+        if (querySwap(x, y, x + xDispersion, y + yDispersion + 1)) { // check cell below
+            yDispersion++;
+            movesLeft--;
+            continue;
+        }
+
+        s8 dX = abs(xDispersion) + 1;
+        if (getRand<u8>(1, 100) > 50) {
+            if (querySwap(x, y, x + dX, y + yDispersion))
+                xDispersion = dX;
+            else if (querySwap(x, y, x - dX, y + yDispersion))
+                xDispersion = -dX;
+            else
+                goto ESCAPE_WHILE_WATER;
+            movesLeft--;
+        } else {
+            if (querySwap(x, y, x - dX, y + yDispersion))
+                xDispersion = -dX;
+            else if (querySwap(x, y, x + dX, y + yDispersion))
+                xDispersion = dX;
+            else
+                goto ESCAPE_WHILE_WATER;
+            movesLeft--;
+        }
+    }
+
+ESCAPE_WHILE_WATER:
+    swapCells(x, y, x + xDispersion, y + yDispersion);
+}
+
+void Game::updateNaturalGas(Cell& c, s32 x, s32 y) {
+    s8 yDispersion = 0;
+    s8 xDispersion = 0;
+    s8 movesLeft   = gasDispersion;
+
+    while (movesLeft > 0) {
+        if (querySwapAbove(x, y, x + xDispersion, y + yDispersion - 1)) { // check cell above
+            yDispersion--;
+            movesLeft--;
+            continue;
+        }
+
+        u8 dX = abs(xDispersion) + 1;
+        if (getRand<u8>(1, 100) > 50) {
+            if (querySwapAbove(x, y, x + dX, y + yDispersion))
+                xDispersion = dX;
+            else if (querySwapAbove(x, y, x - dX, y + yDispersion))
+                xDispersion = -dX;
+            else
+                goto ESCAPE_WHILE_NATURAL_GAS;
+            movesLeft--;
+        } else {
+            if (querySwapAbove(x, y, x - dX, y + yDispersion))
+                xDispersion = -dX;
+            else if (querySwapAbove(x, y, x + dX, y + yDispersion))
+                xDispersion = dX;
+            else
+                goto ESCAPE_WHILE_NATURAL_GAS;
+            movesLeft--;
+        }
+    }
+
+ESCAPE_WHILE_NATURAL_GAS:
+    swapCells(x, y, x + xDispersion, y + yDispersion);
+}
+
+bool Game::querySwapAbove(s32 x1, s32 y1, s32 x2, s32 y2) {
+    Vec2      chunk1Vec2 = worldToChunk(x1, y1);
+    Vec2      chunk2Vec2 = worldToChunk(x2, y2);
+    Chunk*    chunk1     = getChunk(chunk1Vec2);
+    Chunk*    chunk2     = getChunk(chunk2Vec2);
+    Cell&     c1         = chunk1->cells[cellIdx(worldToCell(chunk1Vec2.x, chunk1Vec2.y, x1, y1))];
+    Cell&     c2         = chunk2->cells[cellIdx(worldToCell(chunk2Vec2.x, chunk2Vec2.y, x2, y2))];
+    Material& material1  = materials[c1.matID];
+    Material& material2  = materials[c2.matID];
+
+    if (material1.density >= material2.density || !(material1.flags & MOVABLE) || !(material2.flags & MOVABLE)) { return false; }
+    return true;
+}
+
+bool Game::querySwap(s32 x1, s32 y1, s32 x2, s32 y2) {
+    Vec2      chunk1Vec2 = worldToChunk(x1, y1);
+    Vec2      chunk2Vec2 = worldToChunk(x2, y2);
+    Chunk*    chunk1     = getChunk(chunk1Vec2);
+    Chunk*    chunk2     = getChunk(chunk2Vec2);
+    Cell&     c1         = chunk1->cells[cellIdx(worldToCell(chunk1Vec2.x, chunk1Vec2.y, x1, y1))];
+    Cell&     c2         = chunk2->cells[cellIdx(worldToCell(chunk2Vec2.x, chunk2Vec2.y, x2, y2))];
+    Material& material1  = materials[c1.matID];
+    Material& material2  = materials[c2.matID];
+
+    if (material1.density <= material2.density || !(material1.flags & MOVABLE) || !(material2.flags & MOVABLE)) { return false; }
+    return true;
 }
 
 // shoud be very slow ..
@@ -192,20 +318,26 @@ void Game::changeMaterial(s32 x, s32 y, u8 newMaterial) {
     auto [cellX, cellY]   = chunkToCell(x, y, chunkX, chunkY);
     Chunk* chunk          = getChunk(chunkX, chunkY);
 
-    //if (chunkX < -200 || chunkX > 200 || chunkY < -200 || chunkX > 200 || cellX >= CHUNK_SIZE || cellX < 0 || cellY >= CHUNK_SIZE ||
-    //    cellY < 0) {
-    //    printf("chunk: (%d,%d) (%d,%d)", chunkX, chunkY, cellX, cellY);
-    //}
-
     Cell& c = chunk->cells[cellIdx(cellX, cellY)];
     c.matID = newMaterial;
 }
 
-/*--------------------------------------------------------------------------------------
----- Updating Cells --------------------------------------------------------------------
---------------------------------------------------------------------------------------*/
+// avoid branch for more maths when grabbing chunks?
+void Game::swapCells(s32 x1, s32 y1, s32 x2, s32 y2) {
+    auto   chunk1Vec2 = worldToChunk(x1, y1);
+    auto   chunk2Vec2 = worldToChunk(x2, y2);
+    Chunk* chunk1     = getChunk(chunk1Vec2);
+    Chunk* chunk2     = getChunk(chunk2Vec2);
+    Cell&  c1         = chunk1->cells[cellIdx(worldToCell(chunk1Vec2.x, chunk1Vec2.y, x1, y1))];
+    Cell&  c2         = chunk2->cells[cellIdx(worldToCell(chunk2Vec2.x, chunk2Vec2.y, x2, y2))];
 
-// aint got to the simulation part yet brother !
+    u8 tempMaterialID = c1.matID;
+    c1.matID          = c2.matID;
+    c2.matID          = tempMaterialID;
+
+    c1.updated = true;
+    c2.updated = true;
+}
 
 /*--------------------------------------------------------------------------------------
 ---- Drawing Algorithms ----------------------------------------------------------------
@@ -216,7 +348,7 @@ void Game::changeMaterial(s32 x, s32 y, u8 newMaterial) {
 // currently very slow, try optimised version on this stackoverflow below..
 //https://stackoverflow.com/questions/10060046/drawing-lines-with-bresenhams-line-algorithm
 void Game::drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)> foo) {
-    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
+    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i; // just a few variables
     dx  = x2 - x1;
     dy  = y2 - y1;
     dx1 = fabs(dx); // floating point abs???
@@ -309,8 +441,8 @@ void Game::drawSquare(s32 x, s32 y, u16 size, u8 material, u8 drawChance, std::f
 --------------------------------------------------------------------------------------*/
 
 void Game::updateTexture(std::vector<u8>& textureData) {
-    for (auto& [colour, coords] : textureChanges) { // ALL IN CELL COORDS
-        s32 idx              = textureIdx(coords.x, coords.y);
+    for (auto& [colour, Vec2s] : textureChanges) { // ALL IN CELL Vec2S, not a confusing name at all..
+        s32 idx              = textureIdx(Vec2s.x, Vec2s.y);
         textureData[idx + 0] = colour[0];
         textureData[idx + 1] = colour[1];
         textureData[idx + 2] = colour[2];
@@ -318,17 +450,7 @@ void Game::updateTexture(std::vector<u8>& textureData) {
     }
 }
 
-// Rendering Pipeline is wrong.. x-axis slips ??
-// renders perfectly work camera (0,0)..
-// otherwise it shits itself ?
-
-// Seems to be rendering chunks where they would be ABSOLUTE
-// not relative to the camera at all?? << i am doing "viewportToWorld" afterall?
 void Game::updateEntireTexture(std::vector<u8>& textureData) {
-
-    // beyond ~5 chunks in vertical, it doesn't render anything new
-    // might be an outOfViewportBounds error?
-
     for (u32 y = 0; y < textureSize.y; y++) // black background ??
         for (u32 x = 0; x < textureSize.x; x++) {
             u32 idx              = textureIdx(x, y);
@@ -340,11 +462,12 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
 
 
     // lots of "excess" calculations but it works!!
+    //  >> updates the entire screen opposed to updated cells. oh well!
     for (s32 y = 0; y < cellSize.y; y++) {
         for (s32 x = 0; x < cellSize.x; x++) {
             auto [worldX, worldY] = viewportToWorld(x, y);
             auto [chunkX, chunkY] = worldToChunk(worldX, worldY);
-            auto [cellX, cellY]   = worldToCell(worldX, worldY);
+            auto [cellX, cellY]   = worldToCell(chunkX, chunkY, worldX, worldY);
             Chunk* chunk          = getChunk(chunkX, chunkY);
 
             Cell&            cell    = chunk->cells[cellIdx(cellX, cellY)];
@@ -359,6 +482,7 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
                     textureData[idx + 2] = variant[2];
                     textureData[idx + 3] = variant[3];
                 }
+            cell.updated = false;
         }
     }
 
@@ -392,8 +516,8 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
     //        }
     //}
 
-    //for (auto& [colour, coords] : textureChanges) { // ALL IN CELL COORDS
-    //    const s32 idx        = textureIdx(coords.x, coords.y);
+    //for (auto& [colour, Vec2s] : textureChanges) { // ALL IN CELL Vec2S
+    //    const s32 idx        = textureIdx(Vec2s.x, Vec2s.y);
     //    textureData[idx + 0] = colour[0];
     //    textureData[idx + 1] = colour[1];
     //    textureData[idx + 2] = colour[2];
@@ -402,14 +526,14 @@ void Game::updateEntireTexture(std::vector<u8>& textureData) {
 }
 
 
-// ideally a more optimal solution.
-// not working currently.
-void Game::dwa123(std::vector<u8>& textureData) {
-    auto func123 = [](s32 length) -> u8 { return (length % CHUNK_SIZE == 0) ? 0 : 1; };
+// ideally would be a more optimal solution.
+// not working currently..
+void Game::optimalUpdateTexture(std::vector<u8>& textureData) {
+    auto chunkOffset = [](s32 length) -> u8 { return (length % CHUNK_SIZE == 0) ? 0 : 1; };
 
     auto [startChunkX, startChunkY] = worldToChunk(camera.x, camera.y);
-    s16 iterChunksX                 = cellSize.x / CHUNK_SIZE + func123(cellSize.x);
-    s16 iterChunksY                 = cellSize.y / CHUNK_SIZE + func123(cellSize.y);
+    s16 iterChunksX                 = cellSize.x / CHUNK_SIZE + chunkOffset(cellSize.x);
+    s16 iterChunksY                 = cellSize.y / CHUNK_SIZE + chunkOffset(cellSize.y);
 
 
     // loop chunks in viewport
@@ -472,6 +596,7 @@ void Game::dwa123(std::vector<u8>& textureData) {
         }
 }
 
+
 /*--------------------------------------------------------------------------------------
 ---- Simple, Inlined Algorithms --------------------------------------------------------
 --------------------------------------------------------------------------------------*/
@@ -484,55 +609,61 @@ bool Game::outOfCellBounds(s32 x, s32 y) const {
     return x >= cellSize.x || y >= cellSize.y || x < 0 || y < 0;
 }
 
-bool Game::outOfViewportBounds(s32 x, s32 y) const { // is correct?
-    Coord<s16> viewport = worldToViewport(x, y);
+// world Vec2 >> is in viewport?
+bool Game::outOfViewportBounds(s32 x, s32 y) const {
+    Vec2<s16> viewport = worldToViewport(x, y);
     return viewport.x >= cellSize.x || viewport.y >= cellSize.y || viewport.x < 0 || viewport.y < 0;
-    //return x >= cellSize.x + camera.x || y >= cellSize.y + camera.y || x < camera.x || y < camera.y;
 }
 
+// viewport Vec2 >> is within chunk bounds? kinda useless ngl lol
 bool Game::outOfChunkBounds(u8 x, u8 y) const {
     return x >= CHUNK_SIZE || y >= CHUNK_SIZE || x < 0 || y < 0;
 }
 
+// texture/pixel Vec2 >> is valid texture index?
 bool Game::outOfTextureBounds(u32 x, u32 y) const {
     return x >= textureSize.x || y >= textureSize.y || x < 0 || y < 0;
 }
 
-Coord<s16> Game::worldToChunk(s32 x, s32 y) const {
-    return Coord<s16>(floor(float(x) / CHUNK_SIZE), floor(float(y) / CHUNK_SIZE));
+Vec2<s16> Game::worldToChunk(s32 x, s32 y) const {
+    return Vec2<s16>(floor(float(x) / CHUNK_SIZE), floor(float(y) / CHUNK_SIZE));
 }
 
-Coord<s32> Game::chunkToWorld(s16 x, s16 y, u8 clX, u8 clY) const {
-    return Coord<s32>((x * CHUNK_SIZE) + clX, (y * CHUNK_SIZE) + clY);
+Vec2<s32> Game::chunkToWorld(s16 x, s16 y, u8 clX, u8 clY) const {
+    return Vec2<s32>((x * CHUNK_SIZE) + clX, (y * CHUNK_SIZE) + clY);
 }
 
-// 'meant' to zero out world coordinates to the viewport, i.e camera = (0,0) on texture.
-Coord<s16> Game::worldToViewport(s32 x, s32 y) const {
-    s32 camX = (camera.x < 0) ? camera.x : camera.x * -1;
-    s32 camY = (camera.y < 0) ? camera.y : camera.y * -1;
-    return Coord<s16>(x - camera.x, y - camera.y);
+Vec2<s16> Game::worldToViewport(s32 x, s32 y) const {
+    return Vec2<s16>(x - camera.x, y - camera.y);
 }
 
-Coord<s32> Game::viewportToWorld(s16 x, s16 y) const {
-    //return Coord<s32>(x + camera.x, y - camera.y);
-    return Coord<s32>(x + camera.x, y + camera.y);
+Vec2<s32> Game::viewportToWorld(s16 x, s16 y) const {
+    return Vec2<s32>(x + camera.x, y + camera.y);
 }
 
-Coord<u8> Game::worldToCell(s32 x, s32 y) const {
-    auto [chunkX, chunkY] = worldToChunk(x, y);
-    return Coord<u8>(x - (chunkX * CHUNK_SIZE), y - (chunkY * CHUNK_SIZE));
+Vec2<u8> Game::worldToCell(s16 chunkX, s16 chunkY, s32 x, s32 y) const {
+    //auto [chunkX, chunkY] = worldToChunk(x, y);
+    return Vec2<u8>(x - (chunkX * CHUNK_SIZE), y - (chunkY * CHUNK_SIZE));
 }
 
-Coord<u8> Game::chunkToCell(s16 x, s16 y, u8 clX, u8 clY) const {
-    return Coord<u8>(x - (clX * CHUNK_SIZE), y - (clY * CHUNK_SIZE));
+Vec2<u8> Game::chunkToCell(s16 x, s16 y, u8 clX, u8 clY) const {
+    return Vec2<u8>(x - (clX * CHUNK_SIZE), y - (clY * CHUNK_SIZE));
 }
 
 u8 Game::cellIdx(u8 x, u8 y) const {
     return (y * CHUNK_SIZE) + x;
 }
 
+u8 Game::cellIdx(Vec2<u8> Vec2) const {
+    return (Vec2.y * CHUNK_SIZE) + Vec2.x;
+}
+
 u32 Game::textureIdx(u16 x, u16 y) const {
     return 4 * ((y * textureSize.x) + x);
+}
+
+u8 Game::chunkOffset(u16 length) const {
+    return (length % CHUNK_SIZE == 0) ? 0 : 1;
 }
 
 template <typename T> // cheeky template

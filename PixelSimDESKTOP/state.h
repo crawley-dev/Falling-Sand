@@ -162,54 +162,54 @@ struct TextureData {
 //struct HoverData {};
 
 template <typename T>
-struct Coord {
+struct Vec2 {
     T x, y;
 
-    Coord(T _x, T _y) {
+    Vec2(T _x, T _y) {
         x = _x;
         y = _y;
     }
-    Coord(T _n) {
+    Vec2(T _n) {
         x = _n;
         y = _n;
     }
-    Coord() = default;
+    Vec2() = default;
 
-    Coord<T> operator+(const Coord& c) {
-        return Coord<T>(x + c.x, y + c.y);
+    Vec2<T> operator+(const Vec2& c) {
+        return Vec2<T>(x + c.x, y + c.y);
     }
 
-    Coord<T> operator-(const Coord& c) {
-        return Coord<T>(x - c.x, y - c.y);
+    Vec2<T> operator-(const Vec2& c) {
+        return Vec2<T>(x - c.x, y - c.y);
     }
 
-    Coord<T> operator*(const Coord& c) {
-        return Coord<T>(x * c.x, y * c.y);
+    Vec2<T> operator*(const Vec2& c) {
+        return Vec2<T>(x * c.x, y * c.y);
     }
 
-    Coord<T> operator/(const Coord& c) {
-        return Coord<T>(x / c.x, y / c.y);
+    Vec2<T> operator/(const Vec2& c) {
+        return Vec2<T>(x / c.x, y / c.y);
     }
 
-    Coord<T>& operator+=(const Coord<T>& c) {
+    Vec2<T>& operator+=(const Vec2<T>& c) {
         x += c.x;
         y += c.y;
         return *this;
     }
 
-    Coord<T>& operator-=(const Coord<T>& c) {
+    Vec2<T>& operator-=(const Vec2<T>& c) {
         x -= c.x;
         y -= c.y;
         return *this;
     }
 
-    Coord<T>& operator*=(const T& scalar) {
+    Vec2<T>& operator*=(const T& scalar) {
         x *= scalar;
         y *= scalar;
         return *this;
     }
 
-    Coord<T>& operator/=(const T& scalar) {
+    Vec2<T>& operator/=(const T& scalar) {
         x /= scalar;
         y /= scalar;
         return *this;
@@ -234,19 +234,19 @@ struct AppState {
     u8 fluidDispersionFactor = 4;
     u8 solidDispersionFactor = 2;
 
-    Coord<u16> mouse    = Coord<u16>(0, 0);
-    u16        drawSize = 10;
+    Vec2<u16> mouse    = Vec2<u16>(0, 0);
+    u16       drawSize = 10;
 
     u32 frame          = 0;
     u32 texReloadCount = 0;
     u32 textureChanges = 0;
     u32 cellChanges    = 0;
 
-    Coord<s32> camera = Coord<s32>(0, 0);
+    Vec2<s32> camera = Vec2<s32>(0, 0);
 
-    Coord<s32> print_mouse    = Coord<s32>(0, 0);
-    Coord<s32> print_world    = Coord<s32>(0, 0);
-    Coord<s32> print_viewport = Coord<s32>(0, 0);
-    Coord<s32> print_chunk    = Coord<s32>(0, 0);
-    Coord<s32> print_cell     = Coord<s32>(0, 0);
+    Vec2<s32> print_mouse    = Vec2<s32>(0, 0);
+    Vec2<s32> print_world    = Vec2<s32>(0, 0);
+    Vec2<s32> print_viewport = Vec2<s32>(0, 0);
+    Vec2<s32> print_chunk    = Vec2<s32>(0, 0);
+    Vec2<s32> print_cell     = Vec2<s32>(0, 0);
 };

@@ -245,12 +245,12 @@ void Interface::gameWindow(AppState& state) {
     TextureData& texture = state.textures[TexIndex::GAME];
 
     // has to happen here to get proper ImGui::GetWindowSize() response
-    constexpr int xOffset = 10;
+    constexpr int xOffset = 14;
     constexpr int yOffset = 40;
     int           windowX = (int)ImGui::GetWindowSize().x;
     int           windowY = (int)ImGui::GetWindowSize().y;
-    if (windowX % 2 != 0) ++windowX; // i don't remember what this does
-    if (windowY % 2 != 0) ++windowY; // i don't remember what this does
+    if (windowX % 2 != 0) ++windowX;
+    if (windowY % 2 != 0) ++windowY;
 
     if (texture.width + xOffset != windowX || texture.height + yOffset != windowY) {
         state.reloadGame = true;
@@ -263,16 +263,14 @@ void Interface::gameWindow(AppState& state) {
         state.reloadGame = false;
     }
 
-
     {
         ImGui::BeginChild("GameRender");
         ImVec2 textureRenderSize = ImVec2(texture.width, texture.height);
         ImGui::Image((ImTextureID)texture.id, textureRenderSize, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
         if (ImGui::BeginItemTooltip()) {
-            // clang-format on
             ImGui::Text("camera:   (%d,%d)", state.camera.x, state.camera.y);
             ImGui::Text("mouse:    (%d,%d)", state.print_mouse.x, state.print_mouse.y);
-            ImGui::Text("viewport: (%d,%d)", state.print_viewport.x, state.print_viewport.y);
+            //ImGui::Text("viewport: (%d,%d)", state.print_viewport.x, state.print_viewport.y);
             ImGui::Text("world:    (%d,%d)", state.print_world.x, state.print_world.y);
             ImGui::Text("chunk:    (%d,%d)", state.print_chunk.x, state.print_chunk.y);
             ImGui::Text("cell:     (%d,%d)", state.print_cell.x, state.print_cell.y);
