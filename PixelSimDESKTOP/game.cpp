@@ -232,7 +232,10 @@ bool Game::updateSand(u16 x, u16 y) {
         } else break;
     }
 
-    return trySwap(x, y, x + xDispersion, y + yDispersion);
+    swapCells(x, y, x + xDispersion, y + yDispersion);
+    return true;
+
+    //return trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
 bool Game::updateWater(u16 x, u16 y) {
@@ -267,7 +270,9 @@ bool Game::updateWater(u16 x, u16 y) {
     }
 
 ESCAPE_WHILE_WATER:
-    return trySwap(x, y, x + xDispersion, y + yDispersion);
+    swapCells(x, y, x + xDispersion, y + yDispersion);
+    return true;
+    //return trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
 bool Game::updateNaturalGas(u16 x, u16 y) {
@@ -297,61 +302,30 @@ bool Game::updateNaturalGas(u16 x, u16 y) {
     }
 
 ESCAPE_WHILE_NATURAL_GAS:
-    //return trySwapAbove(x, y, x + xDispersion, y + yDispersion);
     swapCells(x, y, x + xDispersion, y + yDispersion);
-    return true;
-}
-
-bool Game::trySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
-    if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
-
-    Cell &c1 = cells[cellIdx(x1, y1)];
-    Cell &c2 = cells[cellIdx(x2, y2)];
-    //if (materials[c1.matID].density >= materials[c2.matID].density || !materials[c1.matID].movable || !materials[c2.matID].movable) return false;
-    if (materials[c1.matID].density >= materials[c2.matID].density) return false;
-    if (!materials[c1.matID].movable || !materials[c2.matID].movable) return false;
-
-    //if (materials[c2.matID].movable) return false;
-    //if (c2.matID == MaterialID::CONCRETE) return false;
-
-    swapCells(x1, y1, x2, y2);
     return true;
 }
 
 bool Game::querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
     if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
 
-    Cell &c1 = cells[cellIdx(x1, y1)];
-    Cell &c2 = cells[cellIdx(x2, y2)];
-    //if (materials[c1.matID].density >= materials[c2.matID].density || !materials[c1.matID].movable || !materials[c2.matID].movable) return false;
-    if (materials[c1.matID].density >= materials[c2.matID].density) return false;
-    if (!materials[c1.matID].movable || !materials[c2.matID].movable) {
+    Material &material1 = materials[cells[cellIdx(x1, y1)].matID];
+    Material &material2 = materials[cells[cellIdx(x2, y2)].matID];
+    if (material1.density >= material2.density || !material1.movable || !material2.movable) {
         return false;
     }
-    //if (materials[MaterialID::CONCRETE].movable) return false;
-    //if (c2.matID == MaterialID::CONCRETE) return false;
 
-    return true;
-}
-
-bool Game::trySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
-    if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
-
-    Cell &c1 = cells[cellIdx(x1, y1)];
-    Cell &c2 = cells[cellIdx(x2, y2)];
-    if (materials[c1.matID].density <= materials[c2.matID].density) return false;
-
-    swapCells(x1, y1, x2, y2);
     return true;
 }
 
 bool Game::querySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
     if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
 
-    Cell &c1 = cells[cellIdx(x1, y1)];
-    Cell &c2 = cells[cellIdx(x2, y2)];
-
-    if (materials[c1.matID].density <= materials[c2.matID].density) return false;
+    Material &material1 = materials[cells[cellIdx(x1, y1)].matID];
+    Material &material2 = materials[cells[cellIdx(x2, y2)].matID];
+    if (material1.density <= material2.density || !material1.movable || !material2.movable) {
+        return false;
+    }
     return true;
 }
 
@@ -368,9 +342,9 @@ void Game::swapCells(u16 x1, u16 y1, u16 x2, u16 y2) {
     Cell &c1 = cells[cellIdx(x1, y1)];
     Cell &c2 = cells[cellIdx(x2, y2)];
 
-    u8 temp_MaterialID = c1.matID;
-    c1.matID           = c2.matID;
-    c2.matID           = temp_MaterialID;
+    u8 tempMaterialID = c1.matID;
+    c1.matID          = c2.matID;
+    c2.matID          = tempMaterialID;
 
     c1.updated = true;
     c2.updated = true;

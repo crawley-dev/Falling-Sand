@@ -25,16 +25,10 @@ private:
     void snakeUpdate();
     void golUpdate();
 
-
-    //inline bool queryAbove(u16 x , u16 y) { return !outOfBounds(x, y - 1) && cells[cellIdx(x, y - 1)].matID == 0; }
-
-    inline bool trySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2);
-    inline bool querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2);
-
-    inline void changeMaterial(u16 x, u16 y, u8 newMaterial);
-    inline void swapCells(u16 x1, u16 y1, u16 x2, u16 y2);
-    inline bool trySwap(u16 x1, u16 y1, u16 x2, u16 y2);
-    inline bool querySwap(u16 x1, u16 y1, u16 x2, u16 y2);
+    void changeMaterial(u16 x, u16 y, u8 newMaterial);
+    void swapCells(u16 x1, u16 y1, u16 x2, u16 y2);
+    bool querySwap(u16 x1, u16 y1, u16 x2, u16 y2);
+    bool querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2);
 
     bool updateCell(u16 x, u16 y);
     bool updateSand(u16 x, u16 y);
@@ -60,7 +54,7 @@ private:
     inline T getRand(T min = -1, T max = 1) {
         return splitMix64_NextRand() % (max - min + 1) + min;
     }
-    inline u64 splitMix64_NextRand() {
+    u64 splitMix64_NextRand() {
         u64 z = (seed += UINT64_C(0x9E3779B97F4A7C15));
         z     = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
         z     = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
