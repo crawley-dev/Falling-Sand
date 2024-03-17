@@ -294,8 +294,7 @@ bool Game::querySwapAbove(s32 x1, s32 y1, s32 x2, s32 y2) {
     Material& material1  = materials[c1.matID];
     Material& material2  = materials[c2.matID];
 
-    if (material1.density >= material2.density || !(material1.flags & MOVABLE) || !(material2.flags & MOVABLE)) { return false; }
-    return true;
+    return !(material1.density >= material2.density || !(material1.flags & MOVABLE) || !(material2.flags & MOVABLE));
 }
 
 bool Game::querySwap(s32 x1, s32 y1, s32 x2, s32 y2) {
@@ -308,8 +307,7 @@ bool Game::querySwap(s32 x1, s32 y1, s32 x2, s32 y2) {
     Material& material1  = materials[c1.matID];
     Material& material2  = materials[c2.matID];
 
-    if (material1.density <= material2.density || !(material1.flags & MOVABLE) || !(material2.flags & MOVABLE)) { return false; }
-    return true;
+    return !(material1.density <= material2.density || !(material1.flags & MOVABLE) || !(material2.flags & MOVABLE));
 }
 
 // shoud be very slow ..
