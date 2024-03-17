@@ -308,25 +308,16 @@ ESCAPE_WHILE_NATURAL_GAS:
 
 bool Game::querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
     if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
-
     Material &material1 = materials[cells[cellIdx(x1, y1)].matID];
     Material &material2 = materials[cells[cellIdx(x2, y2)].matID];
-    if (material1.density >= material2.density || !material1.movable || !material2.movable) {
-        return false;
-    }
-
-    return true;
+    return material1.movable && material2.movable && material1.density < material2.density;
 }
 
 bool Game::querySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
     if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
-
     Material &material1 = materials[cells[cellIdx(x1, y1)].matID];
     Material &material2 = materials[cells[cellIdx(x2, y2)].matID];
-    if (material1.density <= material2.density || !material1.movable || !material2.movable) {
-        return false;
-    }
-    return true;
+    return material1.movable && material2.movable && material1.density > material2.density;
 }
 
 void Game::changeMaterial(u16 x, u16 y, u8 newMaterial) {
