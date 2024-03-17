@@ -8,21 +8,21 @@
 // >> default flammability
 // >> default phase (solid, liquid, gas, (plasma???))
 struct Material {
-    bool                         movable;
+    bool                         immovable;
     u8                           r, g, b, a;
     u8                           dispersion;
     u16                          density;
     std::vector<std::vector<u8>> variants;
 
-    Material(u8 RED, u8 GREEN, u8 BLUE, u8 ALPHA, u8 DISPERSION, u16 DENSITY, bool MOVABLE) {
-        r            = RED;
-        g            = GREEN;
-        b            = BLUE;
-        a            = ALPHA;
-        dispersion   = DISPERSION;
-        density      = DENSITY;
-        variants     = {{RED, GREEN, BLUE, ALPHA}};
-        bool movable = MOVABLE;
+    Material(u8 RED, u8 GREEN, u8 BLUE, u8 ALPHA, u8 DISPERSION, u16 DENSITY, bool IMMOVABLE) {
+        r              = RED;
+        g              = GREEN;
+        b              = BLUE;
+        a              = ALPHA;
+        dispersion     = DISPERSION;
+        density        = DENSITY;
+        variants       = {{RED, GREEN, BLUE, ALPHA}};
+        bool immovable = IMMOVABLE;
     }
     Material() = default;
 };

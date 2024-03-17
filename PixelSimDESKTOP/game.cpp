@@ -21,13 +21,13 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
     // clang-format off
     materials.clear();
     materials.resize(MaterialID::COUNT);                                                //Material(R  , G  , B  , A  , Dispersion, Density)
-    materials[MaterialID::EMPTY]       = Material( 50,  50,  50, 255, 0,   500,  true);       // find a better solution in the future than somewhat heavy air..
-    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 0, 65535, false); // max u16 value
-    materials[MaterialID::SAND]        = Material(245, 215, 176, 255, 3,  1600,  true);
-    materials[MaterialID::WATER]       = Material( 20,  20, 255, 125, 5,   997,  true);
-    materials[MaterialID::NATURAL_GAS] = Material( 20,  20,  50, 100, 8,    20,  true);
-    materials[MaterialID::FIRE]        = Material(255, 165,   0, 200, 8,    10,  true);
-    materials[MaterialID::GOL_ALIVE]   = Material(  0, 255,  30, 255, 0, 65535,  true);
+    materials[MaterialID::EMPTY]       = Material( 50,  50,  50, 255, 0,   500, !false);       // find a better solution in the future than somewhat heavy air..
+    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 0, 65535, ! true); // max u16 value
+    materials[MaterialID::SAND]        = Material(245, 215, 176, 255, 3,  1600, !false);
+    materials[MaterialID::WATER]       = Material( 20,  20, 255, 125, 5,   997, !false);
+    materials[MaterialID::NATURAL_GAS] = Material( 20,  20,  50, 100, 8,    20, !false);
+    materials[MaterialID::FIRE]        = Material(255, 165,   0, 200, 8,    10, !false);
+    materials[MaterialID::GOL_ALIVE]   = Material(  0, 255,  30, 255, 0, 65535, !false);
     // clang-format on
 
     // generate 'nVariant' number of colour variations per material. for spice..
@@ -200,9 +200,7 @@ bool Game::updateCell(u16 x, u16 y) {
     case MaterialID::SAND: return updateSand(x, y);
     case MaterialID::WATER: return updateWater(x, y);
     case MaterialID::CONCRETE: return false;
-    case MaterialID::NATURAL_GAS:
-        return updateNaturalGas(x, y);
-        //case MaterialID::FIRE:          return updateFire(x, y);
+    case MaterialID::NATURAL_GAS: return updateNaturalGas(x, y);
     }
 }
 
@@ -234,8 +232,6 @@ bool Game::updateSand(u16 x, u16 y) {
 
     swapCells(x, y, x + xDispersion, y + yDispersion);
     return true;
-
-    //return trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
 bool Game::updateWater(u16 x, u16 y) {
@@ -272,7 +268,6 @@ bool Game::updateWater(u16 x, u16 y) {
 ESCAPE_WHILE_WATER:
     swapCells(x, y, x + xDispersion, y + yDispersion);
     return true;
-    //return trySwap(x, y, x + xDispersion, y + yDispersion);
 }
 
 bool Game::updateNaturalGas(u16 x, u16 y) {
@@ -308,25 +303,24 @@ ESCAPE_WHILE_NATURAL_GAS:
 
 bool Game::querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
     if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
-
     Material &material1 = materials[cells[cellIdx(x1, y1)].matID];
     Material &material2 = materials[cells[cellIdx(x2, y2)].matID];
-    if (material1.density >= material2.density || !material1.movable || !material2.movable) {
+    if (material1.immovable == true || material2.immovable == true) {
         return false;
-    }
-
+    } else if (material1.density >= material2.density) return false;
     return true;
+    //return !(material1.immovable || material2.immovable || material1.density >= material2.density);
 }
 
 bool Game::querySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
     if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
-
     Material &material1 = materials[cells[cellIdx(x1, y1)].matID];
     Material &material2 = materials[cells[cellIdx(x2, y2)].matID];
-    if (material1.density <= material2.density || !material1.movable || !material2.movable) {
+    if (material1.immovable && material2.immovable) {
         return false;
-    }
+    } else if (material1.density <= material2.density) return false;
     return true;
+    //return !(material1.immovable || material2.immovable || material1.density <= material2.density);
 }
 
 void Game::changeMaterial(u16 x, u16 y, u8 newMaterial) {
