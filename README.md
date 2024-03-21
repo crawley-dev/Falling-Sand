@@ -97,7 +97,6 @@
 * Boost
 * HIC++
 
-
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -118,7 +117,10 @@
 1. Place pre-requisite libraries ./lib
 2. Navigate to ./premake
 3. Run platform build script
-4. Navigate to 
+4. Compile the project (e.g visual studio)
+5. Navigate to ./bin/BUILD_SETTING-PLATFORM-ARCHITECTURE
+6. Place library .dll files into the app
+7. Run the application (e.g .exe)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
