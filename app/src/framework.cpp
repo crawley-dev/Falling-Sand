@@ -1,5 +1,9 @@
 #pragma once
 #include "framework.h"
+#include "game.h"
+#include "interface.h"
+#include <SDL_image.h>
+#include <SDL_opengl.h>
 #include <fstream>
 #include <iostream>
 

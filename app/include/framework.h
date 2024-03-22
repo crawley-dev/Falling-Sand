@@ -1,9 +1,12 @@
 #pragma once
-#include "game.h"
-#include "interface.h"
+//#include "game.h"
+//#include "interface.h"
+#include "state.h"
 #include <SDL.h>
-#include <SDL_image.h>
-#include <SDL_opengl.h>
+
+// forward declarations
+class Game {};
+class Interface {};
 
 class Framework {
 public:
@@ -30,7 +33,9 @@ public:
 
     // Internal Functions
     void        mouseDraw();
-    inline bool running() const { return applicationRunning; } // const means this function cannot modify any member variables
+    inline bool running() const {
+        return applicationRunning;
+    } // const means this function cannot modify any member variables
 
 private:
     bool applicationRunning = false;

@@ -6,15 +6,15 @@
 #include <vector>
 
 // Type Definitions
-using u8  = uint8_t;  // unsigned char
-using u16 = uint16_t; // unsigned short
-using u32 = uint32_t; // unsigned long int (equal to int on 64 bit systems)
-using u64 = uint64_t; // unsigned long long
+using u8  = unsigned char;
+using u16 = unsigned short;
+using u32 = unsigned long int;
+using u64 = unsigned long long;
 
-using s8  = int8_t;  // char
-using s16 = int16_t; // short
-using s32 = int32_t; // long int (equal to int on 64 bit systems)
-using s64 = int64_t; // long long
+using s8  = char;
+using s16 = short;
+using s32 = long int;
+using s64 = long long;
 
 using f32 = float;
 using f64 = double;
@@ -196,13 +196,21 @@ struct Vec2 {
     }
     Vec2() = default;
 
-    Vec2<T> operator+(const Vec2& c) { return Vec2<T>(x + c.x, y + c.y); }
+    Vec2<T> operator+(const Vec2& c) {
+        return Vec2<T>(x + c.x, y + c.y);
+    }
 
-    Vec2<T> operator-(const Vec2& c) { return Vec2<T>(x - c.x, y - c.y); }
+    Vec2<T> operator-(const Vec2& c) {
+        return Vec2<T>(x - c.x, y - c.y);
+    }
 
-    Vec2<T> operator*(const Vec2& c) { return Vec2<T>(x * c.x, y * c.y); }
+    Vec2<T> operator*(const Vec2& c) {
+        return Vec2<T>(x * c.x, y * c.y);
+    }
 
-    Vec2<T> operator/(const Vec2& c) { return Vec2<T>(x / c.x, y / c.y); }
+    Vec2<T> operator/(const Vec2& c) {
+        return Vec2<T>(x / c.x, y / c.y);
+    }
 
     Vec2<T>& operator+=(const Vec2<T>& c) {
         x += c.x;
