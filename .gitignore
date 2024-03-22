@@ -361,7 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-
-# Boost is massive..
-Libraries/boost_1_82_0/
-/PixelSimDESKTOP/imgui.ini
+/lib/boost
+/lib/SDL2
+/lib/SDL2_IMAGE
+/bin
+/bin-int
+/build
