@@ -97,7 +97,6 @@
 * Boost
 * HIC++
 
-
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -115,10 +114,13 @@
 ### Installation
 <!-- talk about installing boost at some point... -->
 
-1. Place pre-requisite libraries ./libraries
-2. Open 'PixelSimDesktop.sln
-3. Change 'Build Mode' from Debug --> Release
-4. Click 'Local Windows Debugger'
+1. Place pre-requisite libraries ./lib
+2. Navigate to ./premake
+3. Run platform build script
+4. Compile the project (e.g visual studio)
+5. Navigate to ./bin/BUILD_SETTING-PLATFORM-ARCHITECTURE
+6. Place library .dll files into the app
+7. Run the application (e.g .exe)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
