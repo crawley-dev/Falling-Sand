@@ -1,9 +1,6 @@
 #pragma once
-// clang-format off
-#include "pch.h"
 #include "interface.h"
-#include "cell.h"
-// clang-format on  
+#include <algorithm>
 
 Interface::Interface() {}
 Interface::~Interface() {}
@@ -21,9 +18,8 @@ void Interface::boilerPlate() {
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()); // adds docking by default
 }
 
-void Interface::debugMenu(AppState &state) { // pair of empty brackets {} defines a separate scope, required for each separator.
+void Interface::debugMenu(AppState& state) { // pair of empty brackets {} defines a separate scope, required for each separator.
     ImGui::Begin("Debug Menu");
-
 
     ImGui::SetNextItemOpen(true);
     if (ImGui::TreeNode("Simulation Settings")) {
@@ -199,14 +195,14 @@ void Interface::debugMenu(AppState &state) { // pair of empty brackets {} define
     if (ImGui::TreeNode("Debug Values")) {
         ImGui::SeparatorText("Debug Values");
         bool         OutofBounds = false;
-        TextureData &texture     = state.textures[loadedTex];
+        TextureData& texture     = state.textures[loadedTex];
         if (state.mouseX > texture.width || state.mouseX < 0 || state.mouseY > texture.height || state.mouseY < 0) OutofBounds = true;
 
         ImVec2      windowPos             = ImGui::GetMainViewport()->Pos;
         const int   TITLE_BAR_OFFSET_X    = 8;
         const int   TITLE_BAR_OFFSET_Y    = 28;
         const int   COLOUR_VARIANCE_RANGE = 20;
-        const char *scanMode              = Scan::names[state.scanMode].data();
+        const char* scanMode              = Scan::names[state.scanMode].data();
         state.mouseX                      = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
         state.mouseY                      = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
 
@@ -233,12 +229,12 @@ void Interface::debugMenu(AppState &state) { // pair of empty brackets {} define
     ImGui::End();
 }
 
-void Interface::gameWindow(AppState &state) {
+void Interface::gameWindow(AppState& state) {
     ImGui::Begin("GameWindow");
     //frameRate = io.Framerate;
 
     loadedTex            = loadedTex % state.textures.size(); // this needs to be here....
-    TextureData &texture = state.textures[loadedTex];         // this needs to be here....
+    TextureData& texture = state.textures[loadedTex];         // this needs to be here....
     // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow",
     //       Not the SDL2 generated win32 window
 

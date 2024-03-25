@@ -1,8 +1,5 @@
 #pragma once
-
-#define SDL_MAIN_HANDLED
 #include "framework.h"
-#include "pch.h"
 
 Framework *app = nullptr;
 
