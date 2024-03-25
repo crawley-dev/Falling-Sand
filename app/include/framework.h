@@ -21,8 +21,8 @@ private:
     void loadImageRGB(TextureData& texture, std::string path);
     void loadImageRGBA(TextureData& texture, std::string path); // png is somehow rgb not rgba..
 
-    void saveToFile(TextureData& texture);
-    void loadFromFile(TextureData& texture, std::string path);
+    void saveToFile(TextureData& texture, std::string& path);
+    void loadFromFile(TextureData& texture, std::string& path);
 
     void createTexture(TextureData& texture);
     void updateTexture(TextureData& texture);

@@ -231,7 +231,6 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
 
 void Interface::gameWindow(AppState& state) {
     ImGui::Begin("GameWindow");
-    //frameRate = io.Framerate;
 
     loadedTex            = loadedTex % state.textures.size(); // this needs to be here....
     TextureData& texture = state.textures[loadedTex];         // this needs to be here....
@@ -242,17 +241,22 @@ void Interface::gameWindow(AppState& state) {
     constexpr int yOffset = 40;
     int           windowX = (int)ImGui::GetWindowSize().x;
     int           windowY = (int)ImGui::GetWindowSize().y;
-    if (windowX % 2 != 0) ++windowX;
-    if (windowY % 2 != 0) ++windowY;
+    if (windowX % 2 != 0) windowX++;
+    if (windowY % 2 != 0) windowY++;
 
     if (texture.width + xOffset != windowX || texture.height + yOffset != windowY) {
-        state.reloadGame = true;
-        texture.width    = (int)ImGui::GetWindowSize().x - xOffset;
-        texture.height   = (int)ImGui::GetWindowSize().y - yOffset;
-        if (texture.width % 2 != 0) ++texture.width;   // i don't remember what this does
-        if (texture.height % 2 != 0) ++texture.height; // i don't remember what this does
+        printf("changed: (%d,%d), frame: %d", texture.width, texture.height, ImGui::GetFrameCount());
+
+        texture.width  = windowX - xOffset;
+        texture.height = windowY - yOffset;
+        if (texture.width % 2 != 0) texture.width++;
+        if (texture.height % 2 != 0) texture.height++;
+
         ImGui::SetWindowSize(ImVec2(texture.width, texture.height));
-    } else state.reloadGame = false;
+        state.reloadGame = true;
+    } else {
+        state.reloadGame = false;
+    }
 
     {
         ImGui::BeginChild("GameRender");

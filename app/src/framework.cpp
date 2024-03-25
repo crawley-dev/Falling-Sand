@@ -104,13 +104,14 @@ void Framework::update() {
     interface->main();
     interface->debugMenu(state);
 
-    if (ImGui::GetFrameCount() <= 2) return;
+    if (ImGui::GetFrameCount() <= 3) return;
 
     ImGuiIO&     io      = ImGui::GetIO();
     TextureData& texture = state.textures[TexIndex::GAME];
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) state.runSim = !state.runSim;
     if (io.MouseDown[0]) mouseDraw();
+
     if (state.resetSim) {
         game->reset();
         state.resetSim = false;
@@ -122,7 +123,7 @@ void Framework::update() {
         state.loadImage = false;
     }
     if (state.reloadGame) {
-        reloadTextures();
+        reloadTextures(); // i actually don't know what this is for lol
         game->reload(texture.width, texture.height, state.scaleFactor);
         state.reloadGame = false;
     }
@@ -317,9 +318,9 @@ void Framework::loadImageRGBA(TextureData& texture, std::string path) {
 }
 
 // C:/Users/Tom/source/repos/TheCookiess/PixelPhysV2/Resources/Saves
-void Framework::saveToFile(TextureData& texture) {}
+void Framework::saveToFile(TextureData& texture, std::string& path) {}
 
-void Framework::loadFromFile(TextureData& texture, std::string path) {}
+void Framework::loadFromFile(TextureData& texture, std::string& path) {}
 
 // Calls the openGL api to register a texture with its internal state,
 // then sets the texture parameters for the current texture target.
