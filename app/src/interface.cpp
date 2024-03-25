@@ -82,15 +82,33 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
     if (ImGui::TreeNode("Texture Manipulation")) {
         ImGui::SeparatorText("Manipulating Textures");
 
-        static char str[128] = ""; // could overflow the buffer. yay.. this will probably not work at some point..
-        ImGui::InputTextWithHint("Enter File Location", "../Resources/Pictures/", str, IM_ARRAYSIZE(str));
+        static char imgStr[128] = ""; // could overflow the buffer. yay.. this will probably not work at some point..
+        ImGui::InputTextWithHint("Enter Image Path", "../resources/images/", imgStr, IM_ARRAYSIZE(imgStr));
 
         if (ImGui::Button("Change Texture")) loadedTex++;
         ImGui::SameLine();
         if (ImGui::Button("Load Image")) {
             state.loadImage = true;
-            state.imagePath = "../Resources/Pictures/" + std::string(str);
+            state.imagePath = std::string(imgStr);
         } else state.loadImage = false;
+
+
+        static char saveStr[128] = "";
+        ImGui::InputTextWithHint("save_file_input_text", "../resources/saves/", saveStr, IM_ARRAYSIZE(saveStr));
+
+        if (ImGui::Button("Save Simulation State")) {
+            state.saveSim  = true;
+            state.savePath = std::string(saveStr);
+        } else state.saveSim = false;
+
+
+        static char loadStr[128] = "";
+        ImGui::InputTextWithHint("load_file_input_text", "../resources/saves/", loadStr, IM_ARRAYSIZE(loadStr));
+
+        if (ImGui::Button("Load Simulation State")) {
+            state.loadSim  = true;
+            state.savePath = std::string(loadStr);
+        } else state.loadSim = false;
 
         ImGui::TreePop();
     }

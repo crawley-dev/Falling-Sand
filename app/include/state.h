@@ -177,8 +177,11 @@ struct TextureData {
 struct AppState {
     std::vector<TextureData> textures;
     std::string              imagePath;
+    std::string              savePath;
 
     // Efficient Flag: u64 flags = 0;
+    bool saveSim    = false;
+    bool loadSim    = false;
     bool runSim     = false;
     bool resetSim   = false;
     bool reloadGame = false;

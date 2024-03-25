@@ -4,6 +4,9 @@
 #include <SDL_opengl.h>
 #include <fstream>
 #include <iostream>
+#include <string>
+#include <sstream>
+#include <istream>
 
 Framework::Framework() {}
 Framework::~Framework() {}
@@ -116,6 +119,12 @@ void Framework::update() {
         game->reset();
         state.resetSim = false;
     }
+    if (state.saveSim) {
+        saveSimToFile(state.savePath);
+    }
+    if (state.loadSim) {
+        loadSimFromFile(state.savePath);
+    }
     if (state.loadImage) {
         TextureData& img = state.textures[TexIndex::BACKGROUND];
         loadImageRGB(img, state.imagePath);
@@ -123,7 +132,7 @@ void Framework::update() {
         state.loadImage = false;
     }
     if (state.reloadGame) {
-        reloadTextures(); // i actually don't know what this is for lol
+        reloadTextures(); // i actually don't know what this is for
         game->reload(texture.width, texture.height, state.scaleFactor);
         state.reloadGame = false;
     }
@@ -211,10 +220,12 @@ void Framework::clean() {
 
 //.bmp loading slanted? weird..
 // TODO: Investigate SDL_ConvertSurfaceFormat
-void Framework::loadImageRGB(TextureData& texture, std::string path) {
+void Framework::loadImageRGB(TextureData& texture, std::string& path) {
     TextureData& gameTexture = state.textures[TexIndex::GAME];
 
-    SDL_Surface* image = IMG_Load(path.c_str());
+    std::string imagesPath = "../resources/images/";
+    path                   = imagesPath + path;
+    SDL_Surface* image     = IMG_Load(path.c_str());
     if (image == NULL) {
         printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
         return;
@@ -259,14 +270,15 @@ void Framework::loadImageRGB(TextureData& texture, std::string path) {
     updateTexture(texture);
 }
 
-void Framework::loadImageRGBA(TextureData& texture, std::string path) {
-    SDL_Surface* image = IMG_Load(path.c_str());
+void Framework::loadImageRGBA(TextureData& texture, std::string& path) {
+    std::string imagesPath = "../resources/images/";
+    path                   = imagesPath + path;
+    SDL_Surface* image     = IMG_Load(path.c_str());
     if (image == NULL) {
         printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
         return;
     }
-    image                = SDL_ConvertSurfaceFormat(image, SDL_PIXELFORMAT_RGBA8888,
-                                     0); // 24 bit --> 32 bit
+    image                = SDL_ConvertSurfaceFormat(image, SDL_PIXELFORMAT_RGBA8888, 0); // 24 bit --> 32 bit
     SDL_PixelFormat* fmt = image->format;
     std::cout << SDL_GetPixelFormatName(fmt->format) << std::endl;
     printf("Bytes Per Pixel: %d \n", fmt->BytesPerPixel);
@@ -317,10 +329,75 @@ void Framework::loadImageRGBA(TextureData& texture, std::string path) {
     updateTexture(texture);
 }
 
-// C:/Users/Tom/source/repos/TheCookiess/PixelPhysV2/Resources/Saves
-void Framework::saveToFile(TextureData& texture, std::string& path) {}
+std::vector<std::string> Framework::split(const std::string& s, char delim) {
+    std::vector<std::string> result;
+    std::stringstream        ss(s);
+    std::string              item;
 
-void Framework::loadFromFile(TextureData& texture, std::string& path) {}
+    while (std::getline(ss, item, delim)) {
+        result.push_back(item);
+    }
+
+    return result;
+}
+
+void Framework::saveSimToFile(std::string& name) {
+    TextureData&       simTexture = state.textures[TexIndex::GAME];
+    u16                simWidth   = simTexture.width / state.scaleFactor;
+    u16                simHeight  = simTexture.height / state.scaleFactor;
+    std::vector<Cell>& cells      = game->getSimState();
+    auto               cellIdx    = [&](u16 x, u16 y) -> u32 { return (y * simWidth) + x; };
+
+
+    std::string   savesPath = "../resources/saves/";
+    std::ofstream outputFile(savesPath + name); // will create file if doesn't exist.
+
+    if (!outputFile.is_open()) {
+        std::cerr << "unable to open file: " << savesPath << name << '\n';
+    }
+
+    // Cell: matID, variant
+    // ';' separates cells
+    for (u16 y = 0; y < simHeight; y++) {
+        for (u16 x = 0; x < simWidth; x++) {
+            Cell& c = cells[cellIdx(x, y)];
+            outputFile << std::to_string(c.matID) + ',' + std::to_string(c.variant) + ';';
+        }
+        outputFile << '\n';
+    }
+}
+
+void Framework::loadSimFromFile(std::string& name) {
+    TextureData&       simTexture = state.textures[TexIndex::GAME];
+    u16                simWidth   = simTexture.width / state.scaleFactor;
+    u16                simHeight  = simTexture.height / state.scaleFactor;
+    std::vector<Cell>& cells      = game->getSimState();
+    auto               cellIdx    = [&](u16 x, u16 y) -> u32 { return (y * simWidth) + x; };
+
+
+    std::string   savesPath = "../resources/saves/";
+    std::ifstream inputFile(savesPath + name);
+
+    if (!inputFile.is_open()) {
+        std::cerr << "unable to open file: " << savesPath << name << '\n';
+    }
+
+    u32         y = 0;
+    std::string line;
+    while (std::getline(inputFile, line)) {
+        if (y >= simHeight) break;
+        std::vector<std::string> strCells = split(line, ';');
+        for (u32 x = 0; x < cells.size(); x++) {
+            if (x >= simWidth) break;
+            std::string              strCell = strCells[x];
+            std::vector<std::string> items   = split(strCell, ',');
+            cells[cellIdx(x, y)]             = Cell(false, std::stoi(items[0]), std::stoi(items[1]), 0);
+        }
+        y++;
+    }
+
+    state.reloadGame = true;
+}
 
 // Calls the openGL api to register a texture with its internal state,
 // then sets the texture parameters for the current texture target.

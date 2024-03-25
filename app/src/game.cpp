@@ -35,10 +35,8 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
         mat.variants.reserve(nVariants);
         for (u8 i = 0; i < nVariants; i++) {
             if (mat.density == 1600 || mat.density == 997) {
-                mat.variants.push_back({static_cast<u8>(mat.r - getRand<u8>(0, VARIATION)),
-                                        static_cast<u8>(mat.g - getRand<u8>(0, VARIATION)),
-                                        static_cast<u8>(mat.b - getRand<u8>(0, VARIATION)),
-                                        mat.a});
+                mat.variants.push_back(
+                    {static_cast<u8>(mat.r - getRand<u8>(0, VARIATION)), static_cast<u8>(mat.g - getRand<u8>(0, VARIATION)), static_cast<u8>(mat.b - getRand<u8>(0, VARIATION)), mat.a});
             } else {
                 mat.variants.push_back({mat.r, mat.g, mat.b, mat.a});
             }
@@ -50,26 +48,26 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
 
         cells.clear();
         cells.reserve(cellWidth * cellHeight);
-        for (s32 i = 0; i < cellWidth * cellHeight; i++) // init cell.updated = true so updateTextureData runs on first
-                                                         // time.
+        for (s32 i = 0; i < cellWidth * cellHeight; i++) // init cell.updated = true so updateTextureData runs on time
             cells.emplace_back(MaterialID::EMPTY, true, getRand<u8>(0, nVariants - 1), 0);
         sizeChanged = true;
     }
 }
 
+// whenever the simulation occurs on a size change of the simulation.
 void Game::update(AppState& state, std::vector<u8>& textureData) {
     if (state.runSim) simulate(state);
+    if (sizeChanged) {
+        updateEntireTextureData(textureData);
+        sizeChanged = false;
+        return;
+    }
 
     state.textureChanges = textureChanges.size();
     state.cellChanges    = cells.size();
 
     createDrawIndicators(state.mouseX, state.mouseY, state.drawSize, state.drawShape);
-    if (sizeChanged) {
-        updateEntireTextureData(textureData);
-        sizeChanged = false;
-    } else {
-        updateTextureData(textureData);
-    }
+    updateTextureData(textureData);
 }
 
 void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
@@ -114,14 +112,14 @@ void Game::simulate(AppState& state) {
     solidDispersionFactor = state.solidDispersionFactor;
 
     switch (state.scanMode) {
-    case Scan::BOTTOM_UP_LEFT: l_bottomUpUpdate(); break;
+    case Scan::BOTTOM_UP_LEFT:  l_bottomUpUpdate(); break;
     case Scan::BOTTOM_UP_RIGHT: r_bottomUpUpdate(); break;
     // case Scan::TOP_DOWN_LEFT:	    l_topDownUpdate();	    break;	// might
     // be useful for gas updates (== to botUp in this case) case
     // Scan::TOP_DOWN_RIGHT:	r_topDownUpdate();	    break;	// might
     // be useful for gas updates (== to botUp in this case)
-    case Scan::SNAKE: snakeUpdate(); break;
-    case Scan::GAME_OF_LIFE: golUpdate(); break;
+    case Scan::SNAKE:           snakeUpdate(); break;
+    case Scan::GAME_OF_LIFE:    golUpdate(); break;
     }
 
     if (state.scanMode == Scan::BOTTOM_UP_LEFT || state.scanMode == Scan::BOTTOM_UP_RIGHT) {
@@ -196,9 +194,9 @@ bool Game::updateCell(u16 x, u16 y) {
     if (c.updated) return true;
 
     switch (c.matID) {
-    case MaterialID::EMPTY: return false;
-    case MaterialID::SAND: return updateSand(x, y);
-    case MaterialID::WATER: return updateWater(x, y);
+    case MaterialID::EMPTY:    return false;
+    case MaterialID::SAND:     return updateSand(x, y);
+    case MaterialID::WATER:    return updateWater(x, y);
     case MaterialID::CONCRETE: return false;
     case MaterialID::NATURAL_GAS:
         return updateNaturalGas(x, y);
@@ -219,8 +217,7 @@ bool Game::updateSand(u16 x, u16 y) {
     s8 movesLeft   = solidDispersionFactor;
 
     while (movesLeft > 0) {
-        if (querySwap(x, y, x + xDispersion,
-                      y + yDispersion + 1)) { // check cell below
+        if (querySwap(x, y, x + xDispersion, y + yDispersion + 1)) { // check cell below
             yDispersion++;
             movesLeft--;
             continue;
@@ -248,8 +245,7 @@ bool Game::updateWater(u16 x, u16 y) {
         // >> if (can move) && (can move down) >> move
         // >> else check until ^^ or no more horizontal options
 
-        if (querySwap(x, y, x + xDispersion,
-                      y + yDispersion + 1)) { // check cell below
+        if (querySwap(x, y, x + xDispersion, y + yDispersion + 1)) { // check cell below
             yDispersion++;
             movesLeft--;
             continue;
@@ -363,7 +359,7 @@ void Game::createDrawIndicators(u16 mx, u16 my, u16 size, u8 shape) {
     switch (shape) {
     case Shape::CIRCLE:
     case Shape::CIRCLE_OUTLINE: drawCircleOutline(x, y, size, 0, 100, boundedPushBack); break;
-    case Shape::LINE: drawLine(x, y, size, 0, 100, boundedPushBack); break;
+    case Shape::LINE:           drawLine(x, y, size, 0, 100, boundedPushBack); break;
     case Shape::SQUARE:
     case Shape::SQUARE_OUTLINE: drawSquareOutline(x, y, size, 0, 100, boundedPushBack); break;
     }
@@ -377,10 +373,10 @@ void Game::mouseDraw(u16 mx, u16 my, u16 size, u8 drawChance, u8 material, u8 sh
 
     auto changeMaterialLambda = [&](u16 x, u16 y, u8 material) -> void { changeMaterial(x, y, material); };
     switch (shape) {
-    case Shape::CIRCLE: drawCircle(x, y, size, material, drawChance, changeMaterialLambda); break;
+    case Shape::CIRCLE:         drawCircle(x, y, size, material, drawChance, changeMaterialLambda); break;
     case Shape::CIRCLE_OUTLINE: drawCircleOutline(x, y, size, material, drawChance, changeMaterialLambda); break;
-    case Shape::LINE: drawLine(x, y, size, material, drawChance, changeMaterialLambda); break;
-    case Shape::SQUARE: drawSquare(x, y, size, material, drawChance, changeMaterialLambda); break;
+    case Shape::LINE:           drawLine(x, y, size, material, drawChance, changeMaterialLambda); break;
+    case Shape::SQUARE:         drawSquare(x, y, size, material, drawChance, changeMaterialLambda); break;
     case Shape::SQUARE_OUTLINE: drawSquareOutline(x, y, size, material, drawChance, changeMaterialLambda); break;
     }
 }
@@ -456,6 +452,9 @@ void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
 // data.
 void Game::updateTextureData(std::vector<u8>& textureData) {
     for (const auto& [x, y] : textureChanges) {
+        if (outOfBounds(x, y)) // couldn't get to root of problem, patching it out.
+            continue;          // TODO: fix the bug, don't patch it out..
+
         Cell&                  c       = cells[cellIdx(x, y)];                   // grab cell with changes
         const std::vector<u8>& variant = materials[c.matID].variants[c.variant]; // grab cell's colour variant
 
@@ -476,8 +475,8 @@ void Game::updateTextureData(std::vector<u8>& textureData) {
         c.updated = false;
     }
     textureChanges.clear();
-    textureChanges = drawIndicators;            // clears this frames draw indicators next frame.
-    for (const auto& [x, y] : drawIndicators) { //
+    textureChanges = drawIndicators;
+    for (const auto& [x, y] : drawIndicators) {
         for (s32 tY = 0; tY < scaleFactor / 2; tY++)
             for (s32 tX = 0; tX < scaleFactor / 2; tX++) {
                 const s32 texIdx        = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
@@ -490,6 +489,7 @@ void Game::updateTextureData(std::vector<u8>& textureData) {
     drawIndicators.clear();
 }
 
+// doesn't render "drawIndicators" lol.
 void Game::updateEntireTextureData(std::vector<u8>& textureData) {
     for (s32 y = 0; y < cellHeight; y++) {
         for (s32 x = 0; x < cellWidth; x++) {

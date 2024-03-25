@@ -48,8 +48,9 @@ public:
     void reset();
 
     void loadImage(std::vector<u8>& textureData, std::vector<u8>& imageTextureData, u16 imageWidth, u16 imageHeight);
-
     void mouseDraw(u16 x, u16 y, u16 size, u8 drawChance, u8 material, u8 shape);
+
+    std::vector<Cell>& getSimState() { return cells; }
 
 private:
     void simulate(AppState& state);
@@ -99,7 +100,6 @@ private:
     /*----------------------------------------------------------------
     ---- Variables ---------------------------------------------------
     ----------------------------------------------------------------*/
-
 
     bool sizeChanged = false;
 

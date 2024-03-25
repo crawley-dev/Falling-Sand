@@ -18,17 +18,20 @@ public:
     inline bool running() const { return applicationRunning; } // const means this function cannot modify any member variables
 
 private:
-    void loadImageRGB(TextureData& texture, std::string path);
-    void loadImageRGBA(TextureData& texture, std::string path); // png is somehow rgb not rgba..
+    void loadImageRGB(TextureData& texture, std::string& path);
+    void loadImageRGBA(TextureData& texture, std::string& path); // png is somehow rgb not rgba..
 
-    void saveToFile(TextureData& texture, std::string& path);
-    void loadFromFile(TextureData& texture, std::string& path);
+    void saveSimToFile(std::string& name);
+    void loadSimFromFile(std::string& name);
 
     void createTexture(TextureData& texture);
     void updateTexture(TextureData& texture);
     void reloadTextures();
 
     void mouseDraw();
+
+
+    std::vector<std::string> split(const std::string& s, char delim);
 
     /*----------------------------------------------------------------
    ---- Variables ---------------------------------------------------
