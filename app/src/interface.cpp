@@ -83,7 +83,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         ImGui::SeparatorText("Manipulating Textures");
 
         static char imgStr[128] = ""; // could overflow the buffer. yay.. this will probably not work at some point..
-        ImGui::InputTextWithHint("Enter Image Path", "../resources/images/", imgStr, IM_ARRAYSIZE(imgStr));
+        ImGui::InputTextWithHint("load_image_input_text", "example.png", imgStr, IM_ARRAYSIZE(imgStr));
 
         if (ImGui::Button("Change Texture")) loadedTex++;
         ImGui::SameLine();
@@ -94,7 +94,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
 
 
         static char saveStr[128] = "";
-        ImGui::InputTextWithHint("save_file_input_text", "../resources/saves/", saveStr, IM_ARRAYSIZE(saveStr));
+        ImGui::InputTextWithHint("save_file_input_text", "example.txt", saveStr, IM_ARRAYSIZE(saveStr));
 
         if (ImGui::Button("Save Simulation State")) {
             state.saveSim  = true;
@@ -103,7 +103,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
 
 
         static char loadStr[128] = "";
-        ImGui::InputTextWithHint("load_file_input_text", "../resources/saves/", loadStr, IM_ARRAYSIZE(loadStr));
+        ImGui::InputTextWithHint("load_file_input_text", "example.txt", loadStr, IM_ARRAYSIZE(loadStr));
 
         if (ImGui::Button("Load Simulation State")) {
             state.loadSim  = true;
@@ -201,7 +201,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         ImGui::Text("Draw Chance");
         ImGui::SameLine();
         ImGui::InputInt("draw_chance_inputint", &drawChance, 1, 10);
-        state.drawChance = std::clamp(state.drawChance, (u8)1, (u8)100);
+        state.drawChance = std::clamp(drawChance, 1, 100);
         // ImGui::InputInt("Cell Colour Variance", (int)state.drawColourVariance, 1, 10);
         //state.drawColourVariance = std::clamp(state.drawColourVariance, 1, 255);
         // ^^ might revive this, re-generate random variant for a cell?
@@ -216,13 +216,13 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         TextureData& texture     = state.textures[loadedTex];
         if (state.mouseX > texture.width || state.mouseX < 0 || state.mouseY > texture.height || state.mouseY < 0) OutofBounds = true;
 
-        ImVec2      windowPos             = ImGui::GetMainViewport()->Pos;
-        const int   TITLE_BAR_OFFSET_X    = 8;
-        const int   TITLE_BAR_OFFSET_Y    = 28;
-        const int   COLOUR_VARIANCE_RANGE = 20;
-        const char* scanMode              = Scan::names[state.scanMode].data();
-        state.mouseX                      = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
-        state.mouseY                      = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
+        ImVec2        windowPos             = ImGui::GetMainViewport()->Pos;
+        constexpr int TITLE_BAR_OFFSET_X    = 8;
+        constexpr int TITLE_BAR_OFFSET_Y    = 28;
+        constexpr int COLOUR_VARIANCE_RANGE = 20;
+        const char*   scanMode              = Scan::names[state.scanMode].data();
+        state.mouseX                        = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
+        state.mouseY                        = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
 
 
         ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
@@ -263,8 +263,6 @@ void Interface::gameWindow(AppState& state) {
     if (windowY % 2 != 0) windowY++;
 
     if (texture.width + xOffset != windowX || texture.height + yOffset != windowY) {
-        printf("changed: (%d,%d), frame: %d", texture.width, texture.height, ImGui::GetFrameCount());
-
         texture.width  = windowX - xOffset;
         texture.height = windowY - yOffset;
         if (texture.width % 2 != 0) texture.width++;

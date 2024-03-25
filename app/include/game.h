@@ -2,37 +2,40 @@
 #include "state.h"
 #include <functional>
 
-struct Cell {     // 32 bits of data, for more cache hits === speed.
-    bool updated; // uses 1 byte??? should just be a bit
-    u8   matID;
-    u8   variant; // index to array of randomly generated RGBA values from material's RGBA.
-    u8   data;    // extra data if needed, e.g fire temp
+enum MaterialFlag : u8 {
+    IMMOVABLE = 0,
+    MOVABLE   = 1 << 0,
+    BELOW     = 1 << 1,
+    SIDE      = 1 << 2,
+    ABOVE     = 1 << 3,
+};
 
-    Cell(bool UPDATED, u8 MATERIAL, u8 COLOUR_VARIANT, u8 EXTRA_DATA) {
-        updated = UPDATED;
-        matID   = MATERIAL;
-        variant = COLOUR_VARIANT;
-        data    = EXTRA_DATA;
+struct Cell {
+    u8   matID;
+    u8   variant;
+    bool updated;
+
+    Cell(u8 _materialID, u8 _colourVariant, bool _updated) {
+        matID   = _materialID;
+        variant = _colourVariant;
+        updated = _updated;
     }
     Cell() = default;
 };
 
 struct Material {
-    bool                         movable;
-    u8                           r, g, b, a;
-    u8                           dispersion;
+    u8                           r, g, b, a, flags;
     u16                          density;
     std::vector<std::vector<u8>> variants;
 
-    Material(u8 RED, u8 GREEN, u8 BLUE, u8 ALPHA, u8 DISPERSION, u16 DENSITY, bool MOVABLE) {
-        r          = RED;
-        g          = GREEN;
-        b          = BLUE;
-        a          = ALPHA;
-        dispersion = DISPERSION;
-        density    = DENSITY;
-        variants   = {{RED, GREEN, BLUE, ALPHA}};
-        movable    = MOVABLE;
+    Material(u8 _red, u8 _green, u8 _blue, u8 _alpha, u16 _density, u8 _flags) {
+        r        = _red;
+        g        = _green;
+        b        = _blue;
+        a        = _alpha;
+        density  = _density;
+        flags    = _flags;
+        variants = {{_red, _green, _blue, _alpha}};
     }
     Material() = default;
 };
@@ -69,6 +72,7 @@ private:
     bool updateSand(u16 x, u16 y);
     bool updateWater(u16 x, u16 y);
     bool updateNaturalGas(u16 x, u16 y);
+    bool updateFire(u16 x, u16 y);
 
     void updateTextureData(std::vector<u8>& textureData);
     void updateEntireTextureData(std::vector<u8>& textureData);
@@ -77,9 +81,10 @@ private:
 
     void drawCircle(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     void drawCircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
-    void drawLine(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
+    void drawHorizontalLine(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     void drawSquare(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
     void drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo);
+    //void drawBresenhamsLine(u16 x1, u16 y1, u16 x2, u16 y2, u8 material, std::function<void(u16, u16, u8)> foo);
 
     bool outOfBounds(u16 x, u16 y) const { return x >= cellWidth || y >= cellHeight || x < 0 || y < 0; }
     u32  cellIdx(u16 x, u16 y) const { return (y * cellWidth) + x; }

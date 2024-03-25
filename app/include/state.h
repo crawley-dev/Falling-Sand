@@ -72,7 +72,7 @@ struct MaterialID {
     };
 };
 
-struct Flag {
+struct StateFlag {
     enum : u64 {
         RUN_SIM     = 1 << 0,
         RESET_SIM   = 1 << 1,
@@ -165,11 +165,11 @@ struct TextureData {
     u16             height = 0;
     std::vector<u8> data;
 
-    TextureData(u32 ID, u16 WIDTH, u16 HEIGHT, std::vector<u8> DATA) {
-        id     = ID;
-        width  = WIDTH;
-        height = HEIGHT;
-        data   = DATA;
+    TextureData(u32 _id, u16 _width, u16 _height, std::vector<u8> _data) {
+        id     = _id;
+        width  = _width;
+        height = _height;
+        data   = _data;
     }
     TextureData() = default;
 };

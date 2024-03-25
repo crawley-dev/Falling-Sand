@@ -18,13 +18,13 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
     // clang-format off
     materials.clear();
     materials.resize(MaterialID::COUNT);
-    materials[MaterialID::EMPTY]       = Material( 50,  50,  50, 255, 0,   500,  true);
-    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 0, 65535, false); 
-    materials[MaterialID::SAND]        = Material(245, 215, 176, 255, 3,  1600,  true);
-    materials[MaterialID::WATER]       = Material( 20,  20, 255, 125, 5,   997,  true);
-    materials[MaterialID::NATURAL_GAS] = Material( 20,  20,  50, 100, 8,    20,  true);
-    materials[MaterialID::FIRE]        = Material(255, 165,   0, 200, 8,    10,  true);
-    materials[MaterialID::GOL_ALIVE]   = Material(  0, 255,  30, 255, 0, 65535,  true);
+    materials[MaterialID::EMPTY]       = Material( 50,  50,  50, 255,   500, MOVABLE               ); // flags do nothing for now.
+    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 65535, IMMOVABLE             ); // need to keep EMPTY.density less than solids, greater than gases..
+    materials[MaterialID::SAND]        = Material(245, 215, 176, 255,  1600, MOVABLE | BELOW       );
+    materials[MaterialID::WATER]       = Material( 20,  20, 255, 125,   997, MOVABLE | BELOW | SIDE);
+    materials[MaterialID::NATURAL_GAS] = Material( 20,  20,  50, 100,    20, MOVABLE | ABOVE | SIDE);
+    materials[MaterialID::FIRE]        = Material(255, 165,   0, 200,     8, MOVABLE | ABOVE | SIDE);
+    materials[MaterialID::GOL_ALIVE]   = Material(  0, 255,  30, 255, 65535, IMMOVABLE             );
     // clang-format on
 
     // generate 'nVariant' number of colour variations per material. for spice..
@@ -49,7 +49,7 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
         cells.clear();
         cells.reserve(cellWidth * cellHeight);
         for (s32 i = 0; i < cellWidth * cellHeight; i++) // init cell.updated = true so updateTextureData runs on time
-            cells.emplace_back(MaterialID::EMPTY, true, getRand<u8>(0, nVariants - 1), 0);
+            cells.emplace_back(MaterialID::EMPTY, getRand<u8>(0, nVariants - 1), false);
         sizeChanged = true;
     }
 }
@@ -80,7 +80,7 @@ void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) 
     for (s32 y = 0; y < newCellHeight; y++)
         for (s32 x = 0; x < newCellWidth; x++) {
             if (outOfBounds(x, y)) {
-                newCells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants - 1), 0);
+                newCells.emplace_back(MaterialID::EMPTY, getRand<u8>(0, nVariants - 1), false);
             } else {
                 newCells.push_back(cells[cellIdx(x, y)]);
             }
@@ -99,7 +99,7 @@ void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) 
 void Game::reset() {
     cells.clear();
     cells.reserve(cellWidth * cellHeight);
-    for (s32 i = 0; i < cellWidth * cellHeight; i++) cells.emplace_back(MaterialID::EMPTY, false, getRand<u8>(0, nVariants - 1), 0);
+    for (s32 i = 0; i < cellWidth * cellHeight; i++) cells.emplace_back(MaterialID::EMPTY, getRand<u8>(0, nVariants - 1), false);
     sizeChanged = true;
 }
 
@@ -158,7 +158,7 @@ void Game::snakeUpdate() {
 void Game::golUpdate() {
     std::vector<std::pair<Cell, std::pair<u16, u16>>> updatedCells;
     auto                                              updateCellLambda = [&](u16 x, u16 y, u8 matID, u8 variant) -> void {
-        updatedCells.emplace_back(Cell(true, matID, variant, 0), std::pair<u16, u16>(x, y));
+        updatedCells.emplace_back(Cell(matID, variant, true), std::pair<u16, u16>(x, y));
         textureChanges.push_back(std::pair<u16, u16>(x, y));
     };
 
@@ -194,13 +194,12 @@ bool Game::updateCell(u16 x, u16 y) {
     if (c.updated) return true;
 
     switch (c.matID) {
-    case MaterialID::EMPTY:    return false;
-    case MaterialID::SAND:     return updateSand(x, y);
-    case MaterialID::WATER:    return updateWater(x, y);
-    case MaterialID::CONCRETE: return false;
-    case MaterialID::NATURAL_GAS:
-        return updateNaturalGas(x, y);
-        // case MaterialID::FIRE:          return updateFire(x, y);
+    case MaterialID::EMPTY:       return false;
+    case MaterialID::SAND:        return updateSand(x, y);
+    case MaterialID::WATER:       return updateWater(x, y);
+    case MaterialID::CONCRETE:    return false;
+    case MaterialID::NATURAL_GAS: return updateNaturalGas(x, y);
+    case MaterialID::FIRE:        return updateFire(x, y);
     }
 }
 
@@ -302,18 +301,20 @@ ESCAPE_WHILE_NATURAL_GAS:
     return true;
 }
 
+bool Game::updateFire(u16 x, u16 y) { return true; }
+
 bool Game::querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
     if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
     Material& material1 = materials[cells[cellIdx(x1, y1)].matID];
     Material& material2 = materials[cells[cellIdx(x2, y2)].matID];
-    return material1.movable && material2.movable && material1.density < material2.density;
+    return (material1.flags & MOVABLE) && (material2.flags & MOVABLE) && material1.density < material2.density;
 }
 
 bool Game::querySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
     if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
     Material& material1 = materials[cells[cellIdx(x1, y1)].matID];
     Material& material2 = materials[cells[cellIdx(x2, y2)].matID];
-    return material1.movable && material2.movable && material1.density > material2.density;
+    return (material1.flags & MOVABLE) && (material2.flags & MOVABLE) && material1.density > material2.density;
 }
 
 void Game::changeMaterial(u16 x, u16 y, u8 newMaterial) {
@@ -359,15 +360,16 @@ void Game::createDrawIndicators(u16 mx, u16 my, u16 size, u8 shape) {
     switch (shape) {
     case Shape::CIRCLE:
     case Shape::CIRCLE_OUTLINE: drawCircleOutline(x, y, size, 0, 100, boundedPushBack); break;
-    case Shape::LINE:           drawLine(x, y, size, 0, 100, boundedPushBack); break;
+    case Shape::LINE:           drawHorizontalLine(x, y, size, 0, 100, boundedPushBack); break;
     case Shape::SQUARE:
     case Shape::SQUARE_OUTLINE: drawSquareOutline(x, y, size, 0, 100, boundedPushBack); break;
     }
 }
 
 void Game::mouseDraw(u16 mx, u16 my, u16 size, u8 drawChance, u8 material, u8 shape) {
-    const u32 x = mx / scaleFactor;
-    const u32 y = my / scaleFactor;
+    if (mx > textureWidth || my > textureHeight) return;
+    u32 x = mx / scaleFactor;
+    u32 y = my / scaleFactor;
 
     if (outOfBounds(x, y)) return;
 
@@ -375,7 +377,7 @@ void Game::mouseDraw(u16 mx, u16 my, u16 size, u8 drawChance, u8 material, u8 sh
     switch (shape) {
     case Shape::CIRCLE:         drawCircle(x, y, size, material, drawChance, changeMaterialLambda); break;
     case Shape::CIRCLE_OUTLINE: drawCircleOutline(x, y, size, material, drawChance, changeMaterialLambda); break;
-    case Shape::LINE:           drawLine(x, y, size, material, drawChance, changeMaterialLambda); break;
+    case Shape::LINE:           drawHorizontalLine(x, y, size, material, drawChance, changeMaterialLambda); break;
     case Shape::SQUARE:         drawSquare(x, y, size, material, drawChance, changeMaterialLambda); break;
     case Shape::SQUARE_OUTLINE: drawSquareOutline(x, y, size, material, drawChance, changeMaterialLambda); break;
     }
@@ -421,7 +423,7 @@ void Game::drawCircleOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
     }
 }
 
-void Game::drawLine(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) {
+void Game::drawHorizontalLine(u16 x, u16 y, u16 size, u8 material, u8 drawChance, std::function<void(u16, u16, u8)> foo) {
     for (s32 tX = -size; tX < size; tX++)
         if (getRand<s64>(1, 100) <= drawChance) foo(x + tX, y, material);
 }
@@ -443,6 +445,8 @@ void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
     for (s32 tY = -size / 2; tY <= size / 2; tY++)
         if (getRand<s64>(1, 100) <= drawChance) foo(x + size / 2, y + tY, material);
 }
+
+//void Game::drawBresenhamsLine(u16 x1, u16 y1, u16 x2, u16 y2, u8 material, std::function<void(u16, u16, )> foo) {}
 
 /*--------------------------------------------------------------------------------------
 ---- Updating Texture ------------------------------------------------------------------

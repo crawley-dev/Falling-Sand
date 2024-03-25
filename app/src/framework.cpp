@@ -231,7 +231,7 @@ void Framework::loadImageRGB(TextureData& texture, std::string& path) {
         return;
     }
 
-    constexpr int formatRGB24 = 386930691; // a magic number you might say. constexpr is const but better.
+    constexpr int formatRGB24 = 386930691;
     if (image->format->format != formatRGB24) {
         image = SDL_ConvertSurfaceFormat(image, SDL_PIXELFORMAT_RGB24, 0);
         if (image->format->format != formatRGB24) { // last chance Surface Convert.
@@ -391,7 +391,7 @@ void Framework::loadSimFromFile(std::string& name) {
             if (x >= simWidth) break;
             std::string              strCell = strCells[x];
             std::vector<std::string> items   = split(strCell, ',');
-            cells[cellIdx(x, y)]             = Cell(false, std::stoi(items[0]), std::stoi(items[1]), 0);
+            cells[cellIdx(x, y)]             = Cell(std::stoi(items[0]), std::stoi(items[1]), false);
         }
         y++;
     }
@@ -450,14 +450,84 @@ void Framework::updateTexture(TextureData& texture) {
 void Framework::mouseDraw() {
     ImGuiIO& io = ImGui::GetIO();
 
-    static int    lastFrameCall    = 0;
-    constexpr int minFramesTilDraw = 5;
-    if (ImGui::GetFrameCount() - lastFrameCall > minFramesTilDraw) {
-        lastFrameCall = ImGui::GetFrameCount();
-        return;
+    static int    x1               = state.mouseX;
+    static int    y1               = state.mouseY;
+    static int    lastCallFrame    = 0;
+    constexpr int minFramesTilDraw = 30;
+    if (ImGui::GetFrameCount() - lastCallFrame > minFramesTilDraw) {
+        x1            = state.mouseX;
+        y1            = state.mouseY;
+        lastCallFrame = ImGui::GetFrameCount();
     }
+
+    int x2 = state.mouseX;
+    int y2 = state.mouseY;
+
+    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
+    dx  = x2 - x1;
+    dy  = y2 - y1;
+    dx1 = fabs(dx);
+    dy1 = fabs(dy);
+    px  = 2 * dy1 - dx1;
+    py  = 2 * dx1 - dy1;
+    if (dy1 <= dx1) {
+        if (dx >= 0) {
+            x  = x1;
+            y  = y1;
+            xe = x2;
+        } else {
+            x  = x2;
+            y  = y2;
+            xe = x1;
+        }
+        game->mouseDraw(x, y, state.drawSize, state.drawChance, state.drawMaterial, state.drawShape);
+
+        for (i = 0; x < xe; i++) {
+            x = x + 1;
+            if (px < 0) {
+                px = px + 2 * dy1;
+            } else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    y = y + 1;
+                } else {
+                    y = y - 1;
+                }
+                px = px + 2 * (dy1 - dx1);
+            }
+            game->mouseDraw(x, y, state.drawSize, state.drawChance, state.drawMaterial, state.drawShape);
+        }
+    } else {
+        if (dy >= 0) {
+            x  = x1;
+            y  = y1;
+            ye = y2;
+        } else {
+            x  = x2;
+            y  = y2;
+            ye = y1;
+        }
+        game->mouseDraw(x, y, state.drawSize, state.drawChance, state.drawMaterial, state.drawShape);
+
+        for (i = 0; y < ye; i++) {
+            y = y + 1;
+            if (py <= 0) {
+                py = py + 2 * dx1;
+            } else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    x = x + 1;
+                } else {
+                    x = x - 1;
+                }
+                py = py + 2 * (dx1 - dy1);
+            }
+            game->mouseDraw(x, y, state.drawSize, state.drawChance, state.drawMaterial, state.drawShape);
+        }
+    }
+
+    x1 = state.mouseX;
+    y1 = state.mouseY;
 
     // Mouse pos updated in interface->debugMenu() each frame. called before
     // mouseDraw event so correct.
-    game->mouseDraw(state.mouseX, state.mouseY, state.drawSize, state.drawChance, state.drawMaterial, state.drawShape);
+    //game->mouseDraw(state.mouseX, state.mouseY, state.drawSize, state.drawChance, state.drawMaterial, state.drawShape);
 }
