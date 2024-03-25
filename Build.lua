@@ -1,5 +1,5 @@
 -- Defines solution
-workspace "2dProject"
+workspace "falling-sand"
     architecture "x64"
     configurations { "Debug", "Release", "Dist" }
 
@@ -7,7 +7,7 @@ workspace "2dProject"
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 -- Defines configuration
-project "FallingSand"
+project "app"
     location "build"
     kind "ConsoleApp"
     language "C++"
@@ -45,10 +45,12 @@ project "FallingSand"
         "lib/SDL2_IMAGE/include",
     }
 
-    -- postbuildcommands {
-    --     "{COPY} %{wks.location}/lib/SDL2/lib/x64/SDL2.dll %{cfg.targetdir}",
-    --     "{COPY} %{wks.location}/lib/SDL2_IMAGE/lib/x64/SDL2_image.dll %{cfg.targetdir}"
-    -- }
+    postbuildcommands {
+        -- "{COPYFILE} %[%{wks.location}/lib/SDL2/lib/x64/SDL2.dll] %[" .. outputdir,
+        -- "{COPYFILE} %[%{wks.location}/lib/SDL2_IMAGE/lib/x64/SDL2_image.dll] %" .. outputdir
+        "{COPYFILE} %[lib/SDL2/lib/x64/SDL2.dll] %[bin/" .. outputdir .. "]",
+        "{COPYFILE} %[lib/SDL2_IMAGE/lib/x64/SDL2_image.dll] %[bin/" .. outputdir .. "]",
+    }
 
     filter "configurations:Debug"
        defines { "DEBUG" }

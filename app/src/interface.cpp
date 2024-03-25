@@ -244,6 +244,9 @@ void Interface::gameWindow(AppState& state) {
     // has to happen here to get proper ImGui::GetWindowSize() response
     constexpr int xOffset = 14;
     constexpr int yOffset = 40;
+    if (texture.width == 0 || texture.height == 0) {
+        printf("ZERO SIZE! frame: %d", ImGui::GetFrameCount());
+    }
     int           windowX = (int)ImGui::GetWindowSize().x;
     int           windowY = (int)ImGui::GetWindowSize().y;
     if (windowX % 2 != 0) ++windowX;

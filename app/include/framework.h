@@ -1,12 +1,12 @@
 #pragma once
-//#include "game.h"
-//#include "interface.h"
+#include "game.h"
+#include "interface.h"
 #include "state.h"
 #include <SDL.h>
 
 // forward declarations
-class Game {};
-class Interface {};
+//class Game {};
+//class Interface {};
 
 class Framework {
 public:
