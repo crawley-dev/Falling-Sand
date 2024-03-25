@@ -21,34 +21,36 @@ project "FallingSand"
         "app/include/**.h", 
         "lib/imgui/src/**.cpp",
         "lib/imgui/include/**.h",
-        "lib/boost/**.hpp",
     }
 
     -- Defines libraries to link
     links {
         "SDL2",
         "SDL2_image",
-        "opengl32"
+        "opengl32",
     }
 
     -- Links .lib files
     libdirs {
         "lib/SDL2/lib/x64",
-        "lib/SDL2_IMAGE/lib/x64"
+        "lib/SDL2_IMAGE/lib/x64",
     }
 
     -- Includes directories for the compiler to search
     includedirs {
         "app/include",
+        "lib/boost/",
         "lib/imgui/include",
         "lib/SDL2/include",
-        "lib/SDL2_IMAGE/include"
+        "lib/SDL2_IMAGE/include",
     }
 
-    -- postbuildcommands {
-    --     "{COPY} %{wks.location}/lib/SDL2/lib/x64/SDL2.dll %{cfg.targetdir}",
-    --     "{COPY} %{wks.location}/lib/SDL2_IMAGE/lib/x64/SDL2_image.dll %{cfg.targetdir}"
-    -- }
+    postbuildcommands {
+        -- "{COPYFILE} %[%{wks.location}/lib/SDL2/lib/x64/SDL2.dll] %[" .. outputdir,
+        -- "{COPYFILE} %[%{wks.location}/lib/SDL2_IMAGE/lib/x64/SDL2_image.dll] %" .. outputdir
+        "{COPYFILE} %[lib/SDL2/lib/x64/SDL2.dll] %[bin/" .. outputdir .. "]",
+        "{COPYFILE} %[lib/SDL2_IMAGE/lib/x64/SDL2_image.dll] %[bin/" .. outputdir .. "]",
+    }
 
     filter "configurations:Debug"
        defines { "DEBUG" }
