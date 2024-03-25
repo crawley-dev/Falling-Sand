@@ -1,7 +1,41 @@
 #pragma once
-#include "cell.h"
-#include "pch.h"
 #include "state.h"
+#include <functional>
+
+struct Cell {     // 32 bits of data, for more cache hits === speed.
+    bool updated; // uses 1 byte??? should just be a bit
+    u8   matID;
+    u8   variant; // index to array of randomly generated RGBA values from material's RGBA.
+    u8   data;    // extra data if needed, e.g fire temp
+
+    Cell(bool UPDATED, u8 MATERIAL, u8 COLOUR_VARIANT, u8 EXTRA_DATA) {
+        updated = UPDATED;
+        matID   = MATERIAL;
+        variant = COLOUR_VARIANT;
+        data    = EXTRA_DATA;
+    }
+    Cell() = default;
+};
+
+struct Material {
+    bool                         movable;
+    u8                           r, g, b, a;
+    u8                           dispersion;
+    u16                          density;
+    std::vector<std::vector<u8>> variants;
+
+    Material(u8 RED, u8 GREEN, u8 BLUE, u8 ALPHA, u8 DISPERSION, u16 DENSITY, bool MOVABLE) {
+        r            = RED;
+        g            = GREEN;
+        b            = BLUE;
+        a            = ALPHA;
+        dispersion   = DISPERSION;
+        density      = DENSITY;
+        variants     = {{RED, GREEN, BLUE, ALPHA}};
+        bool movable = MOVABLE;
+    }
+    Material() = default;
+};
 
 class Game {
 public:
@@ -10,15 +44,15 @@ public:
 
     void init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
     void reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
-    void update(AppState &state, std::vector<u8> &textureData);
+    void update(AppState& state, std::vector<u8>& textureData);
     void reset();
 
-    void loadImage(std::vector<u8> &textureData, std::vector<u8> &imageTextureData, u16 imageWidth, u16 imageHeight);
+    void loadImage(std::vector<u8>& textureData, std::vector<u8>& imageTextureData, u16 imageWidth, u16 imageHeight);
 
     void mouseDraw(u16 x, u16 y, u16 size, u8 drawChance, u8 material, u8 shape);
 
 private:
-    void simulate(AppState &state);
+    void simulate(AppState& state);
 
     void l_bottomUpUpdate();
     void r_bottomUpUpdate();
@@ -35,8 +69,8 @@ private:
     bool updateWater(u16 x, u16 y);
     bool updateNaturalGas(u16 x, u16 y);
 
-    void updateTextureData(std::vector<u8> &textureData);
-    void updateEntireTextureData(std::vector<u8> &textureData);
+    void updateTextureData(std::vector<u8>& textureData);
+    void updateEntireTextureData(std::vector<u8>& textureData);
 
     void createDrawIndicators(u16 x, u16 y, u16 size, u8 shape);
 

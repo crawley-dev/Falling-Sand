@@ -1,8 +1,5 @@
 #pragma once
-// clang-format off
-#include "pch.h"
 #include "game.h"
-// clang-format on
 
 Game::Game() {}
 Game::~Game() {}

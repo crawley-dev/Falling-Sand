@@ -1,12 +1,27 @@
 ﻿#pragma once
-#include "pch.h"
+#define SDL_MAIN_HANDLED
+#include <array>
+#include <cstdint>
+#include <string_view>
+#include <vector>
 
-// enum classes are a bitch, they need to be cast every time they're used..
-// wrapping everything in "PixelPhysics" namespace is un-necessary as everything is
-// now isolated in their own 'struct'.
+// Type Definitions
+using u8  = unsigned char;
+using u16 = unsigned short;
+using u32 = unsigned long int;
+using u64 = unsigned long long;
 
-// static constexpr std::array<std::string_view, Message::COUNT> names
-// figuring this combination out took too bloody long.. compile time arrays are a nightmare
+using s8  = char;
+using s16 = short;
+using s32 = long int;
+using s64 = long long;
+
+using f32 = float;
+using f64 = double;
+
+using GLubyte = unsigned char;
+using GLuint  = unsigned int;
+
 
 struct Message {
     enum : u8 {
