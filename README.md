@@ -106,7 +106,6 @@
 ### Prerequisites to build
 #### Install these libraries and place them in ./lib with these names:
 - boost (version 1.82.0 or greater) >> https://www.boost.org/users/download/
-- imgui (version 1.89 or greater) >> https://github.com/ocornut/imgui/releases
 - SDL2 (version 2.0.0 or greater) >> https://github.com/libsdl-org/SDL/releases
 - SDL2_IMAGE (version 2.0.0 or greater) >> https://github.com/libsdl-org/SDL_image/releases
 
