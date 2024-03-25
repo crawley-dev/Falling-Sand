@@ -97,26 +97,26 @@
 * Boost
 * HIC++
 
-
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
-### Prerequisites
-* Boost
-* SDL2
-* OpenGL
+### Prerequisites to build
+#### Install these libraries and place them in ./lib with these names:
+- boost (version 1.82.0 or greater) >> https://www.boost.org/users/download/
+- SDL2 (version 2.0.0 or greater) >> https://github.com/libsdl-org/SDL/releases
+- SDL2_IMAGE (version 2.0.0 or greater) >> https://github.com/libsdl-org/SDL_image/releases
 
 
 ### Installation
 <!-- talk about installing boost at some point... -->
 
-1. Place pre-requisite libraries ./libraries
-2. Open 'PixelSimDesktop.sln
-3. Change 'Build Mode' from Debug --> Release
-4. Click 'Local Windows Debugger'
+1. Place pre-requisite libraries ./lib
+2. Navigate to ./premake and run platform-specific build script 
+3. Compile the project (e.g. using visual studio solution (.sln))
+4. Run the application (e.g. .exe)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
