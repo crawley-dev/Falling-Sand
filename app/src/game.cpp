@@ -19,12 +19,13 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
     materials.clear();
     materials.resize(MaterialID::COUNT);
     materials[MaterialID::EMPTY]       = Material( 50,  50,  50, 255,   500, MOVABLE               ); // flags do nothing for now.
-    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 65535, IMMOVABLE             ); // need to keep EMPTY.density less than solids, greater than gases..
+    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 65535, 0                     ); // need to keep EMPTY.density less than solids, greater than gases..
     materials[MaterialID::SAND]        = Material(245, 215, 176, 255,  1600, MOVABLE | BELOW       );
     materials[MaterialID::WATER]       = Material( 20,  20, 255, 125,   997, MOVABLE | BELOW | SIDE);
     materials[MaterialID::NATURAL_GAS] = Material( 20,  20,  50, 100,    20, MOVABLE | ABOVE | SIDE);
     materials[MaterialID::FIRE]        = Material(255, 165,   0, 200,     8, MOVABLE | ABOVE | SIDE);
-    materials[MaterialID::GOL_ALIVE]   = Material(  0, 255,  30, 255, 65535, IMMOVABLE             );
+    materials[MaterialID::WOOD]        = Material(255, 165,   0, 200,     8, FLAMMABLE             );
+    materials[MaterialID::GOL_ALIVE]   = Material(  0, 255,  30, 255, 65535, 0                     );
     // clang-format on
 
     // generate 'nVariant' number of colour variations per material. for spice..
@@ -35,8 +36,10 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
         mat.variants.reserve(nVariants);
         for (u8 i = 0; i < nVariants; i++) {
             if (mat.density == 1600 || mat.density == 997) {
-                mat.variants.push_back(
-                    {static_cast<u8>(mat.r - getRand<u8>(0, VARIATION)), static_cast<u8>(mat.g - getRand<u8>(0, VARIATION)), static_cast<u8>(mat.b - getRand<u8>(0, VARIATION)), mat.a});
+                mat.variants.push_back({static_cast<u8>(mat.r - getRand<u8>(0, VARIATION)),
+                                        static_cast<u8>(mat.g - getRand<u8>(0, VARIATION)),
+                                        static_cast<u8>(mat.b - getRand<u8>(0, VARIATION)),
+                                        mat.a});
             } else {
                 mat.variants.push_back({mat.r, mat.g, mat.b, mat.a});
             }
@@ -73,7 +76,6 @@ void Game::update(AppState& state, std::vector<u8>& textureData) {
 void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
     u32 newCellWidth  = newTextureWidth / newScaleFactor;
     u32 newCellHeight = newTextureHeight / newScaleFactor;
-    printf(" | cell: (%d,%d) \n", newCellWidth, newCellHeight);
 
     std::vector<Cell> newCells;
     newCells.reserve(newCellWidth * newCellHeight);
@@ -99,7 +101,8 @@ void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) 
 void Game::reset() {
     cells.clear();
     cells.reserve(cellWidth * cellHeight);
-    for (s32 i = 0; i < cellWidth * cellHeight; i++) cells.emplace_back(MaterialID::EMPTY, getRand<u8>(0, nVariants - 1), false);
+    for (s32 i = 0; i < cellWidth * cellHeight; i++)
+        cells.emplace_back(MaterialID::EMPTY, getRand<u8>(0, nVariants - 1), false);
     sizeChanged = true;
 }
 
@@ -110,6 +113,7 @@ void Game::reset() {
 void Game::simulate(AppState& state) {
     fluidDispersionFactor = state.fluidDispersionFactor;
     solidDispersionFactor = state.solidDispersionFactor;
+    gasDispersionFactor   = state.gasDispersionFactor;
 
     switch (state.scanMode) {
     case Scan::BOTTOM_UP_LEFT:  l_bottomUpUpdate(); break;
@@ -182,7 +186,8 @@ void Game::golUpdate() {
                 updateCellLambda(x, y, MaterialID::GOL_ALIVE, c.variant);
             }
         }
-    for (auto& [cell, coords] : updatedCells) cells[cellIdx(coords.first, coords.second)] = cell;
+    for (auto& [cell, coords] : updatedCells)
+        cells[cellIdx(coords.first, coords.second)] = cell;
 }
 
 /*--------------------------------------------------------------------------------------
@@ -215,106 +220,88 @@ bool Game::updateSand(u16 x, u16 y) {
     s8 xDispersion = 0;
     s8 movesLeft   = solidDispersionFactor;
 
+    auto querySwap = [&](Material& mat1, u16 x2, u16 y2) -> bool {
+        if (outOfBounds(x, y) || outOfBounds(x2, y2)) return false;
+        Material& mat2 = materials[cells[cellIdx(x2, y2)].matID];
+        return (mat1.flags & MOVABLE) && (mat2.flags & MOVABLE) && mat1.density > mat2.density;
+    };
+
     while (movesLeft > 0) {
-        if (querySwap(x, y, x + xDispersion, y + yDispersion + 1)) { // check cell below
+        Material& curMat = materials[cells[cellIdx(x, y)].matID];
+        if (querySwap(curMat, x + xDispersion, y + yDispersion + 1)) { // check cell below
             yDispersion++;
             movesLeft--;
             continue;
         }
 
-        s8 rand = getRand<s8>();
-        if (querySwap(x, y, x + rand, y + yDispersion + 1)) {
-            xDispersion = rand;
-            movesLeft--;
-        } else break;
+        // redo this, generic it to others.
+        if (getRand<u8>(1, 100) > 50) {
+            if (querySwap(curMat, x + rand, y + yDispersion + 1)) {
+                xDispersion = rand;
+                movesLeft--;
+            } else break;
+        } else {
+        }
     }
 
     swapCells(x, y, x + xDispersion, y + yDispersion);
     return true;
 }
 
+// check for empty space below..
+// check horizontal options
+// >> if (can move) && (can move down) >> move
+// >> else check until ^^ or no more horizontal options
 bool Game::updateWater(u16 x, u16 y) {
-    s8 yDispersion = 0;
-    s8 xDispersion = 0;
-    s8 movesLeft   = fluidDispersionFactor;
+    auto querySwap = [&](Material& mat1, u16 x2, u16 y2) -> bool {
+        if (outOfBounds(x, y) || outOfBounds(x2, y2)) return false;
+        Material& mat2 = materials[cells[cellIdx(x2, y2)].matID];
+        return (mat1.flags & MOVABLE) && (mat2.flags & MOVABLE) && mat1.density > mat2.density;
+    };
 
-    while (movesLeft > 0) {
-        // check for empty space below..
-        // check horizontal options
-        // >> if (can move) && (can move down) >> move
-        // >> else check until ^^ or no more horizontal options
-
-        if (querySwap(x, y, x + xDispersion, y + yDispersion + 1)) { // check cell below
-            yDispersion++;
-            movesLeft--;
-            continue;
-        }
-
-        s8 dX = abs(xDispersion) + 1;
-        if (getRand<u8>(1, 100) > 50) {
-            if (querySwap(x, y, x + dX, y + yDispersion)) xDispersion = dX;
-            else if (querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
-            else goto ESCAPE_WHILE_WATER;
-            movesLeft--;
-        } else {
-            if (querySwap(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
-            else if (querySwap(x, y, x + dX, y + yDispersion)) xDispersion = dX;
-            else goto ESCAPE_WHILE_WATER;
-            movesLeft--;
-        }
-    }
-
-ESCAPE_WHILE_WATER:
-    swapCells(x, y, x + xDispersion, y + yDispersion);
-    return true;
+    return genericUpdate(fluidDispersionFactor, x, y, querySwap);
 }
 
 bool Game::updateNaturalGas(u16 x, u16 y) {
-    s8 yDispersion = 0;
-    s8 xDispersion = 0;
-    s8 movesLeft   = 4;
+    auto querySwap = [&](Material& mat1, u16 x2, u16 y2) -> bool {
+        if (outOfBounds(x, y) || outOfBounds(x2, y2)) return false;
+        Material& mat2 = materials[cells[cellIdx(x2, y2)].matID];
+        return (mat1.flags & MOVABLE) && (mat2.flags & MOVABLE) && mat1.density < mat2.density;
+    };
 
+    return genericUpdate(gasDispersionFactor, x, y, querySwap);
+}
+
+bool Game::updateFire(u16 x, u16 y) { return true; }
+
+bool Game::genericUpdate(u8 movesLeft, u16 x, u16 y, std::function<bool(Material&, u16, u16)> querySwap) {
+    s8 xDispersion = 0, yDispersion = 0;
     while (movesLeft > 0) {
-        if (querySwapAbove(x, y, x + xDispersion,
-                           y + yDispersion - 1)) { // check cell above
+        Material& curMat = materials[cells[cellIdx(x, y)].matID];
+        if (querySwap(curMat, x + xDispersion, y + yDispersion - 1)) { // check cell above
             yDispersion--;
             movesLeft--;
             continue;
         }
 
+        // try *-1
         u8 dX = abs(xDispersion) + 1;
         if (getRand<u8>(1, 100) > 50) {
-            if (querySwapAbove(x, y, x + dX, y + yDispersion)) xDispersion = dX;
-            else if (querySwapAbove(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
-            else goto ESCAPE_WHILE_NATURAL_GAS;
+            if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
+            else if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
+            else goto ESCAPE_LOOP;
             movesLeft--;
         } else {
-            if (querySwapAbove(x, y, x - dX, y + yDispersion)) xDispersion = -dX;
-            else if (querySwapAbove(x, y, x + dX, y + yDispersion)) xDispersion = dX;
-            else goto ESCAPE_WHILE_NATURAL_GAS;
+            if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
+            else if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
+            else goto ESCAPE_LOOP;
             movesLeft--;
         }
     }
 
-ESCAPE_WHILE_NATURAL_GAS:
+ESCAPE_LOOP:
     swapCells(x, y, x + xDispersion, y + yDispersion);
     return true;
-}
-
-bool Game::updateFire(u16 x, u16 y) { return true; }
-
-bool Game::querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2) {
-    if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
-    Material& material1 = materials[cells[cellIdx(x1, y1)].matID];
-    Material& material2 = materials[cells[cellIdx(x2, y2)].matID];
-    return (material1.flags & MOVABLE) && (material2.flags & MOVABLE) && material1.density < material2.density;
-}
-
-bool Game::querySwap(u16 x1, u16 y1, u16 x2, u16 y2) {
-    if (outOfBounds(x1, y1) || outOfBounds(x2, y2)) return false;
-    Material& material1 = materials[cells[cellIdx(x1, y1)].matID];
-    Material& material2 = materials[cells[cellIdx(x2, y2)].matID];
-    return (material1.flags & MOVABLE) && (material2.flags & MOVABLE) && material1.density > material2.density;
 }
 
 void Game::changeMaterial(u16 x, u16 y, u8 newMaterial) {
@@ -446,8 +433,6 @@ void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
         if (getRand<s64>(1, 100) <= drawChance) foo(x + size / 2, y + tY, material);
 }
 
-//void Game::drawBresenhamsLine(u16 x1, u16 y1, u16 x2, u16 y2, u8 material, std::function<void(u16, u16, )> foo) {}
-
 /*--------------------------------------------------------------------------------------
 ---- Updating Texture ------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
@@ -455,22 +440,21 @@ void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
 // Iterates over textureChanges list, updates relevant textureData with cell
 // data.
 void Game::updateTextureData(std::vector<u8>& textureData) {
-    for (const auto& [x, y] : textureChanges) {
+    for (auto& [x, y] : textureChanges) {
         if (outOfBounds(x, y)) // couldn't get to root of problem, patching it out.
             continue;          // TODO: fix the bug, don't patch it out..
 
-        Cell&                  c       = cells[cellIdx(x, y)];                   // grab cell with changes
-        const std::vector<u8>& variant = materials[c.matID].variants[c.variant]; // grab cell's colour variant
+        Cell&            c       = cells[cellIdx(x, y)];                   // grab cell with changes
+        std::vector<u8>& variant = materials[c.matID].variants[c.variant]; // grab cell's colour variant
 
-        const u8 red   = variant[0];
-        const u8 green = variant[1];
-        const u8 blue  = variant[2];
-        const u8 alpha = variant[3];
+        u8 red   = variant[0];
+        u8 green = variant[1];
+        u8 blue  = variant[2];
+        u8 alpha = variant[3];
 
         for (s32 tY = 0; tY < scaleFactor; tY++)
-            for (s32 tX = 0; tX < scaleFactor; tX++) { // iterates over each pixel in the cell
-                const s32 texIdx        = textureIdx((x * scaleFactor) + tX,
-                                              (y * scaleFactor) + tY); // index into 1d array
+            for (s32 tX = 0; tX < scaleFactor; tX++) {                                                // iterates over each pixel in the cell
+                s32 texIdx              = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY); // index into 1d array
                 textureData[texIdx + 0] = red;
                 textureData[texIdx + 1] = green;
                 textureData[texIdx + 2] = blue;
@@ -480,10 +464,10 @@ void Game::updateTextureData(std::vector<u8>& textureData) {
     }
     textureChanges.clear();
     textureChanges = drawIndicators;
-    for (const auto& [x, y] : drawIndicators) {
+    for (auto& [x, y] : drawIndicators) {
         for (s32 tY = 0; tY < scaleFactor / 2; tY++)
             for (s32 tX = 0; tX < scaleFactor / 2; tX++) {
-                const s32 texIdx        = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
+                s32 texIdx              = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
                 textureData[texIdx + 0] = 255;
                 textureData[texIdx + 1] = 255;
                 textureData[texIdx + 2] = 255;

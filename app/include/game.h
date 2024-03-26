@@ -3,11 +3,11 @@
 #include <functional>
 
 enum MaterialFlag : u8 {
-    IMMOVABLE = 0,
     MOVABLE   = 1 << 0,
     BELOW     = 1 << 1,
     SIDE      = 1 << 2,
     ABOVE     = 1 << 3,
+    FLAMMABLE = 1 << 4,
 };
 
 struct Cell {
@@ -24,7 +24,8 @@ struct Cell {
 };
 
 struct Material {
-    u8                           r, g, b, a, flags;
+    u8                           r, g, b, a;
+    u8                           flags;
     u16                          density;
     std::vector<std::vector<u8>> variants;
 
@@ -65,8 +66,8 @@ private:
 
     void changeMaterial(u16 x, u16 y, u8 newMaterial);
     void swapCells(u16 x1, u16 y1, u16 x2, u16 y2);
-    bool querySwap(u16 x1, u16 y1, u16 x2, u16 y2);
-    bool querySwapAbove(u16 x1, u16 y1, u16 x2, u16 y2);
+    bool genericUpdate(u8 movesLeft, u16 x, u16 y, std::function<bool(Material&, u16, u16)> querySwap);
+    //bool querySwap(Material& mat1, u16 x2, u16 y2, std::function<bool(Material&, u16, u16)> foo);
 
     bool updateCell(u16 x, u16 y);
     bool updateSand(u16 x, u16 y);
@@ -91,7 +92,7 @@ private:
     u32  textureIdx(u16 x, u16 y) const { return 4 * ((y * textureWidth) + x); }
 
     template <typename T> // cheeky template
-    inline T getRand(T min = -1, T max = 1) {
+    inline T getRand(T min, T max) {
         return splitMix64_NextRand() % (max - min + 1) + min;
     }
     u64 splitMix64_NextRand() {

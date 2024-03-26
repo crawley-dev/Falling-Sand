@@ -57,6 +57,7 @@ struct MaterialID {
         WATER,
         NATURAL_GAS,
         FIRE,
+        WOOD,
         GOL_ALIVE,
         COUNT,
     };
@@ -68,6 +69,7 @@ struct MaterialID {
         "WATER",
         "Natural Gas",
         "FIRE",
+        "WOOD",
         "Game of Life: Alive",
     };
 };
@@ -193,6 +195,7 @@ struct AppState {
     u8 drawMaterial          = MaterialID::WATER;
     u8 drawChance            = 50;
     u8 scaleFactor           = 10;
+    u8 gasDispersionFactor   = 6;
     u8 fluidDispersionFactor = 4;
     u8 solidDispersionFactor = 2;
 
