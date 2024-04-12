@@ -1,6 +1,7 @@
 ﻿#pragma once
 #define SDL_MAIN_HANDLED
-#define DIST_MODE 0
+#define DIST_MODE 1
+
 #include <array>
 #include <cstdint>
 #include <string_view>
@@ -22,7 +23,6 @@ using f64 = double;
 
 using GLubyte = unsigned char;
 using GLuint  = unsigned int;
-
 
 struct Message {
     enum : u8 {

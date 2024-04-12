@@ -53,9 +53,9 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Multi-Viewport /
-                                                          // Platform Windows
-    io.ConfigDockingWithShift          = true;            // Enable Docking on Shift
-    io.ConfigDockingTransparentPayload = true;            // Enable Transparent Window on Docking
+    // Platform Windows
+    io.ConfigDockingWithShift          = true; // Enable Docking on Shift
+    io.ConfigDockingTransparentPayload = true; // Enable Transparent Window on Docking
 #if DIST_MODE
     io.Fonts->AddFontFromFileTTF("./Cascadia.ttf", 15);
 #else
@@ -73,7 +73,8 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-    ImGuiStyle& style = ImGui::GetStyle();
+    ImGuiStyle& style   = ImGui::GetStyle();
+    style.FrameRounding = 50.f;
 
     // When viewports are enabled we tweak WindowRounding/WindowBg so platform
     // windows can look identical to regular ones.
@@ -90,7 +91,6 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     state = AppState();
     state.textures.push_back(TextureData(TexID::GAME, 0, 0, {}));
     state.textures.push_back(TextureData(TexID::BACKGROUND, 0, 0, {}));
-    // state.textures.push_back(TextureData(PRESENT_TEXTURE_ID   , 0, 0, {}));
 
     applicationRunning = true;
     return true;
@@ -110,7 +110,7 @@ void Framework::update() {
     interface->main();
     interface->debugMenu(state);
 
-    if (ImGui::GetFrameCount() <= 3) return;
+    if (ImGui::GetFrameCount() <= 3) return; // the "game" is not ready, waiting for subsystems to init
 
     ImGuiIO&     io      = ImGui::GetIO();
     TextureData& texture = state.textures[TexIndex::GAME];
@@ -357,7 +357,7 @@ void Framework::saveSimToFile(std::string& name) {
     u16                simWidth   = simTexture.width / state.scaleFactor;
     u16                simHeight  = simTexture.height / state.scaleFactor;
     std::vector<Cell>& cells      = game->getSimState();
-
+    name += ".txt";
 
 #if DIST_MODE
     std::string savesPath = "../resources/saves/";
@@ -388,13 +388,14 @@ void Framework::loadSimFromFile(std::string& name) {
     u16                simWidth   = simTexture.width / state.scaleFactor;
     u16                simHeight  = simTexture.height / state.scaleFactor;
     std::vector<Cell>& cells      = game->getSimState();
-
+    name += ".txt";
 
 #if DIST_MODE
     std::string savesPath = "../resources/saves/";
 #else
     std::string savesPath = "./saves/";
 #endif
+
     std::ifstream inputFile(savesPath + name);
 
     if (!inputFile.is_open()) {

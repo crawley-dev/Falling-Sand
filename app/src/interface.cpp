@@ -133,7 +133,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
 
         ImGui::SeparatorText("Load an image from a file");
         static char imgStr[128] = ""; // could overflow the buffer. yay.. this will probably not work at some point..
-        ImGui::InputTextWithHint("##load_image_input_text", "example.png", imgStr, IM_ARRAYSIZE(imgStr));
+        ImGui::InputTextWithHint("##load_image_input_text", "example.png", imgStr, IM_ARRAYSIZE(imgStr)); //TODO: default file extension
         if (ImGui::Button("Change Texture")) loadedTex++;
         ImGui::SameLine();
         if (ImGui::Button("Load Image")) {
@@ -144,7 +144,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
 
         ImGui::SeparatorText("Save/Load game state");
         static char saveLoadStr[128] = "";
-        ImGui::InputTextWithHint("##save_file_input_text ", " example.txt ", saveLoadStr, IM_ARRAYSIZE(saveLoadStr));
+        ImGui::InputTextWithHint("##save_file_input_text ", "example", saveLoadStr, IM_ARRAYSIZE(saveLoadStr));
         if (ImGui::Button("Save Simulation State")) {
             state.saveSim  = true;
             state.savePath = std::string(saveLoadStr);
@@ -182,7 +182,6 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         if (ImGui::ArrowButton("##right", ImGuiDir_Right)) {
             pseudoFrames++;
         }
-
         if (ImGui::Button("Step Frames")) {
             framesToStep    = pseudoFrames;
             doFrameStepping = true;
@@ -199,7 +198,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
 
     ImVec2        windowPos             = ImGui::GetMainViewport()->Pos;
     constexpr int TITLE_BAR_OFFSET_X    = 8;
-    constexpr int TITLE_BAR_OFFSET_Y    = 28;
+    constexpr int TITLE_BAR_OFFSET_Y    = 8;
     constexpr int COLOUR_VARIANCE_RANGE = 20;
     state.mouseX                        = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
     state.mouseY                        = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
@@ -245,16 +244,24 @@ void Interface::gameWindow(AppState& state) {
     // TODO: Investigage ::GetWindowSize(), get it working for "GameWindow",
     //       Not the SDL2 generated win32 window
 
-    constexpr int xOffset = 10;
-    constexpr int yOffset = 40;
-    int           windowX = (int)ImGui::GetWindowSize().x;
-    int           windowY = (int)ImGui::GetWindowSize().y;
+    constexpr int xPadding = 10;
+    constexpr int yPadding = 20;
+    int           windowX  = (int)ImGui::GetWindowSize().x;
+    int           windowY  = (int)ImGui::GetWindowSize().y;
     if (windowX % 2 != 0) windowX++;
     if (windowY % 2 != 0) windowY++;
 
-    if (texture.width + xOffset != windowX || texture.height + yOffset != windowY) {
-        texture.width  = windowX - xOffset;
-        texture.height = windowY - yOffset;
+    if (texture.width == 0 || texture.height == 0 || windowX == 0 || windowY == 0) {
+        ImGui::SetWindowSize(ImVec2(100, 100));
+        texture.width    = 100;
+        texture.height   = 100;
+        state.reloadGame = true;
+    } else if (texture.width + xPadding != windowX || texture.height + yPadding != windowY) {
+        if (windowX >= xPadding && windowY >= yPadding) { // prevents unsigned underflow
+            texture.width  = windowX - xPadding;
+            texture.height = windowY - yPadding;
+        }
+
         if (texture.width % 2 != 0) texture.width++;
         if (texture.height % 2 != 0) texture.height++;
 
