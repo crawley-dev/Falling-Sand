@@ -467,6 +467,11 @@ void Framework::mouseDraw() {
     int x2 = state.mouseX;
     int y2 = state.mouseY;
 
+    int  xMax = state.textures[TexIndex::GAME].width;
+    int  yMax = state.textures[TexIndex::GAME].height;
+    auto oob  = [&](int x, int y) -> bool { return x > xMax || x < 0 || y > yMax || y < 0; };
+    if (oob(x1, y1) || oob(x2, y2)) return;
+
     int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
     dx  = x2 - x1;
     dy  = y2 - y1;
