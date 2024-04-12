@@ -56,9 +56,11 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
                                                           // Platform Windows
     io.ConfigDockingWithShift          = true;            // Enable Docking on Shift
     io.ConfigDockingTransparentPayload = true;            // Enable Transparent Window on Docking
-    io.Fonts->AddFontFromFileTTF("../lib/fonts/Cascadia.ttf",
-                                 15); // Changing Font -> Cascadia Mono (vs editor
-                                      // font) | Relative paths FTW!
+#if DIST_MODE
+    io.Fonts->AddFontFromFileTTF("./Cascadia.ttf", 15);
+#else
+    io.Fonts->AddFontFromFileTTF("../lib/fonts/Cascadia.ttf", 15); // Changing Font -> Cascadia Mono (vs editor font) | Relative paths FTW!
+#endif
     std::cout << Message::names[Message::IMGUI_CONFIG_INIT] << std::endl;
 
     interface = new Interface();
@@ -275,9 +277,14 @@ void Framework::loadImageRGB(TextureData& texture, std::string& path) {
 }
 
 void Framework::loadImageRGBA(TextureData& texture, std::string& path) {
+#if DIST_MODE
+    std::string imagesPath = "";
+#else
     std::string imagesPath = "../resources/images/";
-    path                   = imagesPath + path;
-    SDL_Surface* image     = IMG_Load(path.c_str());
+#endif
+
+    path               = imagesPath + path;
+    SDL_Surface* image = IMG_Load(path.c_str());
     if (image == NULL) {
         printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
         return;
@@ -350,10 +357,14 @@ void Framework::saveSimToFile(std::string& name) {
     u16                simWidth   = simTexture.width / state.scaleFactor;
     u16                simHeight  = simTexture.height / state.scaleFactor;
     std::vector<Cell>& cells      = game->getSimState();
-    auto               cellIdx    = [&](u16 x, u16 y) -> u32 { return (y * simWidth) + x; };
 
 
-    std::string   savesPath = "../resources/saves/";
+#if DIST_MODE
+    std::string savesPath = "../resources/saves/";
+#else
+    std::string savesPath = "./saves/";
+#endif
+
     std::ofstream outputFile(savesPath + name); // will create file if doesn't exist.
 
     if (!outputFile.is_open()) {
@@ -364,7 +375,8 @@ void Framework::saveSimToFile(std::string& name) {
     // ';' separates cells
     for (u16 y = 0; y < simHeight; y++) {
         for (u16 x = 0; x < simWidth; x++) {
-            Cell& c = cells[cellIdx(x, y)];
+            u32   idx = (y * simWidth) + x;
+            Cell& c   = cells[idx];
             outputFile << std::to_string(c.matID) + ',' + std::to_string(c.variant) + ';';
         }
         outputFile << '\n';
@@ -376,10 +388,13 @@ void Framework::loadSimFromFile(std::string& name) {
     u16                simWidth   = simTexture.width / state.scaleFactor;
     u16                simHeight  = simTexture.height / state.scaleFactor;
     std::vector<Cell>& cells      = game->getSimState();
-    auto               cellIdx    = [&](u16 x, u16 y) -> u32 { return (y * simWidth) + x; };
 
 
-    std::string   savesPath = "../resources/saves/";
+#if DIST_MODE
+    std::string savesPath = "../resources/saves/";
+#else
+    std::string savesPath = "./saves/";
+#endif
     std::ifstream inputFile(savesPath + name);
 
     if (!inputFile.is_open()) {
@@ -395,7 +410,9 @@ void Framework::loadSimFromFile(std::string& name) {
             if (x >= simWidth) break;
             std::string              strCell = strCells[x];
             std::vector<std::string> items   = split(strCell, ',');
-            cells[cellIdx(x, y)]             = Cell(std::stoi(items[0]), std::stoi(items[1]), false);
+
+            u32 idx    = (y * simWidth) + x;
+            cells[idx] = Cell(std::stoi(items[0]), std::stoi(items[1]), false);
         }
         y++;
     }
