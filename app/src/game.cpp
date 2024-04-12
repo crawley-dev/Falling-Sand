@@ -235,47 +235,65 @@ bool Game::updateSand(u16 x, u16 y) {
         }
 
         // redo this, generic it to others.
-        if (getRand<u8>(1, 100) > 50) {
-            if (querySwap(curMat, x + rand, y + yDispersion + 1)) {
-                xDispersion = rand;
-                movesLeft--;
-            } else break;
-        } else {
-        }
+        s8 rand = getRand<s8>(-1, 1);
+        if (querySwap(curMat, x + rand, y + yDispersion + 1)) {
+            xDispersion = rand;
+            movesLeft--;
+        } else break;
     }
-
     swapCells(x, y, x + xDispersion, y + yDispersion);
     return true;
 }
 
-// check for empty space below..
-// check horizontal options
-// >> if (can move) && (can move down) >> move
-// >> else check until ^^ or no more horizontal options
 bool Game::updateWater(u16 x, u16 y) {
+    s8 yDispersion = 0;
+    s8 xDispersion = 0;
+    s8 movesLeft   = fluidDispersionFactor;
+
     auto querySwap = [&](Material& mat1, u16 x2, u16 y2) -> bool {
         if (outOfBounds(x, y) || outOfBounds(x2, y2)) return false;
         Material& mat2 = materials[cells[cellIdx(x2, y2)].matID];
         return (mat1.flags & MOVABLE) && (mat2.flags & MOVABLE) && mat1.density > mat2.density;
     };
 
-    return genericUpdate(fluidDispersionFactor, x, y, querySwap);
+    while (movesLeft > 0) {
+        Material& curMat = materials[cells[cellIdx(x, y)].matID];
+        if (querySwap(curMat, x + xDispersion, y + yDispersion + 1)) { // check cell below
+            yDispersion++;
+            movesLeft--;
+            continue;
+        }
+
+        s8 dX = abs(xDispersion) + 1;
+        if (getRand<u8>(1, 100) > 50) {
+            if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
+            else if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
+            else goto ESCAPE_WHILE_WATER;
+            movesLeft--;
+        } else {
+            if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
+            else if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
+            else goto ESCAPE_WHILE_WATER;
+            movesLeft--;
+        }
+    }
+
+ESCAPE_WHILE_WATER:
+    swapCells(x, y, x + xDispersion, y + yDispersion);
+    return true;
 }
 
 bool Game::updateNaturalGas(u16 x, u16 y) {
+    s8 yDispersion = 0;
+    s8 xDispersion = 0;
+    s8 movesLeft   = gasDispersionFactor;
+
     auto querySwap = [&](Material& mat1, u16 x2, u16 y2) -> bool {
         if (outOfBounds(x, y) || outOfBounds(x2, y2)) return false;
         Material& mat2 = materials[cells[cellIdx(x2, y2)].matID];
         return (mat1.flags & MOVABLE) && (mat2.flags & MOVABLE) && mat1.density < mat2.density;
     };
 
-    return genericUpdate(gasDispersionFactor, x, y, querySwap);
-}
-
-bool Game::updateFire(u16 x, u16 y) { return true; }
-
-bool Game::genericUpdate(u8 movesLeft, u16 x, u16 y, std::function<bool(Material&, u16, u16)> querySwap) {
-    s8 xDispersion = 0, yDispersion = 0;
     while (movesLeft > 0) {
         Material& curMat = materials[cells[cellIdx(x, y)].matID];
         if (querySwap(curMat, x + xDispersion, y + yDispersion - 1)) { // check cell above
@@ -284,25 +302,82 @@ bool Game::genericUpdate(u8 movesLeft, u16 x, u16 y, std::function<bool(Material
             continue;
         }
 
-        // try *-1
-        u8 dX = abs(xDispersion) + 1;
+        s8 dX = abs(xDispersion) + 1;
         if (getRand<u8>(1, 100) > 50) {
             if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
             else if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
-            else goto ESCAPE_LOOP;
+            else goto ESCAPE_WHILE_WATER;
             movesLeft--;
         } else {
             if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
             else if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
-            else goto ESCAPE_LOOP;
+            else goto ESCAPE_WHILE_WATER;
             movesLeft--;
         }
     }
 
-ESCAPE_LOOP:
+ESCAPE_WHILE_WATER:
     swapCells(x, y, x + xDispersion, y + yDispersion);
     return true;
 }
+
+// check for empty space below..
+// check horizontal options
+// >> if (can move) && (can move down) >> move
+// >> else check until ^^ or no more horizontal options
+//
+//bool Game::updateWater(u16 x, u16 y) {
+//    auto querySwap = [&](Material& mat1, u16 x2, u16 y2) -> bool {
+//        if (outOfBounds(x, y) || outOfBounds(x2, y2)) return false;
+//        Material& mat2 = materials[cells[cellIdx(x2, y2)].matID];
+//        return (mat1.flags & MOVABLE) && (mat2.flags & MOVABLE) && mat1.density > mat2.density;
+//    };
+//
+//    return genericUpdate(fluidDispersionFactor, x, y, querySwap);
+//}
+//
+//bool Game::updateNaturalGas(u16 x, u16 y) {
+//    auto querySwap = [&](Material& mat1, u16 x2, u16 y2) -> bool {
+//        if (outOfBounds(x, y) || outOfBounds(x2, y2)) return false;
+//        Material& mat2 = materials[cells[cellIdx(x2, y2)].matID];
+//        return (mat1.flags & MOVABLE) && (mat2.flags & MOVABLE) && mat1.density < mat2.density;
+//    };
+//
+//    return genericUpdate(gasDispersionFactor, x, y, querySwap);
+//}
+
+
+//bool Game::genericUpdate(u8 movesLeft, u16 x, u16 y, std::function<bool(Material&, u16, u16)> querySwap) {
+//    s8 xDispersion = 0, yDispersion = 0;
+//    while (movesLeft > 0) {
+//        Material& curMat = materials[cells[cellIdx(x, y)].matID];
+//        if (querySwap(curMat, x + xDispersion, y + yDispersion - 1)) { // check cell above
+//            yDispersion--;
+//            movesLeft--;
+//            continue;
+//        }
+//
+//        // try *-1
+//        u8 dX = abs(xDispersion) + 1;
+//        if (getRand<u8>(1, 100) > 50) {
+//            if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
+//            else if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
+//            else goto ESCAPE_LOOP;
+//            movesLeft--;
+//        } else {
+//            if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
+//            else if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
+//            else goto ESCAPE_LOOP;
+//            movesLeft--;
+//        }
+//    }
+//
+//ESCAPE_LOOP:
+//    swapCells(x, y, x + xDispersion, y + yDispersion);
+//    return true;
+//}
+
+bool Game::updateFire(u16 x, u16 y) { return true; }
 
 void Game::changeMaterial(u16 x, u16 y, u8 newMaterial) {
     if (outOfBounds(x, y)) return; // not consistent control flow, but it works.

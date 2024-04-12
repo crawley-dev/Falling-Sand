@@ -99,7 +99,8 @@ void Framework::handleEvents() {
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSDL2_ProcessEvent(&event);
         if (event.type == SDL_QUIT) applicationRunning = false;
-        else if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window)) applicationRunning = true;
+        else if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
+            applicationRunning = true;
     }
 }
 
@@ -139,7 +140,8 @@ void Framework::update() {
 
     game->update(state, texture.data);
 
-    for (TextureData& tex : state.textures) updateTexture(tex);
+    for (TextureData& tex : state.textures)
+        updateTexture(tex);
 
     interface->gameWindow(state);
 }
@@ -154,7 +156,8 @@ void Framework::render() {
 
     // Placed After ImGui::Render() to prevent ImGui HUD overwriting my textures.
     if (ImGui::GetFrameCount() == 2) {
-        for (TextureData texture : state.textures) createTexture(texture);
+        for (TextureData texture : state.textures)
+            createTexture(texture);
 
         TextureData& texture = state.textures[TexIndex::GAME];
         game->init(texture.width, texture.height, state.scaleFactor);
@@ -178,7 +181,8 @@ void Framework::clean() {
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    for (TextureData& tex : state.textures) glDeleteTextures(1, &tex.id);
+    for (TextureData& tex : state.textures)
+        glDeleteTextures(1, &tex.id);
 
     // free heap memory.
     delete game;
@@ -453,7 +457,7 @@ void Framework::mouseDraw() {
     static int    x1               = state.mouseX;
     static int    y1               = state.mouseY;
     static int    lastCallFrame    = 0;
-    constexpr int minFramesTilDraw = 30;
+    constexpr int minFramesTilDraw = 15;
     if (ImGui::GetFrameCount() - lastCallFrame > minFramesTilDraw) {
         x1            = state.mouseX;
         y1            = state.mouseY;

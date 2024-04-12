@@ -64,17 +64,23 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
             ImGui::EndCombo();
         }
 
+        int solidDispersionFactor = state.solidDispersionFactor;
+        ImGui::Text("Solid Dispersion");
+        ImGui::SameLine();
+        ImGui::InputInt("solid_dispersion_inputint", &solidDispersionFactor, 1, 10);
+        state.solidDispersionFactor = solidDispersionFactor;
+
         int fluidDispersionFactor = state.fluidDispersionFactor;
         ImGui::Text("Fluid Dispersion");
         ImGui::SameLine();
         ImGui::InputInt("fluid_dispersion_inputint", &fluidDispersionFactor, 1, 10);
         state.fluidDispersionFactor = fluidDispersionFactor;
 
-        int solidDispersionFactor = state.solidDispersionFactor;
-        ImGui::Text("Solid Dispersion");
+        int gasDispersionFactor = state.gasDispersionFactor;
+        ImGui::Text("Gas Dispersion  ");
         ImGui::SameLine();
-        ImGui::InputInt("solid_dispersion_inputint", &solidDispersionFactor, 1, 10);
-        state.solidDispersionFactor = solidDispersionFactor;
+        ImGui::InputInt("gas_dispersion_inputint", &gasDispersionFactor, 1, 10);
+        state.gasDispersionFactor = gasDispersionFactor;
 
         ImGui::TreePop();
     }
@@ -160,7 +166,8 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         if (state.scanMode == Scan::GAME_OF_LIFE) {
             state.drawMaterial = MaterialID::GOL_ALIVE;
         } else {
-            if (state.drawMaterial == MaterialID::GOL_ALIVE) state.drawMaterial = MaterialID::SAND; // TODO: store state of previous drawMaterial, don't default to sand
+            if (state.drawMaterial == MaterialID::GOL_ALIVE)
+                state.drawMaterial = MaterialID::SAND; // TODO: store state of previous drawMaterial, don't default to sand
 
             ImGui::Text("Draw Mode: ");
             ImGui::SameLine();
