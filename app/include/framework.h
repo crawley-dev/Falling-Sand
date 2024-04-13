@@ -21,6 +21,9 @@ private:
     void loadImageRGB(TextureData& texture, std::string& path);
     void loadImageRGBA(TextureData& texture, std::string& path); // png is somehow rgb not rgba..
 
+    void saveChangesToFile(std::string& name, std::vector<std::pair<u16, u16>> changedCells);
+    void loadChangesFromFile(std::string& name);
+
     void saveSimToFile(std::string& name);
     void loadSimFromFile(std::string& name);
 
@@ -29,6 +32,8 @@ private:
     void reloadTextures();
 
     void mouseDraw();
+
+    void startAnimation();
 
 
     std::vector<std::string> split(const std::string& s, char delim);

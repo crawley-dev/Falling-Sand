@@ -58,19 +58,19 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
 }
 
 // whenever the simulation occurs on a size change of the simulation.
-void Game::update(AppState& state, std::vector<u8>& textureData) {
+std::vector<std::pair<u16, u16>> Game::update(AppState& state, std::vector<u8>& textureData) {
     if (state.runSim) simulate(state);
     if (sizeChanged) {
         updateEntireTextureData(textureData);
         sizeChanged = false;
-        return;
+        return cellChanges;
     }
 
-    state.textureChanges = textureChanges.size();
-    state.cellChanges    = cells.size();
+    state.cellChanges = cellChanges.size();
 
     createDrawIndicators(state.mouseX, state.mouseY, state.drawSize, state.drawShape);
     updateTextureData(textureData);
+    return cellChanges;
 }
 
 void Game::reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
@@ -163,7 +163,7 @@ void Game::golUpdate() {
     std::vector<std::pair<Cell, std::pair<u16, u16>>> updatedCells;
     auto                                              updateCellLambda = [&](u16 x, u16 y, u8 matID, u8 variant) -> void {
         updatedCells.emplace_back(Cell(matID, variant, true), std::pair<u16, u16>(x, y));
-        textureChanges.push_back(std::pair<u16, u16>(x, y));
+        cellChanges.push_back(std::pair<u16, u16>(x, y));
     };
 
     for (u16 y = 1; y < cellHeight - 2; y++)
@@ -321,62 +321,6 @@ ESCAPE_WHILE_WATER:
     return true;
 }
 
-// check for empty space below..
-// check horizontal options
-// >> if (can move) && (can move down) >> move
-// >> else check until ^^ or no more horizontal options
-//
-//bool Game::updateWater(u16 x, u16 y) {
-//    auto querySwap = [&](Material& mat1, u16 x2, u16 y2) -> bool {
-//        if (outOfBounds(x, y) || outOfBounds(x2, y2)) return false;
-//        Material& mat2 = materials[cells[cellIdx(x2, y2)].matID];
-//        return (mat1.flags & MOVABLE) && (mat2.flags & MOVABLE) && mat1.density > mat2.density;
-//    };
-//
-//    return genericUpdate(fluidDispersionFactor, x, y, querySwap);
-//}
-//
-//bool Game::updateNaturalGas(u16 x, u16 y) {
-//    auto querySwap = [&](Material& mat1, u16 x2, u16 y2) -> bool {
-//        if (outOfBounds(x, y) || outOfBounds(x2, y2)) return false;
-//        Material& mat2 = materials[cells[cellIdx(x2, y2)].matID];
-//        return (mat1.flags & MOVABLE) && (mat2.flags & MOVABLE) && mat1.density < mat2.density;
-//    };
-//
-//    return genericUpdate(gasDispersionFactor, x, y, querySwap);
-//}
-
-
-//bool Game::genericUpdate(u8 movesLeft, u16 x, u16 y, std::function<bool(Material&, u16, u16)> querySwap) {
-//    s8 xDispersion = 0, yDispersion = 0;
-//    while (movesLeft > 0) {
-//        Material& curMat = materials[cells[cellIdx(x, y)].matID];
-//        if (querySwap(curMat, x + xDispersion, y + yDispersion - 1)) { // check cell above
-//            yDispersion--;
-//            movesLeft--;
-//            continue;
-//        }
-//
-//        // try *-1
-//        u8 dX = abs(xDispersion) + 1;
-//        if (getRand<u8>(1, 100) > 50) {
-//            if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
-//            else if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
-//            else goto ESCAPE_LOOP;
-//            movesLeft--;
-//        } else {
-//            if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
-//            else if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
-//            else goto ESCAPE_LOOP;
-//            movesLeft--;
-//        }
-//    }
-//
-//ESCAPE_LOOP:
-//    swapCells(x, y, x + xDispersion, y + yDispersion);
-//    return true;
-//}
-
 bool Game::updateFire(u16 x, u16 y) { return true; }
 
 void Game::changeMaterial(u16 x, u16 y, u8 newMaterial) {
@@ -385,7 +329,7 @@ void Game::changeMaterial(u16 x, u16 y, u8 newMaterial) {
     c.matID   = newMaterial;
     c.updated = true;
 
-    textureChanges.push_back(std::pair<u16, u16>(x, y));
+    cellChanges.push_back(std::pair<u16, u16>(x, y));
 }
 
 void Game::swapCells(u16 x1, u16 y1, u16 x2, u16 y2) {
@@ -399,8 +343,8 @@ void Game::swapCells(u16 x1, u16 y1, u16 x2, u16 y2) {
     c1.updated = true;
     c2.updated = true;
 
-    textureChanges.push_back(std::pair<u16, u16>(x1, y1));
-    textureChanges.push_back(std::pair<u16, u16>(x2, y2));
+    cellChanges.push_back(std::pair<u16, u16>(x1, y1));
+    cellChanges.push_back(std::pair<u16, u16>(x2, y2));
 }
 
 /*--------------------------------------------------------------------------------------
@@ -512,10 +456,9 @@ void Game::drawSquareOutline(u16 x, u16 y, u16 size, u8 material, u8 drawChance,
 ---- Updating Texture ------------------------------------------------------------------
 --------------------------------------------------------------------------------------*/
 
-// Iterates over textureChanges list, updates relevant textureData with cell
-// data.
+// Iterates over cellChanges list, updates relevant textureData with cell data.
 void Game::updateTextureData(std::vector<u8>& textureData) {
-    for (auto& [x, y] : textureChanges) {
+    for (auto& [x, y] : cellChanges) {
         if (outOfBounds(x, y)) // couldn't get to root of problem, patching it out.
             continue;          // TODO: fix the bug, don't patch it out..
 
@@ -537,8 +480,29 @@ void Game::updateTextureData(std::vector<u8>& textureData) {
             }
         c.updated = false;
     }
-    textureChanges.clear();
-    textureChanges = drawIndicators;
+    for (auto& [x, y] : oldDrawIndicators) { // its the exact same.
+        if (outOfBounds(x, y))               // couldn't get to root of problem, patching it out.
+            continue;                        // TODO: fix the bug, don't patch it out..
+
+        Cell&            c       = cells[cellIdx(x, y)];                   // grab cell with changes
+        std::vector<u8>& variant = materials[c.matID].variants[c.variant]; // grab cell's colour variant
+
+        u8 red   = variant[0];
+        u8 green = variant[1];
+        u8 blue  = variant[2];
+        u8 alpha = variant[3];
+
+        for (s32 tY = 0; tY < scaleFactor; tY++)
+            for (s32 tX = 0; tX < scaleFactor; tX++) {                                                // iterates over each pixel in the cell
+                s32 texIdx              = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY); // index into 1d array
+                textureData[texIdx + 0] = red;
+                textureData[texIdx + 1] = green;
+                textureData[texIdx + 2] = blue;
+                textureData[texIdx + 3] = alpha;
+            }
+        c.updated = false;
+    }
+    oldDrawIndicators = drawIndicators;
     for (auto& [x, y] : drawIndicators) {
         for (s32 tY = 0; tY < scaleFactor / 2; tY++)
             for (s32 tX = 0; tX < scaleFactor / 2; tX++) {

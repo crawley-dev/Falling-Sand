@@ -7,6 +7,8 @@
 #include <string>
 #include <sstream>
 #include <istream>
+#include <chrono>
+#include <thread>
 
 Framework::Framework() {}
 Framework::~Framework() {}
@@ -63,6 +65,11 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
 #endif
     std::cout << Message::names[Message::IMGUI_CONFIG_INIT] << std::endl;
 
+    // Creating Textures.
+    state = AppState();
+    state.textures.push_back(TextureData(TexID::GAME, 0, 0, {}));
+    state.textures.push_back(TextureData(TexID::BACKGROUND, 0, 0, {}));
+
     interface = new Interface();
     if (!interface) return false;
     std::cout << Message::names[Message::INTERFACE_INIT] << std::endl;
@@ -70,6 +77,9 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     game = new Game();
     if (!game) return false;
     std::cout << Message::names[Message::GAME_INIT] << std::endl;
+
+    // Init Game
+    game->init(0, 0, state.scaleFactor);
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
@@ -87,11 +97,6 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Creating Textures.
-    state = AppState();
-    state.textures.push_back(TextureData(TexID::GAME, 0, 0, {}));
-    state.textures.push_back(TextureData(TexID::BACKGROUND, 0, 0, {}));
-
     applicationRunning = true;
     return true;
 }
@@ -106,11 +111,30 @@ void Framework::handleEvents() {
     }
 }
 
+void Framework::startAnimation() {
+    for (u32 i = 0; i < 1060; i++) {
+        std::string name = "test_" + std::to_string(i);
+        loadChangesFromFile(name);
+        if (i % 2 == 0) {
+            TextureData& texture = state.textures[TexIndex::GAME];
+            interface->main();
+            interface->debugMenu(state);
+            game->setSizeChanged(true);
+            game->update(state, texture.data);
+            updateTexture(texture);
+            interface->gameWindow(state);
+            render();
+        }
+    }
+}
+
 void Framework::update() {
+    if (ImGui::GetFrameCount() == 6) {
+        startAnimation();
+    }
+
     interface->main();
     interface->debugMenu(state);
-
-    if (ImGui::GetFrameCount() <= 3) return; // the "game" is not ready, waiting for subsystems to init
 
     ImGuiIO&     io      = ImGui::GetIO();
     TextureData& texture = state.textures[TexIndex::GAME];
@@ -140,10 +164,21 @@ void Framework::update() {
         state.reloadGame = false;
     }
 
-    game->update(state, texture.data);
+    auto changes = game->update(state, texture.data);
+    game->resetChangedCells();
 
-    for (TextureData& tex : state.textures)
+    //if (io.MouseDown[0]) {
+    //    if (state.mouseX < texture.width && state.mouseY < texture.height && state.mouseX > 0 && state.mouseY > 0) {
+    //        static u64  frame = 0;
+    //        std::string name  = "test_" + std::to_string(frame);
+    //        saveChangesToFile(name, changes);
+    //        frame++;
+    //    }
+    //}
+
+    for (TextureData& tex : state.textures) {
         updateTexture(tex);
+    }
 
     interface->gameWindow(state);
 }
@@ -156,17 +191,14 @@ void Framework::render() {
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    // Placed After ImGui::Render() to prevent ImGui HUD overwriting my textures.
+    // ImGui::Render() takes precedence in assigning openGL textures.
     if (ImGui::GetFrameCount() == 2) {
-        for (TextureData texture : state.textures)
+        for (TextureData texture : state.textures) {
             createTexture(texture);
-
-        TextureData& texture = state.textures[TexIndex::GAME];
-        game->init(texture.width, texture.height, state.scaleFactor);
+        }
     }
 
-    // Handles Multiple Viewports && Swaps between 2 texture buffers for smoother
-    // rendering
+    // Handles Multiple Viewports && Swaps between 2 texture buffers for smoother rendering
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         SDL_Window*   backup_current_window  = SDL_GL_GetCurrentWindow();
         SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
@@ -352,6 +384,68 @@ std::vector<std::string> Framework::split(const std::string& s, char delim) {
     return result;
 }
 
+void Framework::saveChangesToFile(std::string& name, std::vector<std::pair<u16, u16>> changedCells) {
+    TextureData&       simTexture = state.textures[TexIndex::GAME];
+    u16                simWidth   = simTexture.width / state.scaleFactor;
+    u16                simHeight  = simTexture.height / state.scaleFactor;
+    std::vector<Cell>& cells      = game->getSimState();
+    //std::vector<std::pair<u16, u16>> changedCells = game->getChangedCells();
+    name += ".txt";
+
+#if DIST_MODE
+    std::string savesPath = "../resources/saves/start_anim/";
+#else
+    std::string savesPath = "./saves/";
+#endif
+
+    std::ofstream outputFile(savesPath + name); // will create file if doesn't exist.
+
+    if (!outputFile.is_open()) {
+        std::cerr << "unable to open file: " << savesPath << name << '\n';
+    }
+
+    for (auto& [x, y] : changedCells) {
+        u32   idx = (y * simWidth) + x;
+        Cell& c   = cells[idx];
+        outputFile << std::to_string(x) + ',' + std::to_string(y) + ',' + std::to_string(c.matID) + ',' + std::to_string(c.variant) + ';';
+    }
+}
+
+void Framework::loadChangesFromFile(std::string& name) {
+    TextureData&       simTexture = state.textures[TexIndex::GAME];
+    u16                simWidth   = simTexture.width / state.scaleFactor;
+    std::vector<Cell>& cells      = game->getSimState();
+    name += ".txt";
+
+#if DIST_MODE
+    std::string savesPath = "../resources/saves/start_anim/";
+#else
+    std::string savesPath = "./saves/";
+#endif
+
+    std::ifstream inputFile(savesPath + name);
+
+    if (!inputFile.is_open()) {
+        std::cerr << "unable to open file: " << savesPath << name << '\n';
+    }
+
+    u32         y = 0;
+    std::string input;
+    std::getline(inputFile, input);
+
+    std::vector<std::string> changes = split(input, ';');
+    for (std::string& change : changes) {
+        std::vector<std::string> vals = split(change, ',');
+
+        u16 x      = std::stoi(vals[0]);
+        u16 y      = std::stoi(vals[1]);
+        u32 idx    = (y * simWidth) + x;
+        cells[idx] = Cell(std::stoi(vals[2]), std::stoi(vals[3]), false);
+    }
+
+    state.reloadGame = true;
+}
+
 void Framework::saveSimToFile(std::string& name) {
     TextureData&       simTexture = state.textures[TexIndex::GAME];
     u16                simWidth   = simTexture.width / state.scaleFactor;
@@ -360,7 +454,7 @@ void Framework::saveSimToFile(std::string& name) {
     name += ".txt";
 
 #if DIST_MODE
-    std::string savesPath = "../resources/saves/";
+    std::string savesPath = "../resources/saves/start_anim/";
 #else
     std::string savesPath = "./saves/";
 #endif
@@ -391,7 +485,7 @@ void Framework::loadSimFromFile(std::string& name) {
     name += ".txt";
 
 #if DIST_MODE
-    std::string savesPath = "../resources/saves/";
+    std::string savesPath = "../resources/saves/start_anim/";
 #else
     std::string savesPath = "./saves/";
 #endif
@@ -460,8 +554,7 @@ void Framework::reloadTextures() {
 // data.
 void Framework::updateTexture(TextureData& texture) {
     glBindTexture(GL_TEXTURE_2D, texture.id);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texture.width, texture.height, GL_RGBA, GL_UNSIGNED_BYTE,
-                    texture.data.data()); // data.data, weird..
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texture.width, texture.height, GL_RGBA, GL_UNSIGNED_BYTE, texture.data.data()); // data.data, weird..
 }
 
 // Passes the mouse position to the game class for drawing.

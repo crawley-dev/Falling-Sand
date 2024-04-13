@@ -46,15 +46,20 @@ public:
     Game();
     ~Game();
 
-    void init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
-    void reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
-    void update(AppState& state, std::vector<u8>& textureData);
-    void reset();
+    void                             init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
+    void                             reload(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor);
+    std::vector<std::pair<u16, u16>> update(AppState& state, std::vector<u8>& textureData);
+    void                             reset();
 
     void loadImage(std::vector<u8>& textureData, std::vector<u8>& imageTextureData, u16 imageWidth, u16 imageHeight);
     void mouseDraw(u16 x, u16 y, u16 size, u8 drawChance, u8 material, u8 shape);
 
+
+    void               setSizeChanged(bool newSize) { sizeChanged = newSize; }
+    void               resetChangedCells() { cellChanges = {}; }
     std::vector<Cell>& getSimState() { return cells; }
+
+    std::vector<std::pair<u16, u16>>& getChangedCells() { return cellChanges; } // idk why I called it "textureChanges"
 
 private:
     void simulate(AppState& state);
@@ -121,6 +126,7 @@ private:
 
     std::vector<Cell>                cells;
     std::vector<Material>            materials;
-    std::vector<std::pair<u16, u16>> textureChanges;
+    std::vector<std::pair<u16, u16>> cellChanges;
     std::vector<std::pair<u16, u16>> drawIndicators;
+    std::vector<std::pair<u16, u16>> oldDrawIndicators;
 };

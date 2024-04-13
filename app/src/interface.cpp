@@ -203,35 +203,35 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
     state.mouseX                        = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
     state.mouseY                        = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
 
-    if (false) {
-        ImGui::SetNextItemOpen(true);
-        if (ImGui::TreeNode("Debug Values")) {
-            ImGui::SeparatorText("Debug Values");
-            bool         OutofBounds = false;
-            TextureData& texture     = state.textures[loadedTex];
-            if (state.mouseX > texture.width || state.mouseX < 0 || state.mouseY > texture.height || state.mouseY < 0) OutofBounds = true;
+#if !DIST_MODE
+    ImGui::SetNextItemOpen(true);
+    if (ImGui::TreeNode("Debug Values")) {
+        ImGui::SeparatorText("Debug Values");
+        bool         OutofBounds = false;
+        TextureData& texture     = state.textures[loadedTex];
+        if (state.mouseX > texture.width || state.mouseX < 0 || state.mouseY > texture.height || state.mouseY < 0) OutofBounds = true;
 
-            const char* scanMode = Scan::names[state.scanMode].data();
+        const char* scanMode = Scan::names[state.scanMode].data();
 
-            ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::Text("Application Framecount: %d\n", ImGui::GetFrameCount());
-            ImGui::Text("Game Framecount: %d\n", state.frame);
-            ImGui::Text("Scale Factor: %d\n", state.scaleFactor);
-            ImGui::Text("Textures Reloaded: %d Times\n", state.texReloadCount);
-            ImGui::Text("Displayed Texture: %s\n", TexID::names[loadedTex].data());
-            ImGui::Text("Texture Width: %d\n", texture.width);
-            ImGui::Text("Texture Height: %d\n", texture.height);
-            ImGui::Text("Cell Width: %d\n", texture.width / state.scaleFactor);
-            ImGui::Text("Cell Height: %d\n", texture.height / state.scaleFactor);
-            ImGui::Text("Texture Updates: %d\n", state.textureChanges);
-            ImGui::Text("Cell Updates: %d\n", state.cellChanges);
-            ImGui::Text("Mouse X: %d\n", state.mouseX);
-            ImGui::Text("Mouse Y: %d\n", state.mouseY);
-            ImGui::Text("Mouse Out of Bounds? %d\n", OutofBounds);
+        ImGui::Text("Application Average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+        ImGui::Text("Application Framecount: %d\n", ImGui::GetFrameCount());
+        ImGui::Text("Game Framecount: %d\n", state.frame);
+        ImGui::Text("Scale Factor: %d\n", state.scaleFactor);
+        ImGui::Text("Textures Reloaded: %d Times\n", state.texReloadCount);
+        ImGui::Text("Displayed Texture: %s\n", TexID::names[loadedTex].data());
+        ImGui::Text("Texture Width: %d\n", texture.width);
+        ImGui::Text("Texture Height: %d\n", texture.height);
+        ImGui::Text("Cell Width: %d\n", texture.width / state.scaleFactor);
+        ImGui::Text("Cell Height: %d\n", texture.height / state.scaleFactor);
+        ImGui::Text("Texture Updates: %d\n", state.textureChanges);
+        ImGui::Text("Cell Updates: %d\n", state.cellChanges);
+        ImGui::Text("Mouse X: %d\n", state.mouseX);
+        ImGui::Text("Mouse Y: %d\n", state.mouseY);
+        ImGui::Text("Mouse Out of Bounds? %d\n", OutofBounds);
 
-            ImGui::TreePop();
-        }
+        ImGui::TreePop();
     }
+#endif
 
     ImGui::End();
 }
