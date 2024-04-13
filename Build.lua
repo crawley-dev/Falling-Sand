@@ -46,8 +46,6 @@ project "app"
     }
 
     postbuildcommands {
-        -- "{COPYFILE} %[%{wks.location}/lib/SDL2/lib/x64/SDL2.dll] %[" .. outputdir,
-        -- "{COPYFILE} %[%{wks.location}/lib/SDL2_IMAGE/lib/x64/SDL2_image.dll] %" .. outputdir
         "{COPYFILE} %[lib/SDL2/lib/x64/SDL2.dll] %[bin/" .. outputdir .. "]",
         "{COPYFILE} %[lib/SDL2_IMAGE/lib/x64/SDL2_image.dll] %[bin/" .. outputdir .. "]",
     }

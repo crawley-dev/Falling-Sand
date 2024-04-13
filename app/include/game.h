@@ -7,7 +7,7 @@ constexpr u8 CHUNK_SIZE    = 16;
 constexpr u8 VARIANT_COUNT = 20;
 constexpr u8 VARIATION     = 12;
 
-// type aliasing to better define Vec2inate space
+// type aliasing to better define coordinate space
 using cellSpace     = u8;
 using viewportSpace = u16;
 using chunkSpace    = s16;
@@ -84,10 +84,6 @@ public:
 private:
     void simulate(AppState& state);
 
-    // 1 loop, change variables based on left or right
-    //void l_bottomUpUpdate(Chunk& chunk);
-    //void r_bottomUpUpdate(Chunk& chunk);
-
     bool querySwapAbove(s32 x1, s32 y1, s32 x2, s32 y2);
     bool querySwap(s32 x1, s32 y1, s32 x2, s32 y2);
     void swapCells(s32 x1, s32 y1, s32 x2, s32 y2);
@@ -155,8 +151,6 @@ private:
     Vec2<u16> textureSize;
     u64       randSeed = 1234567890987654321; // set random seed
 
-    //std::vector<std::pair<std::vector<u8>, std::pair<s32, s32>>>    textureChanges; // render buffer changes.
-    //std::vector<Chunk*>                                                               updatedChunks; // to update
     std::vector<std::pair<Cell*, Vec2<s32>>>                                          cellUpdates;
     std::vector<Material>                                                             materials; // material data
     std::vector<Chunk*>                                                               chunks;    // holds all chunks, for deleting

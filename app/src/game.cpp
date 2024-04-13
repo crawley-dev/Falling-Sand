@@ -27,8 +27,8 @@ void Game::init(u16 width, u16 height, u8 scale) {
     // clang-format off
     materials.clear();
     materials.resize(MaterialID::COUNT);
-    materials[MaterialID::EMPTY]       = Material( 50,  50,  50, 255,   500, MOVABLE               ); // flags do nothing for now.
-    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 65535, 0                     ); // need to keep EMPTY.density less than solids, greater than gases..
+    materials[MaterialID::EMPTY]       = Material( 50,  50,  50, 255,   500, MOVABLE               );
+    materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 65535, 0                     );
     materials[MaterialID::SAND]        = Material(245, 215, 176, 255,  1600, MOVABLE | BELOW       );
     materials[MaterialID::WATER]       = Material( 20,  20, 255, 125,   997, MOVABLE | BELOW | SIDE);
     materials[MaterialID::NATURAL_GAS] = Material( 20,  20,  50, 100,    20, MOVABLE | ABOVE | SIDE);
@@ -101,22 +101,22 @@ void Game::simulate(AppState& state) {
     static Chunk* mouseChunk = getChunk(0, 0);
 
     auto [startChunkX, startChunkY] = worldToChunk(camera.x, camera.y);
-    s16 iterChunksX                 = cellSize.x / CHUNK_SIZE + chunkOffset(cellSize.x);
-    s16 iterChunksY                 = cellSize.y / CHUNK_SIZE + chunkOffset(cellSize.y);
+    //s16 iterChunksX                 = cellSize.x / CHUNK_SIZE + chunkOffset(cellSize.x);
+    //s16 iterChunksY                 = cellSize.y / CHUNK_SIZE + chunkOffset(cellSize.y);
 
-    //for (s16 y = startChunkY; y < startChunkY + iterChunksY; y++)
-    //    for (s16 x = startChunkX; x < startChunkX + iterChunksX; x++) {
+    //for (s16 y = startChunkY - 2; y < startChunkY + iterChunksY + 2; y++)
+    //    for (s16 x = startChunkX - 2; x < startChunkX + iterChunksX + 2; x++) {
     //        Chunk* chunk = getChunk(x, y);
-    //if (!chunkMap.contains({x, y})) continue;
-    //Chunk* chunk = chunkMap[{x, y}];
-    //updateChunk(chunk, (state.scanMode == Scan::BOTTOM_UP_L));
-    //}
+    //        //if (!chunkMap.contains({x, y})) continue;
+    //        //Chunk* chunk = chunkMap[{x, y}];
+    //        updateChunk(chunk, (state.scanMode == Scan::BOTTOM_UP_L));
+    //    }
 
     for (Chunk* chunk : chunks) {
         bool chunkInUse = updateChunk(chunk, state.scanMode == Scan::BOTTOM_UP_L);
-        if (!chunkInUse) {
-            // delete a chunk
-        }
+        //if (!chunkInUse) { // delete chunk
+        //    delete chunka;
+        //}
     }
 
     if (mouseChunk->cells.size() > CHUNK_SIZE * CHUNK_SIZE || mouseChunk->cells.size() < 0) {
@@ -160,6 +160,10 @@ Chunk* Game::createChunk(s16 x, s16 y, u8 material) {
     return chunk;
 }
 
+//void Game::deleteChunk(s16 x, s16 y) {
+//    delete getChunk()
+//}
+
 
 /*--------------------------------------------------------------------------------------
 ---- Updating Cells --------------------------------------------------------------------
@@ -174,6 +178,7 @@ bool Game::updateChunk(Chunk* chunk, bool updateLeft) {
             for (u8 x = 0; x < CHUNK_SIZE; x++) {
                 Cell& c = chunk->cells[cellIdx(x, y)];
                 updateCell(c, wX + x, wY + y);
+                if (c.matID != MaterialID::EMPTY) aliveCells = true;
             }
         }
     } else {
@@ -185,14 +190,6 @@ bool Game::updateChunk(Chunk* chunk, bool updateLeft) {
             }
         }
     }
-    //for (u8 y = CHUNK_SIZE - 1; y > 0; y--) {
-    //    for (u8 x = CHUNK_SIZE - 1; x > 0; x--) {
-    //for (u8 y = 0; y < CHUNK_SIZE; y++) {
-    //    for (u8 x = 0; x < CHUNK_SIZE; x++) {
-    //        Cell& c = chunk->cells[cellIdx(x, y)];
-    //        updateCell(c, wX + x, wY + y);
-    //    }
-    //}
     return aliveCells;
 }
 
@@ -226,9 +223,11 @@ bool Game::updateSand(Cell& c, s32 x, s32 y) {
             xDispersion = rand;
             movesLeft--;
         } else {
+            printf("can't move!\n");
             break;
         }
     }
+
 
     if (x == xDispersion && y == yDispersion) return false;
     swapCells(x, y, x + xDispersion, y + yDispersion);
@@ -311,7 +310,8 @@ bool Game::querySwap(s32 x1, s32 y1, s32 x2, s32 y2) {
     Material& material1 = getMaterial(getCell({x1, y1}));
     Material& material2 = getMaterial(getCell({x2, y2}));
 
-    return !(material1.density <= material2.density || !(material1.flags & MOVABLE) || !(material2.flags & MOVABLE));
+    return material1.density > material2.density;
+    //return !(material1.density <= material2.density || !(material1.flags & MOVABLE) || !(material2.flags & MOVABLE));
 }
 
 // shoud be very slow ..
@@ -344,11 +344,11 @@ void Game::swapCells(s32 x1, s32 y1, s32 x2, s32 y2) {
 // currently very slow, try optimised version on this stackoverflow below..
 //https://stackoverflow.com/questions/10060046/drawing-lines-with-bresenhams-line-algorithm
 void Game::drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)> foo) {
-    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i; // just a few variables
+    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
     dx  = x2 - x1;
     dy  = y2 - y1;
-    dx1 = fabs(dx); // floating point abs???
-    dy1 = fabs(dy); // floating point abs???
+    dx1 = fabs(dx);
+    dy1 = fabs(dy);
     px  = 2 * dy1 - dx1;
     py  = 2 * dx1 - dy1;
     if (dy1 <= dx1) {
@@ -362,8 +362,6 @@ void Game::drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)
             xe = x1;
         }
         foo(x, y);
-
-        //textureChanges.push_back({{255, 30, 30, 255}, {x, y}});
         for (i = 0; x < xe; i++) {
             x = x + 1;
             if (px < 0) {
@@ -377,8 +375,6 @@ void Game::drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)
                 px = px + 2 * (dy1 - dx1);
             }
             foo(x, y);
-
-            //textureChanges.push_back({{255, 30, 30, 255}, {x, y}});
         }
     } else {
         if (dy >= 0) {
@@ -392,7 +388,6 @@ void Game::drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)
         }
         foo(x, y);
 
-        //textureChanges.push_back({{255, 30, 30, 255}, {x, y}});
         for (i = 0; y < ye; i++) {
             y = y + 1;
             if (py <= 0) {
@@ -406,7 +401,6 @@ void Game::drawLine(s32 x1, s32 y1, s32 x2, s32 y2, std::function<void(s32, s32)
                 py = py + 2 * (dx1 - dy1);
             }
             foo(x, y);
-            //textureChanges.push_back({{255, 30, 30, 255}, {x, y}});
         }
     }
 }
@@ -610,25 +604,19 @@ Material& Game::getMaterial(Cell c) {
     return materials[c.matID];
 }
 
-// this function shall for ever be confusiing as shit
-// doesn't actually take into account the camera position. thats your job.
-// whoever wrote this, certificable spac
 bool Game::outOfCellBounds(s32 x, s32 y) const {
     return x >= cellSize.x || y >= cellSize.y || x < 0 || y < 0;
 }
 
-// world Vec2 >> is in viewport?
 bool Game::outOfViewportBounds(s32 x, s32 y) const {
     Vec2<s16> viewport = worldToViewport(x, y);
     return viewport.x >= cellSize.x || viewport.y >= cellSize.y || viewport.x < 0 || viewport.y < 0;
 }
 
-// viewport Vec2 >> is within chunk bounds? kinda useless ngl lol
 bool Game::outOfChunkBounds(u8 x, u8 y) const {
     return x >= CHUNK_SIZE || y >= CHUNK_SIZE || x < 0 || y < 0;
 }
 
-// texture/pixel Vec2 >> is valid texture index?
 bool Game::outOfTextureBounds(u32 x, u32 y) const {
     return x >= textureSize.x || y >= textureSize.y || x < 0 || y < 0;
 }
@@ -686,7 +674,6 @@ u64 Game::splitMix64_NextRand() {
     return z ^ (z >> 31);
 }
 
-
 class TaskQueue {
 public:
     TaskQueue(u8 numThreads) : stop(false) {
@@ -732,69 +719,3 @@ private:
     std::condition_variable           condition;
     bool                              stop;
 };
-
-
-/*
- 
-  //s32  lineY  = textureSize.y / 2;
-    //s32  endX   = (textureSize.x > 0) ? textureSize.x - 1 : textureSize.x;
-    //auto lambda = [&](s32 _x, s32 _y) -> void { textureChanges.push_back({{20, 255, 20, 255}, {_x, _y}}); };
-    //drawLine(0, lineY, endX, lineY, lambda);
-
-
-        // TL --> TR
-//        for (s32 tY = 0; tY < scaleFactor; tY++)
-//            for (s32 tX = 0; tX < scaleFactor; tX++)
-//                for (u8 i = 0; i < CHUNK_SIZE; i++) { // draws
-//                    if (!outOfViewportBounds(texX + i, texY)) {
-//                        const u32 idx        = textureIdx((i + texX) * scaleFactor + tX, texY * scaleFactor + tY);
-//                        textureData[idx + 0] = 255;
-//                        textureData[idx + 1] = 30;
-//                        textureData[idx + 2] = 30;
-//                        textureData[idx + 3] = 255;
-//                    }
-//
-//                    if (!outOfViewportBounds(texX, texY + i)) {
-//                        const u32 idx        = textureIdx(texX * scaleFactor + tX, (texY + i) * scaleFactor + tY);
-//                        textureData[idx + 0] = 255;
-//                        textureData[idx + 1] = 30;
-//                        textureData[idx + 2] = 30;
-//                        textureData[idx + 3] = 255;
-//                    }
-* 
-* 
-    for (auto& chunk : chunks) { // iter over each chunk
-        // next stage:: calc how much of a chunk can be rendered & do up to that.
-        // 1100 - (1096 + 8) = -4   << camera(0,0)
-        // 1100 - (-16 + 8) = 1108  << camera(0,0)
-        //const s32 startY = chunk->y + camera.y;
-        //const s32 startX = chunk->x + camera.x;
-        //u8 xOffset{0}, yOffset{0};
-        //if ((startX + CHUNK_SIZE) < 0 || (startX + CHUNK_SIZE) >= cellSize.x)
-
-        const s32 startX = chunk->x * CHUNK_SIZE - camera.x;
-        const s32 startY = chunk->y * CHUNK_SIZE + camera.y; // fuck textures.
-        if (outOfViewportBounds(startX, startY) && outOfViewportBounds(startX + CHUNK_SIZE, startY) && outOfViewportBounds(startX, startY + CHUNK_SIZE) &&
-            outOfViewportBounds(startX + CHUNK_SIZE, startY + CHUNK_SIZE))
-            continue;
-
-        u8 yOffset{CHUNK_SIZE}, xOffset{CHUNK_SIZE};
-        for (s32 y = startY; y < startY + yOffset; y++) {
-            for (s32 x = startX; x < startX + xOffset; x++) {
-                if (outOfViewportBounds(x, y)) continue;
-
-                const Cell&            c       = chunk->cells[cellIdx(x - startX, y - startY)];
-                const std::vector<u8>& variant = materials[c.matID].variants[c.variant];
-
-                for (s32 tY = 0; tY < scaleFactor; tY++) {
-                    for (s32 tX = 0; tX < scaleFactor; tX++) {
-                        const u32 idx        = textureIdx((x * scaleFactor) + tX, (y * scaleFactor) + tY);
-                        textureData[idx + 0] = variant[0];
-                        textureData[idx + 1] = variant[1];
-                        textureData[idx + 2] = variant[2];
-                        textureData[idx + 3] = variant[3];
-                    }
-                }
-            }
-        }
-    }*/

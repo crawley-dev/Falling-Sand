@@ -46,15 +46,14 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     std::cout << Message::names[Message::IMGUI_CONTEXT_INIT] << std::endl;
 
     // |= is a bitwise operator: 0101 |= 0110 -> 0111
-    ImGuiIO& io = ImGui::GetIO();                         // Setup ImGui Config
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Multi-Viewport / Platform Windows
-    io.ConfigDockingWithShift          = true;            // Enable Docking on Shift
-    io.ConfigDockingTransparentPayload = true;            // Enable Transparent Window on Docking
-    io.Fonts->AddFontFromFileTTF("../lib/fonts/Cascadia.ttf",
-                                 15); // Changing Font -> Cascadia Mono (vs editor font) | Relative paths FTW!
+    ImGuiIO& io = ImGui::GetIO();                                  // Setup ImGui Config
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;          // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;           // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;              // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;            // Enable Multi-Viewport / Platform Windows
+    io.ConfigDockingWithShift          = true;                     // Enable Docking on Shift
+    io.ConfigDockingTransparentPayload = true;                     // Enable Transparent Window on Docking
+    io.Fonts->AddFontFromFileTTF("../lib/fonts/Cascadia.ttf", 15); // Changing Font -> Cascadia Mono (vs editor font) | Relative paths FTW!
     std::cout << Message::names[Message::IMGUI_CONFIG_INIT] << std::endl;
 
     interface = new Interface();
@@ -260,10 +259,6 @@ void Framework::loadImageRGB(TextureData& texture, std::string& path) {
         SDL_FreeSurface(temp);
     }*/
 
-    /* stack overflow to the rescue!! https://stackoverflow.com/questions/40850196/sdl2-resize-a-surface
-    if (image->w > GET_GAME_WIDTH || image->h > GET_GAME_HEIGHT) {
-         !! big data manipulation wizard to the rescue !!
-    }*/
 
     // have to (un)lock surface to stop SDL2 breaking
     SDL_LockSurface(image);
@@ -294,13 +289,13 @@ void Framework::loadImageRGB(TextureData& texture, std::string& path) {
     updateTexture(texture);
 
     // downscaling texture if necessary
-    //TextureData& gameTexture = data.textures[GAME_TEXTURE_ID];
-    //while (texture.data.size() > gameTexture.data.size()) {
+    // TextureData& gameTexture = data.textures[GAME_TEXTURE_ID];
+    // while (texture.data.size() > gameTexture.data.size()) {
     //    glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
     //    glBindTexture(GL_TEXTURE_2D, texture.id);
     //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 2); // downscale x2
     //    glGenerateMipMap()
-    //}
+    // }
 }
 
 void Framework::loadImageRGBA(TextureData& texture, std::string& path) {

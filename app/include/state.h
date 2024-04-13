@@ -1,5 +1,6 @@
 ﻿#pragma once
 #define SDL_MAIN_HANDLED
+#define DIST_MODE 1
 #include <array>
 #include <cstdint>
 #include <string_view>
@@ -21,13 +22,6 @@ using f64 = double;
 
 using GLubyte = unsigned char;
 using GLuint  = unsigned int;
-
-// enum classes are a bitch, they need to be cast every time they're used..
-// wrapping everything in "PixelPhysics" namespace is un-necessary as everything is
-// now isolated in their own 'struct'.
-
-// static constexpr std::array<std::string_view, Message::COUNT> names
-// figuring this combination out took too bloody long.. compile time arrays are a nightmare
 
 struct Message {
     enum : u8 {
@@ -240,7 +234,11 @@ struct Vec2 {
 struct AppState {
     std::vector<TextureData> textures;
     std::string              imagePath;
+    std::string              savePath;
 
+
+    bool saveSim    = false;
+    bool loadSim    = false;
     bool runSim     = false;
     bool resetSim   = false;
     bool reloadGame = false;
@@ -252,8 +250,9 @@ struct AppState {
     u8 drawMaterial          = MaterialID::WATER;
     u8 drawChance            = 50;
     u8 scaleFactor           = 5;
-    u8 fluidDispersionFactor = 4;
     u8 solidDispersionFactor = 2;
+    u8 fluidDispersionFactor = 6;
+    u8 gasDispersionFactor   = 8;
 
     Vec2<u16> mouse    = Vec2<u16>(0, 0);
     u16       drawSize = 10;
