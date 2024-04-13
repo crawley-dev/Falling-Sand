@@ -112,10 +112,12 @@ void Framework::handleEvents() {
 }
 
 void Framework::startAnimation() {
-    for (u32 i = 0; i < 1060; i++) {
+    //constexpr u32 frames = 2288;
+    constexpr u32 frames = 2902;
+    for (u32 i = 0; i < frames; i++) {
         std::string name = "test_" + std::to_string(i);
         loadChangesFromFile(name);
-        if (i % 2 == 0) {
+        if (i % 3 == 0) {
             TextureData& texture = state.textures[TexIndex::GAME];
             interface->main();
             interface->debugMenu(state);
@@ -167,12 +169,15 @@ void Framework::update() {
     auto changes = game->update(state, texture.data);
     game->resetChangedCells();
 
-    //if (io.MouseDown[0]) {
-    //    if (state.mouseX < texture.width && state.mouseY < texture.height && state.mouseX > 0 && state.mouseY > 0) {
-    //        static u64  frame = 0;
-    //        std::string name  = "test_" + std::to_string(frame);
-    //        saveChangesToFile(name, changes);
-    //        frame++;
+    // Creating animations
+    //if (ImGui::GetFrameCount() > 7) {
+    //    if (io.MouseDown[0]) {
+    //        if (state.mouseX < texture.width && state.mouseY < texture.height && state.mouseX > 0 && state.mouseY > 0) {
+    //            static u64  frame = 2288;
+    //            std::string name  = "test_" + std::to_string(frame);
+    //            saveChangesToFile(name, changes);
+    //            frame++;
+    //        }
     //    }
     //}
 
@@ -384,12 +389,12 @@ std::vector<std::string> Framework::split(const std::string& s, char delim) {
     return result;
 }
 
+// Only for creating animations..
 void Framework::saveChangesToFile(std::string& name, std::vector<std::pair<u16, u16>> changedCells) {
     TextureData&       simTexture = state.textures[TexIndex::GAME];
     u16                simWidth   = simTexture.width / state.scaleFactor;
     u16                simHeight  = simTexture.height / state.scaleFactor;
     std::vector<Cell>& cells      = game->getSimState();
-    //std::vector<std::pair<u16, u16>> changedCells = game->getChangedCells();
     name += ".txt";
 
 #if DIST_MODE
