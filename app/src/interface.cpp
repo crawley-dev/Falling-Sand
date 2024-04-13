@@ -203,7 +203,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
     state.mouseX                        = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
     state.mouseY                        = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
 
-#if !DIST_MODE
+#if DIST_MODE
     ImGui::SetNextItemOpen(true);
     if (ImGui::TreeNode("Debug Values")) {
         ImGui::SeparatorText("Debug Values");

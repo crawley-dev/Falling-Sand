@@ -58,11 +58,13 @@ bool Framework::init(const char* title, int xpos, int ypos, int width, int heigh
     // Platform Windows
     io.ConfigDockingWithShift          = true; // Enable Docking on Shift
     io.ConfigDockingTransparentPayload = true; // Enable Transparent Window on Docking
+
 #if DIST_MODE
     io.Fonts->AddFontFromFileTTF("./Cascadia.ttf", 15);
 #else
     io.Fonts->AddFontFromFileTTF("../lib/fonts/Cascadia.ttf", 15); // Changing Font -> Cascadia Mono (vs editor font) | Relative paths FTW!
 #endif
+
     std::cout << Message::names[Message::IMGUI_CONFIG_INIT] << std::endl;
 
     // Creating Textures.
@@ -133,6 +135,8 @@ void Framework::startAnimation() {
 void Framework::update() {
     if (ImGui::GetFrameCount() == 6) {
         startAnimation();
+    } else if (ImGui::GetFrameCount() == 6 + 967 + 120 + 120 + 60) {
+        state.runSim = true;
     }
 
     interface->main();
