@@ -22,10 +22,10 @@ void Game::init(u16 newTextureWidth, u16 newTextureHeight, u8 newScaleFactor) {
     materials[MaterialID::CONCRETE]    = Material(200, 200, 200, 255, 65535, 0                     ); // need to keep EMPTY.density less than solids, greater than gases..
     materials[MaterialID::SAND]        = Material(245, 215, 176, 255,  1600, MOVABLE | BELOW       );
     materials[MaterialID::WATER]       = Material( 20,  20, 255, 125,   997, MOVABLE | BELOW | SIDE);
-    materials[MaterialID::NATURAL_GAS] = Material( 20,  20,  50, 100,    20, MOVABLE | ABOVE | SIDE);
-    materials[MaterialID::FIRE]        = Material(255, 165,   0, 200,     8, MOVABLE | ABOVE | SIDE);
-    materials[MaterialID::WOOD]        = Material(255, 165,   0, 200,     8, FLAMMABLE             );
-    materials[MaterialID::GOL_ALIVE]   = Material(  0, 255,  30, 255, 65535, 0                     );
+    materials[MaterialID::NATURAL_GAS] = Material( 20,  20,  50, 100,    20, MOVABLE | ABOVE | SIDE | FLAMMABLE);
+    materials[MaterialID::FIRE]        = Material(255, 165,   0, 200,     8, MOVABLE | ABOVE | SIDE | IGNITER);
+    materials[MaterialID::WOOD]        = Material(255, 165,   0, 200,   500, MOVABLE | ABOVE | SIDE | FLAMMABLE);
+    materials[MaterialID::GOL_ALIVE]   = Material(  0, 255,  30, 255, 65535, 0);
     // clang-format on
 
     // generate 'nVariant' number of colour variations per material. for spice..
@@ -118,16 +118,8 @@ void Game::simulate(AppState& state) {
     switch (state.scanMode) {
     case Scan::BOTTOM_UP_LEFT:  l_bottomUpUpdate(); break;
     case Scan::BOTTOM_UP_RIGHT: r_bottomUpUpdate(); break;
-    // case Scan::TOP_DOWN_LEFT:	    l_topDownUpdate();	    break;	// might
-    // be useful for gas updates (== to botUp in this case) case
-    // Scan::TOP_DOWN_RIGHT:	r_topDownUpdate();	    break;	// might
-    // be useful for gas updates (== to botUp in this case)
     case Scan::SNAKE:           snakeUpdate(); break;
     case Scan::GAME_OF_LIFE:    golUpdate(); break;
-    }
-
-    if (state.scanMode == Scan::BOTTOM_UP_LEFT || state.scanMode == Scan::BOTTOM_UP_RIGHT) {
-        state.scanMode = (state.scanMode += 1) % 2;
     }
 
     state.frame++;
@@ -205,6 +197,7 @@ bool Game::updateCell(u16 x, u16 y) {
     case MaterialID::CONCRETE:    return false;
     case MaterialID::NATURAL_GAS: return updateNaturalGas(x, y);
     case MaterialID::FIRE:        return updateFire(x, y);
+    case MaterialID::WOOD:        return updateWood(x, y);
     }
 }
 
@@ -268,17 +261,17 @@ bool Game::updateWater(u16 x, u16 y) {
         if (getRand<u8>(1, 100) > 50) {
             if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
             else if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
-            else goto ESCAPE_WHILE_WATER;
+            else goto ESCAPE_LOOP;
             movesLeft--;
         } else {
             if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
             else if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
-            else goto ESCAPE_WHILE_WATER;
+            else goto ESCAPE_LOOP;
             movesLeft--;
         }
     }
 
-ESCAPE_WHILE_WATER:
+ESCAPE_LOOP:
     swapCells(x, y, x + xDispersion, y + yDispersion);
     return true;
 }
@@ -291,6 +284,7 @@ bool Game::updateNaturalGas(u16 x, u16 y) {
     auto querySwap = [&](Material& mat1, u16 x2, u16 y2) -> bool {
         if (outOfBounds(x, y) || outOfBounds(x2, y2)) return false;
         Material& mat2 = materials[cells[cellIdx(x2, y2)].matID];
+        if (mat2.flags & IGNITER) cells[cellIdx(x, y)].matID = cells[cellIdx(x2, y2)].matID;
         return (mat1.flags & MOVABLE) && (mat2.flags & MOVABLE) && mat1.density < mat2.density;
     };
 
@@ -306,22 +300,90 @@ bool Game::updateNaturalGas(u16 x, u16 y) {
         if (getRand<u8>(1, 100) > 50) {
             if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
             else if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
-            else goto ESCAPE_WHILE_WATER;
+            else goto ESCAPE_LOOP;
             movesLeft--;
         } else {
             if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
             else if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
-            else goto ESCAPE_WHILE_WATER;
+            else goto ESCAPE_LOOP;
             movesLeft--;
         }
     }
 
-ESCAPE_WHILE_WATER:
+ESCAPE_LOOP:
     swapCells(x, y, x + xDispersion, y + yDispersion);
     return true;
 }
 
-bool Game::updateFire(u16 x, u16 y) { return true; }
+bool Game::updateFire(u16 x, u16 y) {
+    s8 yDispersion = 0;
+    s8 xDispersion = 0;
+    s8 movesLeft   = gasDispersionFactor;
+
+    auto querySwap = [&](Material& mat1, u16 x2, u16 y2) -> bool {
+        if (outOfBounds(x, y) || outOfBounds(x2, y2)) return false;
+        Material& mat2 = materials[cells[cellIdx(x2, y2)].matID];
+        if (mat2.flags & FLAMMABLE) cells[cellIdx(x2, y2)].matID = MaterialID::FIRE;
+        return (mat1.flags & MOVABLE) && (mat2.flags & MOVABLE) && mat1.density < mat2.density;
+    };
+
+    while (movesLeft > 0) {
+        Material& curMat = materials[cells[cellIdx(x, y)].matID];
+        if (querySwap(curMat, x + xDispersion, y + yDispersion - 1)) { // check cell above
+            yDispersion--;
+            movesLeft--;
+            continue;
+        }
+
+        s8 dX = abs(xDispersion) + 1;
+        if (getRand<u8>(1, 100) > 50) {
+            if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
+            else if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
+            else goto ESCAPE_LOOP;
+            movesLeft--;
+        } else {
+            if (querySwap(curMat, x - dX, y + yDispersion)) xDispersion = -dX;
+            else if (querySwap(curMat, x + dX, y + yDispersion)) xDispersion = dX;
+            else goto ESCAPE_LOOP;
+            movesLeft--;
+        }
+    }
+
+ESCAPE_LOOP:
+    swapCells(x, y, x + xDispersion, y + yDispersion);
+    return true;
+}
+
+bool Game::updateWood(u16 x, u16 y) {
+    s8 yDispersion = 0;
+    s8 xDispersion = 0;
+    s8 movesLeft   = solidDispersionFactor;
+
+    auto querySwap = [&](Material& mat1, u16 x2, u16 y2) -> bool {
+        if (outOfBounds(x, y) || outOfBounds(x2, y2)) return false;
+        Material& mat2 = materials[cells[cellIdx(x2, y2)].matID];
+        if (mat2.flags & IGNITER) cells[cellIdx(x, y)].matID = cells[cellIdx(x2, y2)].matID;
+        return (mat1.flags & MOVABLE) && (mat2.flags & MOVABLE) && mat1.density > mat2.density;
+    };
+
+    while (movesLeft > 0) {
+        Material& curMat = materials[cells[cellIdx(x, y)].matID];
+        if (querySwap(curMat, x + xDispersion, y + yDispersion + 1)) { // check cell below
+            yDispersion++;
+            movesLeft--;
+            continue;
+        }
+
+        // redo this, generic it to others.
+        s8 rand = getRand<s8>(-1, 1);
+        if (querySwap(curMat, x + rand, y + yDispersion + 1)) {
+            xDispersion = rand;
+            movesLeft--;
+        } else break;
+    }
+    swapCells(x, y, x + xDispersion, y + yDispersion);
+    return true;
+}
 
 void Game::changeMaterial(u16 x, u16 y, u8 newMaterial) {
     if (outOfBounds(x, y)) return; // not consistent control flow, but it works.

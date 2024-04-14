@@ -31,27 +31,15 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         if (ImGui::Button("Reset Sim")) state.resetSim = true;
 
         if (ImGui::Button("Decrease Game Area")) {
-            state.scaleFactor--;
+            state.scaleFactor++;
             state.reloadGame = true;
         }
         ImGui::SameLine();
         if (ImGui::Button("Increase Game Area")) {
-            state.scaleFactor++;
+            state.scaleFactor--;
             state.reloadGame = true;
         }
         state.scaleFactor = std::clamp(state.scaleFactor, (u8)1, (u8)10);
-
-        //ImGui::Text("Scan Modes:     ");
-        //ImGui::SameLine();
-        //if (ImGui::BeginCombo("scan_modes_combo", Scan::names[state.scanMode].data())) {
-        //    for (u8 n = 0; n < Scan::COUNT; n++) {
-        //        const bool is_selected = (state.scanMode == n);
-        //        if (ImGui::Selectable(Scan::names[n].data(), is_selected)) state.scanMode = n;
-
-        //        if (is_selected) ImGui::SetItemDefaultFocus();
-        //    }
-        //    ImGui::EndCombo();
-        //}
 
         int solidDispersionFactor = state.solidDispersionFactor;
         ImGui::Text("Solid Dispersion");
@@ -80,23 +68,26 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         // doesn't currently highlight which type is selected.
         // dig into deeper logic of ImGui.. bit painful..
 
-        if (state.scanMode == Scan::GAME_OF_LIFE) {
-            state.drawMaterial = MaterialID::GOL_ALIVE;
-        } else {
-            if (state.drawMaterial == MaterialID::GOL_ALIVE)
-                state.drawMaterial = MaterialID::SAND; // TODO: store state of previous drawMaterial, don't default to sand
-
-            ImGui::Text("Draw Mode: ");
-            ImGui::SameLine();
-            if (ImGui::BeginCombo("##draw_modes_combo", MaterialID::names[state.drawMaterial].data())) {
-                for (u8 n = 0; n < MaterialID::COUNT; n++) {
-                    const bool is_selected = (state.drawMaterial == n);
-                    if (ImGui::Selectable(MaterialID::names[n].data(), is_selected)) state.drawMaterial = n;
-
-                    if (is_selected) ImGui::SetItemDefaultFocus();
-                }
-                ImGui::EndCombo();
+        if (state.drawMaterial == MaterialID::GOL_ALIVE) {
+            state.scanMode = Scan::GAME_OF_LIFE;
+        } else if (state.scanMode == Scan::BOTTOM_UP_LEFT || state.scanMode == Scan::BOTTOM_UP_RIGHT) {
+            if (rand() % 100 > 50) {
+                state.scanMode = Scan::BOTTOM_UP_LEFT;
+            } else {
+                state.scanMode = Scan::BOTTOM_UP_RIGHT;
             }
+        }
+
+        ImGui::Text("Draw Mode: ");
+        ImGui::SameLine();
+        if (ImGui::BeginCombo("##draw_modes_combo", MaterialID::names[state.drawMaterial].data())) {
+            for (u8 n = 0; n < MaterialID::COUNT; n++) {
+                const bool is_selected = (state.drawMaterial == n);
+                if (ImGui::Selectable(MaterialID::names[n].data(), is_selected)) state.drawMaterial = n;
+
+                if (is_selected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
         }
 
         ImGui::Text("Draw Shape:");
@@ -117,8 +108,8 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         ImGui::SameLine();
         ImGui::InputInt("##draw_size_inputint", &drawSize, 1, 10);
         u8 drawSizeModifier = ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) ? 10 : 1;
-        state.drawSize += (int)io.MouseWheel * drawSizeModifier;
-        state.drawSize = (state.drawSize > 10000) ? 1 : state.drawSize;
+        drawSize += (int)io.MouseWheel * drawSizeModifier;
+        state.drawSize = std::clamp(drawSize, 1, 1000);
 
         int drawChance = state.drawChance;
         ImGui::Text("Draw Chance");
@@ -198,7 +189,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
 
     ImVec2        windowPos             = ImGui::GetMainViewport()->Pos;
     constexpr int TITLE_BAR_OFFSET_X    = 8;
-    constexpr int TITLE_BAR_OFFSET_Y    = 8;
+    constexpr int TITLE_BAR_OFFSET_Y    = 25; //8;
     constexpr int COLOUR_VARIANCE_RANGE = 20;
     state.mouseX                        = (int)(io.MousePos.x - windowPos.x - TITLE_BAR_OFFSET_X);
     state.mouseY                        = (int)(io.MousePos.y - windowPos.y - TITLE_BAR_OFFSET_Y);
@@ -223,6 +214,7 @@ void Interface::debugMenu(AppState& state) { // pair of empty brackets {} define
         ImGui::Text("Texture Height: %d\n", texture.height);
         ImGui::Text("Cell Width: %d\n", texture.width / state.scaleFactor);
         ImGui::Text("Cell Height: %d\n", texture.height / state.scaleFactor);
+        ImGui::Text("Scan Mode: %s\n", scanMode);
         ImGui::Text("Texture Updates: %d\n", state.textureChanges);
         ImGui::Text("Cell Updates: %d\n", state.cellChanges);
         ImGui::Text("Mouse X: %d\n", state.mouseX);
@@ -245,7 +237,7 @@ void Interface::gameWindow(AppState& state) {
     //       Not the SDL2 generated win32 window
 
     constexpr int xPadding = 10;
-    constexpr int yPadding = 20;
+    constexpr int yPadding = 40; //20;
     int           windowX  = (int)ImGui::GetWindowSize().x;
     int           windowY  = (int)ImGui::GetWindowSize().y;
     if (windowX % 2 != 0) windowX++;

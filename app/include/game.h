@@ -8,6 +8,7 @@ enum MaterialFlag : u8 {
     SIDE      = 1 << 2,
     ABOVE     = 1 << 3,
     FLAMMABLE = 1 << 4,
+    IGNITER   = 1 << 5,
 };
 
 struct Cell {
@@ -79,6 +80,7 @@ private:
     bool updateWater(u16 x, u16 y);
     bool updateNaturalGas(u16 x, u16 y);
     bool updateFire(u16 x, u16 y);
+    bool updateWood(u16 x, u16 y);
 
     void updateTextureData(std::vector<u8>& textureData);
     void updateEntireTextureData(std::vector<u8>& textureData);

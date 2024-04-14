@@ -191,7 +191,7 @@ struct AppState {
     bool loadImage  = false;
 
     u8 scanMode              = Scan::BOTTOM_UP_LEFT;
-    u8 updateMode            = Update::CYCLE;
+    u8 updateMode            = Update::STATIC;
     u8 drawShape             = Shape::SQUARE;
     u8 drawMaterial          = MaterialID::WATER;
     u8 drawChance            = 50;
